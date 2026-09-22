@@ -1,0 +1,1 @@
+Immediately go to `AGENTS.md`.

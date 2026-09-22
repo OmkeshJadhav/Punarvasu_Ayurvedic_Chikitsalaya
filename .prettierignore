@@ -1,0 +1,10 @@
+.next 
+node_modules 
+package-lock.json 
+coverage 
+*.tsbuildinfo 
+supabase/.temp 
+
+# Documentation is authored prose. Reformatting it produces large, noisy diffs 
+# that hide real changes, so Prettier handles code only. 
+*.md

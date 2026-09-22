@@ -1,0 +1,649 @@
+@import "tailwindcss";
+
+/**
+ * Punarvasu design tokens.
+ *
+ * Implements `docs/DESIGN_SYSTEM.md`. Three layers, in order:
+ *
+ *   1. `:root`  - the raw palette. Rarely used directly.
+ *   2. `:root`  - semantic tokens that name a *role* (surface, border, danger).
+ *                 Components reference only these.
+ *   3. `@theme` - maps semantic tokens into Tailwind's utility namespaces so
+ *                 `bg-primary`, `text-muted-foreground`, `rounded-lg`,
+ *                 `shadow-md` and the type scale all resolve to tokens.
+ *
+ * Rule: a component may use layer 2 and 3. It may not hardcode a colour, a
+ * radius, a shadow or a font size.
+ *
+ * Contrast: every foreground/background pair defined here is asserted against
+ * WCAG AA in `src/lib/design/contrast.test.ts`. Changing a value without
+ * running that test is how a healthcare interface quietly becomes unreadable.
+ */
+
+:root {
+  /* ---------------------------------------------------------------- */
+  /* 1. Raw palette                                                     */
+  /* ---------------------------------------------------------------- */
+
+  /* Botanical green - Ayurveda, nature, healing, stability. Deepened in the
+     Phase 03 revision: the previous mid-green read grey beside a warm page. */
+  --punarvasu-primary-900: #16281f;
+  --punarvasu-primary-800: #1e3529;
+  --punarvasu-primary-700: #2a473a;
+  --punarvasu-primary-600: #355a49;
+  --punarvasu-primary-500: #467058;
+  --punarvasu-primary-400: #6d9280;
+  --punarvasu-primary-300: #a3bcac;
+  --punarvasu-primary-200: #d3e0d6;
+  --punarvasu-primary-100: #e7efe8;
+  --punarvasu-primary-50: #f3f8f4;
+
+  /* Text neutrals - warm brown, the colour of sandalwood and cured wood.
+     Never a cold grey, and never the green-grey this ramp used to be: brown
+     type on a cream page is what makes the product read as apothecary rather
+     than as a clinic portal. */
+  --punarvasu-neutral-900: #2f1d19;
+  --punarvasu-neutral-800: #3e2723;
+  --punarvasu-neutral-700: #5a423c;
+  --punarvasu-neutral-600: #6f5650;
+  --punarvasu-neutral-500: #8a716a;
+  --punarvasu-neutral-400: #a89189;
+  --punarvasu-neutral-350: #8d746c;
+  --punarvasu-neutral-300: #c9b6ae;
+
+  /* Surface neutrals - unbleached paper, raw silk, turmeric-stained cotton.
+     A separate ramp from the text neutrals because the two warm in different
+     directions: surfaces run yellow, type runs red. Mixing them into one ramp
+     is what produced the muddy middle tones this palette replaces. */
+  --punarvasu-sand-300: #ddcca9;
+  --punarvasu-sand-200: #ece0c8;
+  --punarvasu-sand-100: #f4e7c8;
+  --punarvasu-sand-50: #f9efd6;
+  --punarvasu-cream: #fff8e1;
+
+  /* Accents. Used in small quantities, never as a large surface. */
+  --punarvasu-gold: #8a6519;
+  --punarvasu-gold-surface: #f6eeda;
+  --punarvasu-terracotta: #8f4a34;
+
+  /* ---------------------------------------------------------------- */
+  /* 2. Semantic tokens                                                 */
+  /* ---------------------------------------------------------------- */
+
+  /* Surfaces. The page is warm cream; cards lift to pure white. The three
+     page-level surfaces - cream, sand, white - are what give a long marketing
+     page its horizontal banding without reaching for a new colour. */
+  --background: var(--punarvasu-cream);
+  --foreground: var(--punarvasu-neutral-800);
+
+  --card: #ffffff;
+  --card-foreground: var(--punarvasu-neutral-800);
+
+  --popover: #ffffff;
+  --popover-foreground: var(--punarvasu-neutral-800);
+
+  /* A quieter surface for grouped or secondary content, and the alternate
+     band in the page rhythm. */
+  --muted: var(--punarvasu-sand-50);
+  --muted-foreground: var(--punarvasu-neutral-700);
+
+  /* Secondary: warm, paper-like. Used for secondary buttons, chips and the
+     closing call-to-action band. */
+  --secondary: var(--punarvasu-sand-100);
+  --secondary-foreground: var(--punarvasu-neutral-800);
+
+  /* Accent: the soft herbal tint used for hover and selected surfaces. */
+  --accent: var(--punarvasu-primary-100);
+  --accent-foreground: var(--punarvasu-primary-800);
+
+  --primary: var(--punarvasu-primary-700);
+  --primary-foreground: #ffffff;
+  --primary-hover: var(--punarvasu-primary-800);
+  --primary-active: var(--punarvasu-primary-900);
+
+  /* Data marks.
+   *
+   * Added in Phase 16, for the analytics charts. A data mark is its own role
+   * and deliberately not `--primary`: that token is the button fill, the
+   * link, the icon and the focus ring, and a page of bars painted in it reads
+   * as a row of controls somebody could press. One step lighter separates the
+   * two without leaving the brand ramp.
+   *
+   * There is exactly **one** series colour, because every chart in the
+   * product plots one series. A second would be the point at which a
+   * categorical ramp is designed deliberately - chosen for colour-vision
+   * separation and validated as a set - rather than a second green picked
+   * because it was next in the list.
+   *
+   * `--chart-track` is the unfilled remainder of a proportion bar. It carries
+   * no information, so it is a surface tint rather than a second data colour.
+   *
+   * Both are asserted against WCAG SC 1.4.11's 3:1 in
+   * `src/lib/design/contrast.test.ts`: a bar is a non-text graphical object
+   * that conveys information, so its boundary with every surface it can sit
+   * on has to be perceivable.
+   */
+  --chart-series: var(--punarvasu-primary-600);
+  --chart-track: var(--punarvasu-sand-100);
+
+  /* Editorial voice.
+   *
+   * A marketing section is always the same three parts - an eyebrow, a
+   * heading, and the prose under it - and the brand gives each one its own
+   * colour. The green carries the writing; the brown sits above it as an
+   * accent.
+   *
+   * These are separate tokens rather than a reuse of `--primary` and
+   * `--foreground` because those two already have jobs. `--primary` is the
+   * button fill, the link, the icon and the focus ring; `--foreground` is
+   * every form label, table cell and menu item. Recolouring either to move an
+   * eyebrow would turn buttons brown and helper text green. Naming the
+   * editorial roles separately is what lets this palette change again without
+   * touching functional UI.
+   *
+   * The split also marks a real boundary: editorial text is what a visitor
+   * reads, functional text is what a user operates. Form hints, table cells,
+   * captions and placeholders stay on `--foreground` / `--muted-foreground`.
+   */
+  --heading: var(--punarvasu-primary-800);
+  --prose: var(--punarvasu-primary-700);
+  --eyebrow: var(--punarvasu-terracotta);
+
+  /* Borders. `--input` is deliberately darker than `--border`: a form control
+     boundary is meaningful UI information and must clear WCAG 1.4.11 (3:1),
+     while a decorative divider need not. */
+  --border: var(--punarvasu-sand-200);
+  --border-strong: var(--punarvasu-sand-300);
+  --input: var(--punarvasu-neutral-350);
+
+  /* Focus. One ring colour everywhere so keyboard users learn it once. */
+  --ring: var(--punarvasu-primary-700);
+
+  /* Scrim: the wash that sits between a photograph and text laid over it.
+     A deep warm near-black rather than pure black, so a cropped photo darkens
+     towards the brand's brown rather than towards a video player.
+
+     The opacity is not a taste decision. Over a *pure white* photograph -
+     the worst case - a 70% scrim composites to #656565, which carries white
+     text at 5.8:1. Anything lighter cannot be guaranteed to clear AA, so
+     `MediaFrame`'s strong scrim never goes below it. */
+  --scrim: #241611;
+  --scrim-foreground: #ffffff;
+
+  /* Brand band: a deep green section used to break the vertical rhythm of a
+     long marketing page. Introduced in Phase 03 because "an inverted section"
+     is a reusable structural idea, not a one-off colour - without it every
+     page reaches for an arbitrary green and the inversions drift apart.
+
+     Its foreground pair is asserted against AA like every other pair.
+     `--brand-surface-border` is a decorative divider and is exempt from the
+     3:1 non-text rule for the same reason `--border` is. */
+  --brand-surface: var(--punarvasu-primary-800);
+  --brand-surface-foreground: #ffffff;
+  --brand-surface-muted: var(--punarvasu-primary-200);
+  --brand-surface-border: var(--punarvasu-primary-500);
+  --brand-surface-accent: var(--punarvasu-sand-100);
+
+  /* Status. Each has a text-weight tone and a tinted surface. Status is never
+     communicated by colour alone - see `components/ui/badge.tsx`. */
+  --success: #397a55;
+  --success-foreground: #ffffff;
+  --success-surface: #eaf4ed;
+  --success-border: #c4dfd0;
+
+  --warning: #8a5410;
+  --warning-foreground: #ffffff;
+  --warning-surface: #fff4de;
+  --warning-border: #ecd5a8;
+
+  --destructive: #b44949;
+  --destructive-foreground: #ffffff;
+  --destructive-surface: #fcecec;
+  --destructive-border: #eec9c9;
+
+  --info: #3c6680;
+  --info-foreground: #ffffff;
+  --info-surface: #eaf2f7;
+  --info-border: #c8dce8;
+
+  /* ---------------------------------------------------------------- */
+  /* Motion                                                             */
+  /* ---------------------------------------------------------------- */
+  --duration-fast: 150ms;
+  --duration-normal: 240ms;
+  --duration-slow: 420ms;
+
+  /* ---------------------------------------------------------------- */
+  /* Stacking order                                                     */
+  /* ---------------------------------------------------------------- */
+  --z-content: 10;
+  --z-sticky: 20;
+  --z-dropdown: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+
+  /* The light palette is the product. See `docs/DESIGN_SYSTEM.md` section 55. */
+  color-scheme: light;
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. Tailwind theme mapping                                           */
+/* ------------------------------------------------------------------ */
+
+/*
+ * A natural decelerating curve. Nothing in Punarvasu overshoots or bounces.
+ * Declared in a non-inline `@theme` so Tailwind emits `--ease-natural` on
+ * `:root`, making it available both as the `ease-natural` utility and as a
+ * plain `var()` inside keyframes and component CSS.
+ */
+@theme {
+  --ease-natural: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-chart-series: var(--chart-series);
+  --color-chart-track: var(--chart-track);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-surface: var(--success-surface);
+  --color-success-border: var(--success-border);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-surface: var(--warning-surface);
+  --color-warning-border: var(--warning-border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-surface: var(--destructive-surface);
+  --color-destructive-border: var(--destructive-border);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-surface: var(--info-surface);
+  --color-info-border: var(--info-border);
+
+  --color-heading: var(--heading);
+  --color-prose: var(--prose);
+  --color-eyebrow: var(--eyebrow);
+
+  --color-scrim: var(--scrim);
+  --color-scrim-foreground: var(--scrim-foreground);
+
+  --color-brand-surface: var(--brand-surface);
+  --color-brand-surface-foreground: var(--brand-surface-foreground);
+  --color-brand-surface-muted: var(--brand-surface-muted);
+  --color-brand-surface-border: var(--brand-surface-border);
+  --color-brand-surface-accent: var(--brand-surface-accent);
+
+  --color-gold: var(--punarvasu-gold);
+  --color-gold-surface: var(--punarvasu-gold-surface);
+  --color-terracotta: var(--punarvasu-terracotta);
+
+  /* Typography. Serif carries brand and editorial voice; sans carries every
+     piece of functional UI. Two families, no more. */
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif), ui-serif, Georgia, serif;
+
+  /* Fluid type scale. Each step interpolates between its mobile and desktop
+     size across the 375px-1280px range, so nothing is a shrunken desktop
+     heading and nothing needs a breakpoint override. */
+  --text-display-xl: clamp(2.625rem, 1.75rem + 3.73vw, 4rem);
+  --text-display-xl--line-height: 1.05;
+  --text-display-xl--letter-spacing: -0.02em;
+
+  --text-display: clamp(2.375rem, 1.66rem + 3.05vw, 3.5rem);
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-h1: clamp(2.125rem, 1.53rem + 2.54vw, 3rem);
+  --text-h1--line-height: 1.12;
+  --text-h1--letter-spacing: -0.02em;
+
+  --text-h2: clamp(1.875rem, 1.47rem + 1.73vw, 2.5rem);
+  --text-h2--line-height: 1.16;
+  --text-h2--letter-spacing: -0.015em;
+
+  --text-h3: clamp(1.625rem, 1.42rem + 0.87vw, 2rem);
+  --text-h3--line-height: 1.22;
+  --text-h3--letter-spacing: -0.01em;
+
+  --text-h4: clamp(1.375rem, 1.32rem + 0.22vw, 1.5rem);
+  --text-h4--line-height: 1.3;
+  --text-h4--letter-spacing: -0.005em;
+
+  --text-h5: clamp(1.1875rem, 1.17rem + 0.07vw, 1.25rem);
+  --text-h5--line-height: 1.35;
+
+  --text-body-lg: clamp(1.0625rem, 1.05rem + 0.07vw, 1.125rem);
+  --text-body-lg--line-height: 1.65;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.55;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.5;
+
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.4;
+
+  /* Containers. Marketing pages breathe wider than dense workspaces; prose
+     stays inside a comfortable measure. */
+  --container-prose: 45rem; /* 720px  - articles, long-form copy */
+  --container-content: 70rem; /* 1120px - standard page content */
+  --container-wide: 80rem; /* 1280px - marketing, gallery layouts */
+
+  /* Radius. Moderate and consistent - sophisticated, not playful. */
+  --radius-sm: 0.375rem; /* 6px  - chips, small controls */
+  --radius-md: 0.625rem; /* 10px - buttons, inputs */
+  --radius-lg: 1rem; /* 16px - cards */
+  --radius-xl: 1.5rem; /* 24px - feature panels, sheets */
+
+  /* Shadows. Reserved for genuinely elevated surfaces. Most cards use a
+     border and a surface change instead. */
+  --shadow-sm: 0 1px 3px rgba(25, 40, 32, 0.06);
+  --shadow-md: 0 8px 24px rgba(25, 40, 32, 0.08);
+  --shadow-lg: 0 20px 50px rgba(25, 40, 32, 0.1);
+
+  --animate-fade-in: fade-in var(--duration-normal) var(--ease-natural);
+  --animate-rise-in: rise-in var(--duration-slow) var(--ease-natural);
+  --animate-overlay-in: fade-in var(--duration-fast) var(--ease-natural);
+  --animate-dialog-in: dialog-in var(--duration-normal) var(--ease-natural);
+  --animate-sheet-in-bottom: sheet-in-bottom var(--duration-normal)
+    var(--ease-natural);
+  --animate-sheet-in-right: sheet-in-right var(--duration-normal)
+    var(--ease-natural);
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes sheet-in-bottom {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes sheet-in-right {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  /* Radix publishes the measured panel height as a custom property, which is
+     what makes a height animation possible without JavaScript. */
+  @keyframes accordion-open {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+  }
+
+  @keyframes accordion-close {
+    from {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Base layer                                                          */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-synthesis-weight: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* One focus treatment for the entire application. Components never remove
+     it; they only choose where the offset sits. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Headings default to the serif voice and to the editorial green; functional
+     UI opts back into sans, and an inverted surface overrides the colour with
+     its own foreground. Setting it here rather than on each component is what
+     makes a heading added tomorrow the right colour without anyone
+     remembering. `h5` takes the colour but not the serif: at that size the
+     serif stops helping. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+    text-wrap: balance;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    color: var(--heading);
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* An unlabelled control is an accessibility defect, not a style choice.
+     This makes one visible during development instead of silent in an audit. */
+  [data-punarvasu-dev="true"] button:not([aria-label]):empty {
+    outline: 2px dashed var(--destructive);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Utilities                                                           */
+/* ------------------------------------------------------------------ */
+
+/* Vertical rhythm between major page sections, responsive by definition so
+   pages never hand-roll `py-12 md:py-20 lg:py-28`. */
+@utility section-y {
+  padding-block: --spacing(14);
+
+  @variant md {
+    padding-block: --spacing(20);
+  }
+
+  @variant lg {
+    padding-block: --spacing(28);
+  }
+}
+
+/* The standard horizontal page gutter. Content never touches the viewport
+   edge on mobile (`docs/DESIGN_SYSTEM.md` section 10). */
+@utility gutter-x {
+  padding-inline: --spacing(5);
+
+  @variant sm {
+    padding-inline: --spacing(8);
+  }
+
+  @variant lg {
+    padding-inline: --spacing(12);
+  }
+}
+
+/* The full-bleed image band a marketing page opens on.
+   A height rather than an aspect ratio: the band must stay tall enough to hold
+   a headline, a paragraph and two buttons on a 320px screen, and short enough
+   that the section below it is visible on a laptop - an aspect ratio satisfies
+   neither end. It is capped below 100svh on purpose, so the page always shows
+   that there is more underneath it. */
+@utility hero-band {
+  min-block-size: 30rem;
+
+  @variant sm {
+    min-block-size: 34rem;
+  }
+
+  @variant lg {
+    min-block-size: 40rem;
+  }
+}
+
+/* A comfortable reading measure: roughly 60-72 characters. */
+@utility measure {
+  max-inline-size: 68ch;
+}
+
+/* Anchor targets sit under a sticky header, so a jump link would otherwise
+   land with the heading hidden behind the bar. The offset clears the header
+   (64px, 80px from `lg`) with room to breathe, and it works for keyboard
+   activation and `scroll-behavior: auto` alike because it is layout, not
+   script (`docs/implementation-plan/phase_03.md` section 41). */
+@utility anchor-offset {
+  scroll-margin-block-start: --spacing(20);
+
+  @variant lg {
+    scroll-margin-block-start: --spacing(28);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Inverted surfaces                                                   */
+/* ------------------------------------------------------------------ */
+
+/*
+ * `data-surface="inverted"` marks a region whose background is dark: the brand
+ * band, the footer, and any copy laid over a photograph.
+ *
+ * It exists for one reason. The focus ring is `--ring`, the primary green, and
+ * on a deep green band or a darkened photograph that ring is invisible - a
+ * keyboard user simply loses their position. Solving it per component means
+ * every future inverted section has to remember, and one day one will not.
+ *
+ * The rule is deliberately unlayered. Tailwind's utilities live in
+ * `@layer utilities`, and unlayered declarations outrank every layer, so this
+ * re-points the ring even on a component that sets `focus-visible:outline-ring`
+ * itself. That is a blunt instrument, which is why it is exactly one
+ * declaration: the ring's colour, nothing else.
+ */
+[data-surface="inverted"] :focus-visible,
+[data-surface="inverted"]:focus-visible {
+  outline-color: var(--brand-surface-foreground);
+}
+
+/* ------------------------------------------------------------------ */
+/* Reduced motion                                                      */
+/* ------------------------------------------------------------------ */
+
+/* Movement is removed; state changes still happen, instantly. Nothing becomes
+   unusable, and nothing animates for someone who asked it not to. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Print                                                               */
+/* ------------------------------------------------------------------ */
+
+/* Appointment confirmations and treatment instructions get printed. Drop the
+   interactive furniture and let the content use the page. */
+@media print {
+  [data-print="hide"] {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+  }
+}
