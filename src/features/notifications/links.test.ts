@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { notificationActionUrl, notificationLinkPath } from "./links";
+import {
+  isApplicationPath,
+  notificationActionUrl,
+  notificationLinkPath,
+} from "./links";
 import type { NotificationAudience, NotificationSubjectType } from "./types";
 
 /**
@@ -233,5 +237,32 @@ describe("notificationActionUrl", () => {
     expect(code).not.toMatch(/\brequest\b/i);
     expect(code).not.toContain("http://");
     expect(code).not.toContain("https://");
+  });
+});
+
+describe("isApplicationPath", () => {
+  it("accepts every path the builder produces", () => {
+    const id = "22222222-2222-4222-8222-222222222222";
+    for (const path of [
+      notificationLinkPath("patient", "appointment", id),
+      notificationLinkPath("patient", "prescription", id),
+      notificationLinkPath("patient", "treatment_plan", id),
+      notificationLinkPath("practitioner", "appointment", id),
+    ]) {
+      expect(path).not.toBeNull();
+      expect(isApplicationPath(path ?? "")).toBe(true);
+    }
+  });
+
+  it.each([
+    "https://evil.example/patient",
+    "//evil.example/patient",
+    "/\\evil.example",
+    "javascript:alert(1)",
+    "patient/appointments",
+    "",
+    "/patient/appointments /x",
+  ])("refuses %j, which redirect() could follow off-site", (path) => {
+    expect(isApplicationPath(path)).toBe(false);
   });
 });

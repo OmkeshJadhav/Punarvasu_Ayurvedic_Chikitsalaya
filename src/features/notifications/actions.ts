@@ -3,10 +3,11 @@
 /**
  * Notification server actions.
  *
- * ## There are three, and none of them sends anything
+ * ## There are four, and none of them sends anything
  *
- * Mark one read, mark all read, change one preference. That is the complete
- * set of things a browser can ask this feature to do.
+ * Mark one read, open one (mark it read and go to it), mark all read, change
+ * one preference. That is the complete set of things a browser can ask this
+ * feature to do.
  *
  * `phase_15.md` section 109 asks that no arbitrary notification-sending
  * endpoint be exposed to ordinary users, and the strongest form of that is
@@ -17,7 +18,7 @@
  *
  * ## No action takes a user id
  *
- * Sections 54, 97, 98 and 110. Every one of the three database functions
+ * Sections 54, 97, 98 and 110. Every one of the database functions
  * behind these actions reads `auth.uid()` itself. A form carrying `userId`,
  * `recipientUserId`, `recipientEmail` or `recipientPhone` is rejected by
  * `strict()` before it reaches one, and would have nowhere to arrive if it
@@ -37,6 +38,7 @@
  */
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { can } from "@/lib/authorization/policy";
@@ -51,6 +53,8 @@ import {
   NOTIFICATION_PREFERENCES_PATH,
 } from "./content";
 import { describeNotificationFailure } from "./errors";
+import { isApplicationPath } from "./links";
+import { getNotificationLinkPath } from "./queries";
 import {
   notificationFormError,
   notificationFormSuccess,
@@ -152,6 +156,67 @@ export async function markNotificationReadAction(
   revalidatePath(NOTIFICATIONS_PATH);
 
   return notificationFormSuccess(NOTIFICATION_CENTRE_COPY.markedRead);
+}
+
+/**
+ * Opens one notification from the bell's preview: marks it read, then goes to
+ * the resource it is about.
+ *
+ * ## The destination is read from the row, never from the form
+ *
+ * The form carries the id and nothing else. The path is looked up under
+ * `notifications_select_own`, so the only places this can send anybody are
+ * links on their own notifications — and it is checked to be an application
+ * path before `redirect()` sees it, because `redirect()` would follow an
+ * absolute URL off-site.
+ *
+ * ## It always navigates
+ *
+ * Opening a notification is the point; marking it read is housekeeping. So a
+ * failed mark-read still goes to the resource (the notification simply stays
+ * unread), and anything that prevents finding the resource — an invalid id,
+ * somebody else's id, a signed-out session — lands on the notification
+ * centre, which explains itself properly.
+ */
+export async function openNotificationAction(
+  formData: FormData,
+): Promise<void> {
+  const actor = await requireNotificationWriter();
+  const parsed = markNotificationReadSchema.safeParse(
+    readForm(formData, MARK_READ_FIELDS),
+  );
+
+  if ("failure" in actor || !parsed.success) {
+    redirect(NOTIFICATIONS_PATH);
+  }
+
+  const linkPath = await getNotificationLinkPath(parsed.data.notificationId);
+
+  if (linkPath === null || !isApplicationPath(linkPath)) {
+    redirect(NOTIFICATIONS_PATH);
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.rpc("mark_notification_read", {
+      p_notification_id: parsed.data.notificationId,
+    });
+
+    if (error) {
+      logger.warn(describeNotificationFailure(error).logEvent, {
+        userId: actor.userId,
+      });
+    }
+  } catch (error) {
+    logger.error("notification.open_mark_read_error", error, {
+      userId: actor.userId,
+    });
+  }
+
+  revalidatePath(NOTIFICATIONS_PATH);
+
+  // Outside the try, deliberately: `redirect()` signals by throwing.
+  redirect(linkPath);
 }
 
 /**

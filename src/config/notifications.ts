@@ -240,6 +240,15 @@ export const NOTIFICATION_RECENT_LIMIT_CAP = 5;
 export const DASHBOARD_NOTIFICATION_COUNT = 3;
 
 /**
+ * How many the bell's preview panel shows.
+ *
+ * Five — the most a glance should hold, and the cap above. Read and unread
+ * alike, newest first, so the panel answers "what has happened lately?" rather
+ * than only "what have I missed?"; the notification centre is the full list.
+ */
+export const BELL_PREVIEW_NOTIFICATION_COUNT = 5;
+
+/**
  * The largest unread count the bell will print.
  *
  * Beyond this it reads "99+". A precise number in the hundreds tells a patient

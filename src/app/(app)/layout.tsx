@@ -123,9 +123,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               person. Sign out is the only other control the foundation needs.
 
               `NotificationBell` is Phase 15: a server component, so the unread
-              count is authorized server state rather than a number the browser
-              keeps (`phase_15.md` section 63), and so the header still ships
-              no JavaScript. It renders for every role — a notification is
+              count and the preview of the newest notifications are authorized
+              server state rather than something the browser keeps
+              (`phase_15.md` section 63). Only the preview panel's open/close
+              behaviour is a client component. It renders for every role — a notification is
               addressed to an account, and a role with none sees a bell with no
               number.
             */}

@@ -85,3 +85,15 @@ export function notificationActionUrl(
 ): string {
   return `${siteUrl.replace(/\/+$/, "")}${linkPath}`;
 }
+
+/**
+ * Whether a stored link is an application-relative path, and so safe to
+ * redirect to.
+ *
+ * The database's check constraint already refuses anything else. This is the
+ * second gate, at the point a stored value becomes a `redirect()` — which
+ * accepts absolute URLs, and would follow `//host` or `/\host` off-site.
+ */
+export function isApplicationPath(path: string): boolean {
+  return /^\/(?![/\\])[^\s]*$/.test(path);
+}

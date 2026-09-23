@@ -1167,9 +1167,13 @@ describe("the application layer", () => {
       (match) => match[1] ?? "",
     );
 
+    // `openNotificationAction` (the bell's preview) marks one of the caller's
+    // own notifications read and redirects to its stored link. It sends
+    // nothing, and the scans below hold it to that like the rest.
     expect(exported.sort()).toEqual([
       "markAllNotificationsReadAction",
       "markNotificationReadAction",
+      "openNotificationAction",
       "setNotificationPreferenceAction",
     ]);
 

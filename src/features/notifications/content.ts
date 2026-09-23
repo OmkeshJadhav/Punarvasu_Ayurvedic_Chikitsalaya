@@ -197,6 +197,32 @@ export function notificationPreferencesCopy(audience: NotificationAudience): {
 }
 
 /**
+ * The bell's preview panel.
+ *
+ * A glance at the newest few, read and unread alike. It deliberately has no
+ * "mark all" and no filters — those belong to the notification centre, which
+ * "View all" opens.
+ */
+export const NOTIFICATION_BELL_COPY = {
+  panelTitle: "Notifications",
+  viewAll: "View all notifications",
+  emptyTitle: "You're all caught up",
+  emptyBody: "New updates will appear here.",
+  errorBody:
+    "We couldn't load your latest notifications. View all to try again.",
+  opening: "Opening…",
+} as const;
+
+/** "3 unread" / "99+ unread" / "No unread" — the panel's header line. */
+export function notificationBellUnreadSummary(
+  unread: number,
+  cap: number,
+): string {
+  if (unread <= 0) return "No unread";
+  return unread > cap ? `${cap}+ unread` : `${unread} unread`;
+}
+
+/**
  * What the bell says to a screen reader.
  *
  * Section 90: the unread state must not be colour alone, and the count must be

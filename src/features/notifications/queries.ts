@@ -29,6 +29,7 @@ import "server-only";
  */
 
 import {
+  BELL_PREVIEW_NOTIFICATION_COUNT,
   NOTIFICATION_AUDIENCE_CATEGORIES,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_PAGE_SIZE,
@@ -253,6 +254,70 @@ export async function getUnreadNotificationCount(): Promise<UnreadCountResult> {
   } catch (error) {
     logger.error("notification.unread_count_error", error);
     return { status: "unavailable" };
+  }
+}
+
+/**
+ * Everything the header bell needs: the unread count and the newest few.
+ *
+ * ## Soft on permission, like the count
+ *
+ * This runs in the application shell on every signed-in page, so a role that
+ * cannot read notifications gets an empty preview rather than the thrown error
+ * `listRecentNotifications`'s `assertPermission` would raise. Row-level
+ * security scopes both reads to `auth.uid()` regardless.
+ *
+ * The two queries run in parallel and fail independently: a count that could
+ * not be read still leaves a useful list, and the other way round.
+ */
+export async function getNotificationBellSnapshot(): Promise<{
+  readonly unread: UnreadCountResult;
+  readonly recent: NotificationListResult;
+}> {
+  const user = await getCurrentUser();
+
+  if (!user || !can(user.role, "notifications.read.self")) {
+    return {
+      unread: { status: "ok", count: 0 },
+      recent: { status: "ok", notifications: [] },
+    };
+  }
+
+  const [unread, recent] = await Promise.all([
+    getUnreadNotificationCount(),
+    listRecentNotifications(BELL_PREVIEW_NOTIFICATION_COUNT),
+  ]);
+
+  return { unread, recent };
+}
+
+/**
+ * Where one of the signed-in user's notifications points, or `null`.
+ *
+ * Takes an id, and that is safe for the same reason `mark_notification_read`
+ * is: `notifications_select_own` scopes the row to `auth.uid()`, so somebody
+ * else's id reads no row — indistinguishable from an id that does not exist.
+ */
+export async function getNotificationLinkPath(
+  notificationId: string,
+): Promise<string | null> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("link_path")
+      .eq("id", notificationId)
+      .maybeSingle<{ readonly link_path: string }>();
+
+    if (error) {
+      logger.error("notification.link_lookup_failed", error);
+      return null;
+    }
+
+    return data?.link_path ?? null;
+  } catch (error) {
+    logger.error("notification.link_lookup_error", error);
+    return null;
   }
 }
 

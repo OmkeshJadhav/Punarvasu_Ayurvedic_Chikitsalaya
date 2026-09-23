@@ -1567,6 +1567,132 @@ row stays interpretable on its own, which is section 99's argument for
 
 ---
 
+### 21. Notification bell preview (2026-09-23)
+
+The bell in the authenticated header was a plain link to `/notifications`.
+It now opens a **preview panel** of the newest five notifications, and the
+notification centre is reached from the panel's "View all notifications" link.
+
+#### 21.1 What the person sees
+
+* **Unread indicator.** The bell carries the unread count (capped at `99+`),
+  now ringed in the card colour so it stays legible against the icon. The
+  trigger's accessible name states the count ("Notifications, 3 unread").
+* **Hover opens the panel** for a mouse or pen, never touch (150 ms open delay, 200 ms
+  close delay so the pointer can cross to the panel). A **click, a tap, Enter
+  or Space** opens it too and keeps it open until Escape, an outside click or
+  navigation — so it is never hover-only (`AGENTS.md` section 34). A click on
+  a panel the pointer opened keeps it open rather than closing it.
+* **The newest five, read and unread alike**, newest first. Unread rows have a
+  sand tint, a primary dot, a heavier title and the word "Unread" in their
+  accessible name; read rows sit on the plain popover surface. Colour is never
+  the only signal (section 90, WCAG 1.4.1).
+* **Clicking a notification** marks it read and opens the resource it is about
+  (the appointment, prescription or plan). A spinner shows while that happens.
+* **"View all notifications"** is the only route from the panel to
+  `/notifications`.
+* Empty ("You're all caught up") and failed-read states are distinct, as
+  everywhere else in this phase.
+
+#### 21.2 Design decisions
+
+* **A popover, not a tooltip.** The panel holds buttons and a link. A tooltip
+  may not: it is skipped by assistive technology and unreachable by touch.
+  Radix Popover (already a dependency through `radix-ui`) gives a non-modal
+  dialog with `aria-expanded`, Escape and outside-click dismissal and focus
+  returned to the bell. A hover-opened panel does **not** take focus. A
+  click- or keyboard-opened one moves focus into the panel.
+* **The data is still server state.** `NotificationBell` stays a server
+  component. It reads the count and the five rows in parallel through
+  `getNotificationBellSnapshot()` under row-level security, and passes them to
+  the client `NotificationBellMenu`. Nothing is fetched from the browser and
+  nothing reaches browser storage. The cost is one extra `limit 5` query per
+  authenticated page, on a layout that was already `force-dynamic`.
+* **Opening a notification is a form, not a link.** Marking read is a write,
+  so each row posts its **id only** to `openNotificationAction`. The action
+  reads the destination from the caller's own row (`notifications_select_own`),
+  checks it is an application path (`isApplicationPath`, because `redirect()`
+  follows absolute and protocol-relative URLs), marks it read and redirects.
+  An invalid id, somebody else's id or no session lands on `/notifications`
+  and writes nothing. A failed mark-read still opens the resource. It works
+  before hydration, because the browser posts the form. What it gives up is
+  middle-click and "open in new tab" on a row. The notification centre still
+  offers real links for those.
+* **Supersedes the Phase 15 "link, not a panel" decision** recorded in
+  `notification-bell.tsx`. The panel stays deliberately small: no filters, no
+  pagination, no "mark all read". Those remain the centre's job.
+
+#### 21.3 Files
+
+Added:
+
+* `src/components/ui/popover.tsx` — the Popover primitive, styled with the
+  design tokens (`bg-popover`, `shadow-md`, `z-(--z-dropdown)`, `rounded-lg`).
+* `src/components/notifications/notification-bell-menu.tsx` — the client
+  trigger and panel.
+* `tests/components/notification-bell-menu.test.tsx` — 9 tests: count and
+  cap, click/keyboard/hover opening, focus behaviour, no touch-hover, read vs
+  unread naming, the form posts only the id, empty vs failed, axe sweep.
+* `tests/integration/notification-open-action.test.ts` — 9 tests: stored link
+  used, planted form destination ignored, three off-site stored values
+  refused, other user's id, invalid id, no session, failed mark-read.
+
+Modified:
+
+* `src/components/notifications/notification-bell.tsx` — renders the menu from
+  the snapshot.
+* `src/features/notifications/queries.ts` — `getNotificationBellSnapshot()`,
+  `getNotificationLinkPath()`.
+* `src/features/notifications/actions.ts` — `openNotificationAction`.
+* `src/features/notifications/links.ts` (+ test) — `isApplicationPath()`.
+* `src/features/notifications/content.ts` — `NOTIFICATION_BELL_COPY`,
+  `notificationBellUnreadSummary()`.
+* `src/config/notifications.ts` — `BELL_PREVIEW_NOTIFICATION_COUNT = 5`.
+* `src/app/(app)/layout.tsx` — comment only (the header now ships the
+  panel's JavaScript).
+* `tests/integration/notification-security.test.ts` — the server-action
+  allowlist now includes `openNotificationAction`. It still asserts no
+  action creates, enqueues or claims a notification.
+
+No migration, no new permission, no new dependency.
+
+#### 21.4 Verification
+
+```text
+npm run typecheck     passed
+npm run lint          passed
+npm run build         passed
+npm test              4556 passed, 1 failed
+prettier --check      changed files clean
+```
+
+The one failing test, `ignores every .env except the example`, and the
+prettier warning on `.prettierrc.json` **fail identically without this
+change**. They are about the local environment files, not this work.
+
+**Browser check, 2026-09-23 (headless Chrome over CDP, local dev server,
+dev patient account):** a real mouse-move path over the header bell on
+`/patient` opens the panel (`aria-expanded="true"`, opacity 1, z-index 30,
+topmost at its own centre), showing one unread and one read notification, and
+the screenshot matched the design. Under DevTools touch emulation no hover
+events fire at all, so the panel opens by tap only there — by design. Not yet
+checked: a physical phone, placement at 320px, and closing after opening a
+notification.
+
+Hover originally required `pointerType === "mouse"`. It now ignores only
+`touch`, so a pen hover opens it too.
+
+#### 21.5 Known limitations
+
+1. **Opening a notification whose link is the current page** leaves the panel
+   open, showing the row now read. The panel closes on a pathname change, and
+   there is none.
+2. **The preview is as fresh as the last navigation.** A notification that
+   arrives while a page is open appears on the next navigation or refresh. This
+   was already true of the count.
+
+---
+
 ### 19. Phase status
 
 ```text
@@ -1577,6 +1703,9 @@ Practitioner notifications (section 20): COMPLETE
 Migration applied to the live project:   YES — 2026-09-23
 Verified live:                           YES — 19 checks, section 20.7
 Verified in a browser:                   NO  — known issue 1
+
+Bell preview panel (section 21):         COMPLETE
+Verified in a browser:                   PARTLY — hover, section 21.4
 ```
 
 Phase 16 has not been started. Its specification is a zero-byte placeholder
