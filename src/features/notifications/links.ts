@@ -23,28 +23,42 @@
  * function in TypeScript so the application can predict what the database
  * will store. `links.test.ts` reads the migration and asserts the two agree.
  *
- * ## Why these three routes
+ * ## Two audiences, four routes
  *
- * Every recipient today is a patient, so every path is under `/patient`. Staff
- * notifications are deferred (section 56 asks for useful workflows rather than
- * every database event), and the day they arrive they bring their own routes
- * and their own branch here — and in the SQL, together, or the test fails.
+ * A patient's notification points into `/patient`; a practitioner's points at
+ * `/doctor/appointments/<id>`, their own diary entry. Both destinations existed
+ * before notifications did and both authorize independently, which is the whole
+ * reason a link may name a resource at all.
+ *
+ * A practitioner has no prescription or treatment-plan route here, and returns
+ * `null` for both. That is not an omission: those are documents the
+ * practitioner wrote, and telling somebody they have issued the prescription
+ * they just issued is the noise section 56 exists to prevent. `null` means
+ * "this audience is not told about this resource", and the database raises
+ * rather than storing an empty path.
  */
 
-import type { NotificationSubjectType } from "./types";
+import type { NotificationAudience, NotificationSubjectType } from "./types";
 
 /**
  * The application route a notification about this resource points at.
  *
- * Mirrors `public.notification_link_path()`. The id is interpolated without
- * escaping because it is a `uuid` column on both sides of the boundary — the
- * database's parameter type is `uuid`, so a value that is not one never
- * reaches the string.
+ * Mirrors `public.notification_link_path()`, including its nulls. The id is
+ * interpolated without escaping because it is a `uuid` column on both sides of
+ * the boundary — the database's parameter type is `uuid`, so a value that is
+ * not one never reaches the string.
  */
 export function notificationLinkPath(
+  audience: NotificationAudience,
   resourceType: NotificationSubjectType,
   resourceId: string,
-): string {
+): string | null {
+  if (audience === "practitioner") {
+    return resourceType === "appointment"
+      ? `/doctor/appointments/${resourceId}`
+      : null;
+  }
+
   switch (resourceType) {
     case "appointment":
       return `/patient/appointments/${resourceId}`;

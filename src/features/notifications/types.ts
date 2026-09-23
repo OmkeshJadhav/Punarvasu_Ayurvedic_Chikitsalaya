@@ -34,6 +34,18 @@ export type NotificationStatus =
 export type NotificationSubjectType =
   Database["public"]["Enums"]["notification_subject_type"];
 
+/**
+ * Which side of an appointment a notification was written for.
+ *
+ * Two values, and neither names anybody. It decides which account the database
+ * resolves the notification to and which area the deep link points at — the
+ * patient's `/patient/...` or the practitioner's `/doctor/...` — and it is the
+ * *only* thing `create_notification` gained when staff notifications arrived.
+ * There is still no recipient parameter anywhere in this feature.
+ */
+export type NotificationAudience =
+  Database["public"]["Enums"]["notification_audience"];
+
 export type NotificationDeliveryStatus =
   Database["public"]["Enums"]["notification_delivery_status"];
 
@@ -124,6 +136,14 @@ export interface NotificationPreference {
 export type NotificationPreferencesResult =
   | {
       readonly status: "ok";
+      /**
+       * Which audience this grid was built for.
+       *
+       * Carried alongside the rows rather than recomputed by the screen, so
+       * the categories rendered and the words describing them cannot come
+       * from two different answers to the same question.
+       */
+      readonly audience: NotificationAudience;
       readonly preferences: readonly NotificationPreference[];
     }
   | { readonly status: "unavailable" };

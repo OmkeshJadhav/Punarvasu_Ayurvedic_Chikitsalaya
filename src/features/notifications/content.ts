@@ -12,6 +12,8 @@
  * accident.
  */
 
+import type { NotificationAudience } from "./types";
+
 export const NOTIFICATIONS_PATH = "/notifications";
 export const NOTIFICATION_PREFERENCES_PATH = "/notifications/preferences";
 
@@ -69,6 +71,57 @@ export const NOTIFICATION_CENTRE_COPY = {
   preferencesLink: "Notification settings",
 } as const;
 
+/**
+ * The same two screens, in the practitioner's register.
+ *
+ * Only the sentences that would be *wrong* for them are overridden. "Updates
+ * about your appointments and your care" is written for the person being
+ * cared for; a practitioner's notifications are about their working day, and
+ * telling them otherwise would be the kind of copy that makes a product feel
+ * as though it was built for somebody else.
+ *
+ * Everything not listed here — the filters, the mark-read controls, the error
+ * copy — is the same words for everybody, because it means the same thing.
+ */
+export const PRACTITIONER_NOTIFICATION_COPY = {
+  description:
+    "Changes to your day. When an appointment with you is confirmed, moved or cancelled, it appears here — open one to see the appointment itself.",
+
+  emptyBody:
+    "There are no notifications here yet. We'll let you know when an appointment in your diary is confirmed, moved or cancelled.",
+
+  preferencesDescription:
+    "Choose how Punarvasu tells you about changes to your day.",
+
+  scopeNote:
+    "Punarvasu only tells you about appointments in your own diary. There is no marketing here and nothing to opt in to.",
+
+  privacyNote:
+    "Notifications are deliberately brief, and they never name a patient — a message can be read on a lock screen or over a shoulder. Open the appointment to see who you are seeing.",
+
+  mandatoryNote:
+    "Always on — a change to your day has to reach you somewhere, and this is the one place that always exists.",
+
+  emailUnavailableNote:
+    "Email notifications are not switched on for this clinic yet. Your notifications are waiting for you here in Punarvasu.",
+} as const;
+
+/** The notification centre's introduction, for this reader. */
+export function notificationCentreDescription(
+  audience: NotificationAudience,
+): string {
+  return audience === "practitioner"
+    ? PRACTITIONER_NOTIFICATION_COPY.description
+    : NOTIFICATION_CENTRE_COPY.description;
+}
+
+/** What an empty inbox says, for this reader. */
+export function notificationEmptyBody(audience: NotificationAudience): string {
+  return audience === "practitioner"
+    ? PRACTITIONER_NOTIFICATION_COPY.emptyBody
+    : NOTIFICATION_CENTRE_COPY.emptyBody;
+}
+
 export const NOTIFICATION_PREFERENCES_COPY = {
   title: "Notification settings",
   description: "Choose how Punarvasu keeps in touch with you about your care.",
@@ -115,6 +168,33 @@ export const NOTIFICATION_PREFERENCES_COPY = {
 
   backLink: "Back to notifications",
 } as const;
+
+/** The notification-settings sentences that differ by reader. */
+export function notificationPreferencesCopy(audience: NotificationAudience): {
+  readonly description: string;
+  readonly scopeNote: string;
+  readonly privacyNote: string;
+  readonly mandatoryNote: string;
+  readonly emailUnavailableNote: string;
+} {
+  if (audience === "practitioner") {
+    return {
+      description: PRACTITIONER_NOTIFICATION_COPY.preferencesDescription,
+      scopeNote: PRACTITIONER_NOTIFICATION_COPY.scopeNote,
+      privacyNote: PRACTITIONER_NOTIFICATION_COPY.privacyNote,
+      mandatoryNote: PRACTITIONER_NOTIFICATION_COPY.mandatoryNote,
+      emailUnavailableNote: PRACTITIONER_NOTIFICATION_COPY.emailUnavailableNote,
+    };
+  }
+
+  return {
+    description: NOTIFICATION_PREFERENCES_COPY.description,
+    scopeNote: NOTIFICATION_PREFERENCES_COPY.scopeNote,
+    privacyNote: NOTIFICATION_PREFERENCES_COPY.privacyNote,
+    mandatoryNote: NOTIFICATION_PREFERENCES_COPY.mandatoryNote,
+    emailUnavailableNote: NOTIFICATION_PREFERENCES_COPY.emailUnavailableNote,
+  };
+}
 
 /**
  * What the bell says to a screen reader.

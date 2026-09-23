@@ -7,7 +7,9 @@ import {
   NOTIFICATION_TEMPLATE_VERSION,
   renderEmail,
   renderNotification,
+  renderPractitionerNotification,
   type NotificationTemplateData,
+  type PractitionerNotificationTemplateData,
 } from "./templates";
 import type { NotificationEventType } from "./types";
 
@@ -169,6 +171,222 @@ describe("every event has a template", () => {
     expect(EVENT_CATEGORY.appointment_reminder).toBe("appointment_reminders");
     expect(EVENT_CATEGORY.appointment_confirmed).toBe("appointment_updates");
     expect(EVENT_CATEGORY.appointment_cancelled).toBe("appointment_updates");
+  });
+});
+
+/* ------------------------------------------------------------------------ */
+/* The practitioner's vocabulary                                             */
+/* ------------------------------------------------------------------------ */
+
+const PRACTITIONER_EVENTS: readonly PractitionerNotificationTemplateData["event"][] =
+  ["appointment_confirmed", "appointment_rescheduled", "appointment_cancelled"];
+
+function renderEveryPractitioner(): {
+  event: PractitionerNotificationTemplateData["event"];
+  rendered: ReturnType<typeof renderPractitionerNotification>;
+}[] {
+  return PRACTITIONER_EVENTS.map((event) => ({
+    event,
+    rendered: renderPractitionerNotification({
+      event,
+      data: { appointmentTypeName: APPOINTMENT_TYPE, startsAt: STARTS_AT },
+    } as PractitionerNotificationTemplateData),
+  }));
+}
+
+/**
+ * A plausible patient, and every way one might leak into a message.
+ *
+ * None of these is an input to a practitioner template — the interface has no
+ * field for any of them — so the assertion below is a second line of defence
+ * behind a compiler error, exactly as the clinical-word scan is behind the
+ * context functions.
+ */
+const PATIENT_NAME = "Meera Sharma";
+
+describe("the practitioner's templates", () => {
+  it("cover the three events a practitioner is told about, and no more", () => {
+    // Not six. A reminder would be sixteen messages about a day they are
+    // already looking at (sections 56, 61), and a prescription notification
+    // would tell them about the prescription they had just written.
+    expect(renderEveryPractitioner()).toHaveLength(3);
+
+    for (const { rendered } of renderEveryPractitioner()) {
+      expect(rendered.title.length).toBeGreaterThan(0);
+      expect(rendered.body.length).toBeGreaterThan(0);
+      expect(rendered.templateVersion).toBe(NOTIFICATION_TEMPLATE_VERSION);
+    }
+  });
+
+  it.each(renderEveryPractitioner())(
+    "$event names no patient",
+    ({ rendered }) => {
+      // Sections 36, 37 and 57. A practitioner may know who is on their own
+      // list; a lock screen may not be told.
+      const text = `${rendered.title} ${rendered.body}`;
+
+      expect(text).not.toContain(PATIENT_NAME);
+      expect(text.toLowerCase()).not.toContain("patient");
+    },
+  );
+
+  it.each(renderEveryPractitioner())(
+    "$event says nothing clinical",
+    ({ rendered }) => {
+      const found = containsClinicalWord(`${rendered.title} ${rendered.body}`);
+      expect(found, `contains "${found}"`).toBeNull();
+    },
+  );
+
+  it.each(renderEveryPractitioner())(
+    "$event carries the appointment type and the authoritative time",
+    ({ rendered }) => {
+      // Section 25: use real data, invent nothing.
+      expect(rendered.body).toContain(APPOINTMENT_TYPE);
+      expect(rendered.body).toMatch(/2026/);
+    },
+  );
+
+  it("puts every practitioner message in the appointment-updates category", () => {
+    // The same preference unit as a patient's, because it is the same fact
+    // about the same appointment — and mandatory in-app for the same reason.
+    for (const { rendered } of renderEveryPractitioner()) {
+      expect(rendered.category).toBe("appointment_updates");
+    }
+  });
+
+  it("says something different from what the patient is told", () => {
+    // Two audiences, two vocabularies. If these ever converged, one of them
+    // would be addressing the wrong person.
+    for (const event of PRACTITIONER_EVENTS) {
+      const theirs = renderPractitionerNotification({
+        event,
+        data: { appointmentTypeName: APPOINTMENT_TYPE, startsAt: STARTS_AT },
+      } as PractitionerNotificationTemplateData);
+
+      const patients = renderNotification({
+        event,
+        data: {
+          practitionerName: PRACTITIONER,
+          appointmentTypeName: APPOINTMENT_TYPE,
+          startsAt: STARTS_AT,
+        },
+      } as NotificationTemplateData);
+
+      expect(theirs.body).not.toBe(patients.body);
+      // And never the practitioner's own name back at them.
+      expect(theirs.body).not.toContain(PRACTITIONER);
+    }
+  });
+
+  it("carries no cancellation reason", () => {
+    // Section 27, and the same rule the patient's cancellation follows: a
+    // cancellation note is written by staff for staff.
+    const cancelled = renderPractitionerNotification({
+      event: "appointment_cancelled",
+      data: { appointmentTypeName: APPOINTMENT_TYPE, startsAt: STARTS_AT },
+    });
+
+    expect(cancelled.body.toLowerCase()).not.toContain("reason");
+    expect(cancelled.body.toLowerCase()).not.toContain("because");
+  });
+});
+
+/* ------------------------------------------------------------------------ */
+/* Grammar against interpolated data                                         */
+/* ------------------------------------------------------------------------ */
+
+describe("no article ever precedes an interpolated value", () => {
+  /**
+   * The defect this guards, found by the first live worker run.
+   *
+   * The practitioner confirmation read "A Initial consultation is confirmed
+   * for…". The consultation type is data — it is whatever the clinic named a
+   * row in `appointment_types` — so an article written beside it in the
+   * template cannot agree with it. Every unit test passed, because every
+   * fixture happened to use a consonant-initial name.
+   *
+   * The fix was to restructure the sentences so no article is needed, rather
+   * than to compute "a" against "an": section 100 asks that localization stay
+   * possible later, and a hard-coded English article rule is the opposite of
+   * that. This asserts the restructuring holds for **both** shapes of name.
+   */
+  const VOWEL_INITIAL = "Initial consultation";
+  const CONSONANT_INITIAL = "Panchakarma therapy";
+
+  /** "a" or "A" immediately before a word starting with a vowel. */
+  const MISAGREED = /\ba\s+(?=[aeiou])/i;
+
+  function everyMessage(appointmentTypeName: string): string[] {
+    const appointment = {
+      practitionerName: PRACTITIONER,
+      appointmentTypeName,
+      startsAt: STARTS_AT,
+    };
+
+    const patientMessages = APPOINTMENT_EVENTS.map((event) =>
+      renderNotification({
+        event,
+        data: appointment,
+      } as NotificationTemplateData),
+    ).concat(
+      renderNotification({
+        event: "prescription_issued",
+        data: { practitionerName: PRACTITIONER },
+      }),
+      renderNotification({
+        event: "treatment_plan_activated",
+        data: { practitionerName: PRACTITIONER },
+      }),
+    );
+
+    const practitionerMessages = PRACTITIONER_EVENTS.map((event) =>
+      renderPractitionerNotification({
+        event,
+        data: { appointmentTypeName, startsAt: STARTS_AT },
+      } as PractitionerNotificationTemplateData),
+    );
+
+    return [...patientMessages, ...practitionerMessages].map(
+      (m) => `${m.title} ${m.body}`,
+    );
+  }
+
+  it("the detector finds the defect it is meant to find", () => {
+    // Without this the assertions below could pass on a regex that matches
+    // nothing — the failure mode section 14 of the progress record describes.
+    expect(MISAGREED.test("A Initial consultation is confirmed")).toBe(true);
+    expect(MISAGREED.test("a appointment has moved")).toBe(true);
+    expect(MISAGREED.test("A Panchakarma therapy is confirmed")).toBe(false);
+    expect(MISAGREED.test("has issued a prescription")).toBe(false);
+  });
+
+  it.each([VOWEL_INITIAL, CONSONANT_INITIAL])(
+    "reads correctly when the consultation type is %s",
+    (typeName) => {
+      for (const message of everyMessage(typeName)) {
+        expect(message, `misagreeing article in: ${message}`).not.toMatch(
+          MISAGREED,
+        );
+      }
+    },
+  );
+
+  it("still names the consultation type in every appointment message", () => {
+    // The fix must not have removed the information along with the article.
+    for (const typeName of [VOWEL_INITIAL, CONSONANT_INITIAL]) {
+      const practitionerBodies = PRACTITIONER_EVENTS.map(
+        (event) =>
+          renderPractitionerNotification({
+            event,
+            data: { appointmentTypeName: typeName, startsAt: STARTS_AT },
+          } as PractitionerNotificationTemplateData).body,
+      );
+
+      for (const body of practitionerBodies) {
+        expect(body).toContain(typeName);
+      }
+    }
   });
 });
 

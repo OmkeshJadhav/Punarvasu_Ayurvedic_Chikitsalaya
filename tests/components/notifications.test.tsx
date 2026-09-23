@@ -7,7 +7,12 @@ import { NotificationFilters } from "@/components/notifications/notification-fil
 import { NotificationItem } from "@/components/notifications/notification-item";
 import { NotificationList } from "@/components/notifications/notification-list";
 import { NotificationPreferencesForm } from "@/components/notifications/notification-preferences-form";
-import { NOTIFICATION_CENTRE_COPY } from "@/features/notifications/content";
+import { RecentNotifications } from "@/components/notifications/recent-notifications";
+import {
+  NOTIFICATION_CENTRE_COPY,
+  PRACTITIONER_NOTIFICATION_COPY,
+} from "@/features/notifications/content";
+import { DOCTOR_NOTIFICATIONS_COPY } from "@/features/doctor/content";
 import type {
   Notification,
   NotificationPreference,
@@ -272,6 +277,7 @@ describe("the list", () => {
       <NotificationList
         page={{ notifications: [notification()], nextCursor: null }}
         filter="all"
+        audience="patient"
       />,
     );
 
@@ -293,6 +299,7 @@ describe("the list", () => {
       <NotificationList
         page={{ notifications: [notification()], nextCursor: null }}
         filter="all"
+        audience="patient"
       />,
     );
 
@@ -309,6 +316,7 @@ describe("the list", () => {
       <NotificationList
         page={{ notifications: [notification()], nextCursor: null }}
         filter="unread"
+        audience="patient"
       />,
     );
 
@@ -322,6 +330,7 @@ describe("the list", () => {
       <NotificationList
         page={{ notifications: [], nextCursor: null }}
         filter="all"
+        audience="patient"
       />,
     );
 
@@ -336,6 +345,7 @@ describe("the list", () => {
       <NotificationList
         page={{ notifications: [], nextCursor: null }}
         filter="unread"
+        audience="patient"
       />,
     );
 
@@ -353,6 +363,7 @@ describe("the list", () => {
           nextCursor: "2026-09-18T09:00:00.000Z",
         }}
         filter="unread"
+        audience="patient"
       />,
     );
 
@@ -369,6 +380,7 @@ describe("the list", () => {
       <NotificationList
         page={{ notifications: [notification()], nextCursor: null }}
         filter="all"
+        audience="patient"
       />,
     );
 
@@ -392,6 +404,7 @@ describe("the list", () => {
           nextCursor: "2026-09-18T09:00:00.000Z",
         }}
         filter="all"
+        audience="patient"
       />,
     );
 
@@ -462,7 +475,11 @@ describe("mark all as read", () => {
 describe("preferences", () => {
   it("renders every category and channel", () => {
     render(
-      <NotificationPreferencesForm preferences={PREFERENCES} emailConfigured />,
+      <NotificationPreferencesForm
+        preferences={PREFERENCES}
+        audience="patient"
+        emailConfigured
+      />,
     );
 
     expect(
@@ -481,7 +498,11 @@ describe("preferences", () => {
   it("disables a mandatory channel and says why", async () => {
     // Section 22. A disabled control with no explanation reads as a bug.
     render(
-      <NotificationPreferencesForm preferences={PREFERENCES} emailConfigured />,
+      <NotificationPreferencesForm
+        preferences={PREFERENCES}
+        audience="patient"
+        emailConfigured
+      />,
     );
 
     const section = screen
@@ -507,6 +528,7 @@ describe("preferences", () => {
     render(
       <NotificationPreferencesForm
         preferences={PREFERENCES}
+        audience="patient"
         emailConfigured={false}
       />,
     );
@@ -531,7 +553,11 @@ describe("preferences", () => {
     const user = userEvent.setup();
 
     render(
-      <NotificationPreferencesForm preferences={PREFERENCES} emailConfigured />,
+      <NotificationPreferencesForm
+        preferences={PREFERENCES}
+        audience="patient"
+        emailConfigured
+      />,
     );
 
     const section = screen
@@ -559,7 +585,11 @@ describe("preferences", () => {
     // Section 97. `{"userId": "another-user"}` is not something this UI can
     // express, and `set_notification_preference` has no parameter for one.
     render(
-      <NotificationPreferencesForm preferences={PREFERENCES} emailConfigured />,
+      <NotificationPreferencesForm
+        preferences={PREFERENCES}
+        audience="patient"
+        emailConfigured
+      />,
     );
 
     for (const input of document.querySelectorAll("input")) {
@@ -571,7 +601,11 @@ describe("preferences", () => {
     // The Phase 12 defect: the browser's own constraint validation refuses to
     // fire the submit event at all, so the control does visibly nothing.
     render(
-      <NotificationPreferencesForm preferences={PREFERENCES} emailConfigured />,
+      <NotificationPreferencesForm
+        preferences={PREFERENCES}
+        audience="patient"
+        emailConfigured
+      />,
     );
 
     expect(document.querySelectorAll("[required]")).toHaveLength(0);
@@ -581,7 +615,190 @@ describe("preferences", () => {
     const { container } = render(
       <NotificationPreferencesForm
         preferences={PREFERENCES}
+        audience="patient"
         emailConfigured={false}
+      />,
+    );
+
+    await expectNoAxeViolations(container);
+  });
+});
+
+/* ------------------------------------------------------------------------ */
+/* The practitioner's view                                                   */
+/* ------------------------------------------------------------------------ */
+
+describe("a practitioner's notification centre", () => {
+  /** The one category a practitioner is sent, in both channels. */
+  const PRACTITIONER_PREFERENCES: readonly NotificationPreference[] = [
+    {
+      category: "appointment_updates",
+      channel: "in_app",
+      enabled: true,
+      mandatory: true,
+    },
+    {
+      category: "appointment_updates",
+      channel: "email",
+      enabled: true,
+      mandatory: false,
+    },
+  ];
+
+  it("promises a practitioner what they will actually receive", () => {
+    // Telling a practitioner we will let them know when their practitioner
+    // shares something with them would be nonsense.
+    render(
+      <NotificationList
+        page={{ notifications: [], nextCursor: null }}
+        filter="all"
+        audience="practitioner"
+      />,
+    );
+
+    expect(
+      screen.getByText(PRACTITIONER_NOTIFICATION_COPY.emptyBody),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(NOTIFICATION_CENTRE_COPY.emptyBody),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers a practitioner only the category they are sent", () => {
+    render(
+      <NotificationPreferencesForm
+        preferences={PRACTITIONER_PREFERENCES}
+        audience="practitioner"
+        emailConfigured
+      />,
+    );
+
+    // Their one category, in their own words.
+    expect(
+      screen.getByRole("heading", { name: /changes to your day/i }),
+    ).toBeInTheDocument();
+
+    // And not two controls over messages nobody will ever send them.
+    expect(
+      screen.queryByRole("heading", { name: /appointment reminders/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: /prescriptions and treatment plans/i,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("locks their in-app channel and says why in their own words", () => {
+    // Section 22. A change to somebody's working day made by the front desk
+    // has to reach them somewhere.
+    render(
+      <NotificationPreferencesForm
+        preferences={PRACTITIONER_PREFERENCES}
+        audience="practitioner"
+        emailConfigured
+      />,
+    );
+
+    expect(
+      screen.getByText(PRACTITIONER_NOTIFICATION_COPY.mandatoryNote),
+    ).toBeInTheDocument();
+  });
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(
+      <NotificationPreferencesForm
+        preferences={PRACTITIONER_PREFERENCES}
+        audience="practitioner"
+        emailConfigured={false}
+      />,
+    );
+
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe("the recent-notifications panel", () => {
+  it("distinguishes an empty list from a failed read", () => {
+    // Telling a practitioner nothing has changed when the database was
+    // unreachable is how somebody misses a cancellation.
+    const { unmount } = render(
+      <RecentNotifications
+        result={{ status: "ok", notifications: [] }}
+        copy={DOCTOR_NOTIFICATIONS_COPY}
+      />,
+    );
+
+    expect(
+      screen.getByText(DOCTOR_NOTIFICATIONS_COPY.emptyTitle),
+    ).toBeInTheDocument();
+    unmount();
+
+    render(
+      <RecentNotifications
+        result={{ status: "unavailable" }}
+        copy={DOCTOR_NOTIFICATIONS_COPY}
+      />,
+    );
+
+    expect(
+      screen.getByText(DOCTOR_NOTIFICATIONS_COPY.errorBody),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(DOCTOR_NOTIFICATIONS_COPY.emptyTitle),
+    ).not.toBeInTheDocument();
+  });
+
+  it("is a list of links to the resource, with no mark-read control", () => {
+    // The glance, not the centre. A second place to manage notifications
+    // would be a second thing to keep correct.
+    render(
+      <RecentNotifications
+        result={{
+          status: "ok",
+          notifications: [
+            notification({
+              title: "An appointment has moved",
+              body: "Initial consultation has moved to Saturday, 19 September at 10:30 am.",
+              linkPath: `/doctor/appointments/${BASE.resourceId}`,
+            }),
+          ],
+        }}
+        copy={DOCTOR_NOTIFICATIONS_COPY}
+      />,
+    );
+
+    const link = screen.getByRole("link", {
+      name: /an appointment has moved/i,
+    });
+    expect(link).toHaveAttribute(
+      "href",
+      `/doctor/appointments/${BASE.resourceId}`,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /mark as read/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("marks unread with a word rather than a tint", () => {
+    render(
+      <RecentNotifications
+        result={{ status: "ok", notifications: [notification()] }}
+        copy={DOCTOR_NOTIFICATIONS_COPY}
+      />,
+    );
+
+    expect(
+      screen.getByText(NOTIFICATION_CENTRE_COPY.unreadBadge),
+    ).toBeInTheDocument();
+  });
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(
+      <RecentNotifications
+        result={{ status: "ok", notifications: [notification()] }}
+        copy={DOCTOR_NOTIFICATIONS_COPY}
       />,
     );
 
@@ -601,6 +818,7 @@ describe("privacy", () => {
       <NotificationList
         page={{ notifications: [notification()], nextCursor: null }}
         filter="all"
+        audience="patient"
       />,
     );
 
@@ -631,6 +849,7 @@ describe("privacy", () => {
           nextCursor: null,
         }}
         filter="all"
+        audience="patient"
       />,
     );
 

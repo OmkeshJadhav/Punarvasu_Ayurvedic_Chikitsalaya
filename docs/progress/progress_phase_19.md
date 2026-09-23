@@ -1,11 +1,12 @@
 ## PHASE 19 — Security & Privacy Hardening
 
 Status:
-**COMPLETE — with one required verification step outstanding.** The migration
-has been written and statically verified but **not applied to the live Supabase
-project**, and this session had no database credentials. Section 18 says
-exactly what has to be run before the phase is signed off. Nothing in this
-document claims a live check that was not performed.
+**COMPLETE.** The migration was written and statically verified on 2026-09-22
+in a session with no database credentials, and **applied to the live Supabase
+project on 2026-09-23** alongside the Phase 15 practitioner-notification
+migration. Section 18's outstanding verification step is done; what was
+actually observed on the live project is recorded in section 19. Nothing in
+this document claims a live check that was not performed.
 
 Completed On:
 2026-09-22
@@ -1034,3 +1035,48 @@ Three things to carry forward:
 * **A scanner without a self-test is a scanner that has quietly stopped.** Four
   phases have now found one. Every scan in the new suite asserts it found
   something before it asserts anything about what it found.
+
+---
+
+### 19. Live application, 2026-09-23
+
+Applied with `psql` against the linked project (the Supabase CLI was not
+installed in that session), inside a single transaction, with the
+`supabase_migrations.schema_migrations` row inserted in the same transaction so
+the schema change and its history entry commit together or not at all. It was
+first run inside a transaction that was **rolled back**, to prove it applied
+cleanly before anything committed.
+
+```text
+NOTICE: Phase 19: revoked EXECUTE from anon on 102 functions in public (0 skipped).
+```
+
+Comfortably past the migration's own `revoked < 50` abort guard, and **0
+skipped** — no function raised on the revoke.
+
+| Check | Result |
+| --- | --- |
+| Functions in `public` still executable by `anon` | **219 extension-owned and 16 trigger functions, and nothing else.** The loop excludes both by design — `pg_depend.deptype = 'e'` and a `trigger` return type |
+| Project-owned functions still executable by `anon` | **Zero** |
+| `alter default privileges ... revoke execute on functions from anon` | Present — 2 rows in `pg_default_acl` for `public` |
+| `security_audit_events` | Exists, row-level security **enabled**, one policy |
+| Pre-existing data | Untouched — the same 7 appointments, 1 patient and 4 notifications before and after |
+
+The notification feature was re-checked at the same time, since it was the
+other migration in the run: only the three pure configuration mirrors
+(`notification_reminder_offsets`, `notification_category_is_mandatory`,
+`notification_link_path`) are executable by `authenticated`. Every processor
+function — `create_notification`, `claim_notification_outbox`,
+`release_due_reminders`, `plan_appointment_reminders`,
+`notification_recipient_for_resource`, `notification_preference_enabled` and
+the three context functions — is executable by **neither** `anon` nor
+`authenticated`.
+
+Through PostgREST, `anon` calling `create_notification` receives **404**, not
+403: a function the role cannot execute is not in the schema PostgREST exposes
+to it at all.
+
+**What this does not cover.** The checks above are privilege and catalogue
+state. Section 18's remaining items — the audit trail exercised through a real
+sign-in, and the CSP re-driven against the deployed site rather than a local
+production build — were not part of this run.

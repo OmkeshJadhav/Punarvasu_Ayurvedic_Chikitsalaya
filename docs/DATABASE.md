@@ -326,7 +326,7 @@ Four tables, not one:
 ```text
 notification_outbox        one row per domain event, written by an `after`
                            trigger INSIDE the domain transaction
-notifications              one thing a patient should know
+notifications              one thing an account should know
 notification_deliveries    one EXTERNAL delivery attempt
 notification_preferences   one row per (user, category, channel)
 ```
@@ -335,8 +335,11 @@ notification_preferences   one row per (user, category, channel)
   performs no insert, update or delete against any domain table, adds no
   column to one, and replaces no function from an earlier phase.
 * **Owner** — The recipient account, resolved **inside the database** from
-  the resource the notification is about. There is no recipient parameter on
-  any function, in any schema, or on any form.
+  the **audience** and the resource the notification is about:
+  `patients.profile_id` for a patient, `practitioners.profile_id` for a
+  practitioner. There is no recipient parameter on any function, in any schema,
+  or on any form — `notification_audience` has two values and neither names
+  anybody.
 * **Sensitive** — Notification bodies must be minimal, and here that is
   structural rather than a rule to remember: there is **no column** for a
   diagnosis, a symptom, an assessment, a medicine, a dose, an item, a plan
@@ -358,7 +361,16 @@ notification_preferences   one row per (user, category, channel)
 * **Idempotency** — A unique `dedupe_key` on the outbox and on the
   notification, and a unique `(notification_id, channel)` on the delivery. A
   repeated trigger, a worker retry, a browser refresh and a process restart all
-  resolve to one logical notification.
+  resolve to one logical notification **per audience**: an appointment event
+  writes one outbox row and the processor derives a distinct notification key
+  for each audience from it (`…:confirmed` and `…:confirmed_practitioner`), so
+  neither dedupes the other.
+* **Audiences** — `notification_audience` is `patient` or `practitioner`
+  (added by `20260930120000`). A practitioner is told only about **changes to
+  their own diary** — confirmed, moved, cancelled — never about a reminder, a
+  prescription or a plan, and their message carries no patient name: the
+  template that writes it has no field for one. The `audience` column is
+  **not granted to any client role**; it is machinery, like `dedupe_key`.
 * **Reminders** — Planned from the authoritative appointment and re-checked
   against it when they fall due, so a cancelled, moved, completed or
   not-attended appointment cannot produce one. Section 11's status model is

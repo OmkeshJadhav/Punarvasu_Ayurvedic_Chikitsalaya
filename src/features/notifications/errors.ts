@@ -44,6 +44,16 @@ export const NOTIFICATION_ERROR_CODES = {
   inAppDelivery: "PV054",
   /** A completion status the delivery table does not accept. */
   unsupportedDeliveryStatus: "PV055",
+  /**
+   * An audience has somebody to tell but no route to send them to.
+   *
+   * Unreachable today — the only practitioner notifications are about
+   * appointments, and appointments have a doctor route — and raised rather
+   * than assumed away, because the recipient resolver and the link builder are
+   * two `case` expressions that have to agree. A silent null would surface as
+   * a `not null` violation with nothing attached explaining why.
+   */
+  noRoute: "PV056",
 } as const;
 
 const INSUFFICIENT_PRIVILEGE = "42501";

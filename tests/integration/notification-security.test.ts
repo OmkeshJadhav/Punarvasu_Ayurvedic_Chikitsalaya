@@ -53,6 +53,35 @@ const GRANTS_FIX = readFileSync(
   "utf8",
 );
 
+/**
+ * The audience migration.
+ *
+ * `20260930120000` **drops and recreates** `create_notification`,
+ * `notification_link_path` and `notification_recipient_for_resource` so they
+ * can take an audience. PostgreSQL cannot change a signature in place, and
+ * `docs/DATABASE.md` section 12 forbids editing an applied migration.
+ *
+ * Every assertion about those three has to be made against this file, not the
+ * original: the original's definitions are no longer installed, so a test that
+ * went on reading them would pass while describing SQL that does not exist.
+ * That is precisely the failure the grants fix recorded above, one migration
+ * later.
+ */
+const AUDIENCE_MIGRATION = readFileSync(
+  new URL(
+    "../../supabase/migrations/20260930120000_doctor_notifications.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+
+/** The three functions whose current definition lives in the newest file. */
+const REDEFINED = [
+  "create_notification",
+  "notification_link_path",
+  "notification_recipient_for_resource",
+] as const;
+
 const SRC = fileURLToPath(new URL("../../src/", import.meta.url));
 
 const NOTIFICATION_TABLES = [
@@ -62,17 +91,31 @@ const NOTIFICATION_TABLES = [
   "notification_preferences",
 ] as const;
 
-/** Every function body in the migration, keyed by name. */
-function functionBodies(): Map<string, string> {
+/** Every function body in a migration, keyed by name. */
+function functionBodies(sql: string = MIGRATION): Map<string, string> {
   const bodies = new Map<string, string>();
   const pattern =
     /create function public\.([a-z_]+)\s*\(([\s\S]*?)\)\s*returns[\s\S]*?as \$\$([\s\S]*?)\$\$;/g;
 
-  for (const match of MIGRATION.matchAll(pattern)) {
+  for (const match of sql.matchAll(pattern)) {
     bodies.set(match[1] ?? "", `${match[2] ?? ""}||${match[3] ?? ""}`);
   }
 
   return bodies;
+}
+
+/**
+ * The body of a function as it is **currently defined**.
+ *
+ * The newest definition wins, so an assertion about `create_notification`
+ * describes the one that is installed rather than the one it replaced.
+ */
+function currentBody(name: string): string {
+  return (
+    functionBodies(AUDIENCE_MIGRATION).get(name) ??
+    functionBodies().get(name) ??
+    ""
+  );
 }
 
 /**
@@ -496,7 +539,7 @@ describe("no recipient parameter exists", () => {
   });
 
   it("and create_notification resolves one instead", () => {
-    const body = functionBodies().get("create_notification") ?? "";
+    const body = currentBody("create_notification");
 
     expect(body).toContain("notification_recipient_for_resource");
     expect(body).toContain("PV050");
@@ -504,11 +547,33 @@ describe("no recipient parameter exists", () => {
 
   it("and create_notification derives the link rather than accepting it", () => {
     // Section 19: do not accept arbitrary URLs from notification payloads.
-    const body = functionBodies().get("create_notification") ?? "";
+    const body = currentBody("create_notification");
     const params = body.split("||")[0] ?? "";
 
     expect(params).not.toMatch(/p_link|p_url|p_path/);
     expect(body).toContain("public.notification_link_path(");
+  });
+
+  it("and an audience is not a recipient", () => {
+    // `p_audience` is the one parameter the signature gained when staff
+    // notifications arrived. It takes two values — `patient` and
+    // `practitioner` — and neither names anybody: the account is still
+    // resolved from the resource.
+    const params = currentBody("create_notification").split("||")[0] ?? "";
+
+    expect(params).toContain("p_audience public.notification_audience");
+    expect(params).not.toMatch(
+      /p_recipient|p_user_id|p_profile_id|p_practitioner_id|p_patient_id/,
+    );
+
+    const declared =
+      /create type public\.notification_audience as enum \(([^)]*)\)/.exec(
+        AUDIENCE_MIGRATION,
+      )?.[1] ?? "";
+
+    expect(
+      [...declared.matchAll(/'([a-z_]+)'/g)].map((match) => match[1]).sort(),
+    ).toEqual(["patient", "practitioner"]);
   });
 });
 
@@ -616,6 +681,163 @@ describe("notifications never own domain state", () => {
       functionBodies().get("appointments_emit_notification_events") ?? "";
 
     expect(body).not.toContain("'requested'");
+  });
+});
+
+/* ------------------------------------------------------------------------ */
+/* The audience migration                                                    */
+/* ------------------------------------------------------------------------ */
+
+describe("the practitioner's notifications", () => {
+  it("is the file this suite thinks it is", () => {
+    expect(AUDIENCE_MIGRATION.length).toBeGreaterThan(5_000);
+    expect(functionBodies(AUDIENCE_MIGRATION).size).toBe(REDEFINED.length);
+  });
+
+  it("re-revokes and re-gates every function it recreates", () => {
+    // `create function` takes Supabase's default named grants at creation
+    // time — the whole discovery of `20260926130000`. A migration that drops
+    // and recreates a processor function re-opens the hole unless it repeats
+    // both the revoke and the gate.
+    for (const name of REDEFINED) {
+      expect(
+        AUDIENCE_MIGRATION,
+        `${name} is recreated but not revoked from the named client roles`,
+      ).toMatch(
+        new RegExp(
+          String.raw`revoke all on function public\.${name}\([\s\S]{0,400}?from public, anon, authenticated`,
+        ),
+      );
+    }
+
+    // `create_notification` is the one of the three that can write, so it is
+    // the one that carries the gate. The other two are pure lookups revoked
+    // from every client role, exactly as before.
+    expect(currentBody("create_notification")).toContain(
+      "perform public.assert_notification_worker()",
+    );
+  });
+
+  it("grants the creator to service_role and to nobody else", () => {
+    const grants = [
+      ...AUDIENCE_MIGRATION.matchAll(
+        /grant execute on function public\.create_notification\([\s\S]{0,400}?to (\w+);/g,
+      ),
+    ].map((match) => match[1]);
+
+    expect(grants).toEqual(["service_role"]);
+  });
+
+  it("never grants the recipient resolver to a client role", () => {
+    // It takes no user id, but it answers "whose account is this resource?",
+    // which is not a question a client may ask.
+    expect(AUDIENCE_MIGRATION).not.toMatch(
+      /grant execute on function public\.notification_recipient_for_resource[\s\S]{0,300}?to (authenticated|anon|service_role)/,
+    );
+  });
+
+  it("writes to no domain table, and adds no column to one", () => {
+    // Section 2 still holds. The one column this migration adds is on
+    // `public.notifications`, which is this feature's own table.
+    const domainTables = [
+      "appointments",
+      "prescriptions",
+      "prescription_items",
+      "treatment_plans",
+      "treatment_plan_items",
+      "clinical_records",
+      "patients",
+      "patient_documents",
+      "user_roles",
+      "profiles",
+      "practitioners",
+    ];
+
+    for (const table of domainTables) {
+      for (const verb of ["insert into", "update", "delete from"]) {
+        expect(
+          AUDIENCE_MIGRATION,
+          `the audience migration performs "${verb} ${table}"`,
+        ).not.toMatch(new RegExp(`${verb} public\\.${table}\\b`, "i"));
+      }
+
+      expect(
+        AUDIENCE_MIGRATION,
+        `the audience migration alters public.${table}`,
+      ).not.toMatch(new RegExp(`alter table public\\.${table}\\b`, "i"));
+    }
+  });
+
+  it("changes no trigger and writes no second outbox row", () => {
+    // One domain fact, one event. Who is told is decided by the processor
+    // afterwards, so the outbox stays a log of what happened to the clinic
+    // rather than a log of messages somebody intends to send.
+    expect(AUDIENCE_MIGRATION).not.toMatch(/create trigger/i);
+    expect(AUDIENCE_MIGRATION).not.toMatch(/drop trigger/i);
+    expect(AUDIENCE_MIGRATION).not.toMatch(
+      /_emit_notification_events\s*\(\)\s*returns trigger/i,
+    );
+    expect(AUDIENCE_MIGRATION).not.toMatch(
+      /insert into public\.notification_outbox/i,
+    );
+  });
+
+  it("touches no policy", () => {
+    // A practitioner reads their notifications through the policy a patient
+    // already had: `recipient_user_id = auth.uid() and status = 'active'`.
+    // No second policy, and nothing widened.
+    expect(AUDIENCE_MIGRATION).not.toMatch(/create policy/i);
+    expect(AUDIENCE_MIGRATION).not.toMatch(/drop policy/i);
+    expect(AUDIENCE_MIGRATION).not.toMatch(/alter policy/i);
+  });
+
+  it("does not grant the audience column to a client role", () => {
+    // Machinery rather than message, like `dedupe_key`. The row carries the
+    // title and body that were rendered for its audience, and those are what
+    // a reader sees.
+    expect(AUDIENCE_MIGRATION).not.toMatch(
+      /grant select[\s\S]{0,200}?audience[\s\S]{0,200}?on public\.notifications/i,
+    );
+  });
+
+  it("pins search_path on every function it defines", () => {
+    const declarations = [
+      ...AUDIENCE_MIGRATION.matchAll(
+        /create function public\.([a-z_]+)[\s\S]*?(?=\bas \$\$)/g,
+      ),
+    ];
+
+    expect(declarations.length).toBe(REDEFINED.length);
+
+    for (const declaration of declarations) {
+      expect(
+        declaration[0],
+        `${declaration[1]} does not pin search_path`,
+      ).toContain("set search_path = ''");
+    }
+  });
+
+  it("resolves a practitioner from the appointment and from nothing else", () => {
+    const body = currentBody("notification_recipient_for_resource");
+
+    expect(body).toContain("public.practitioners");
+    expect(body).toContain("a.practitioner_id = pr.id");
+    // Only appointments. A prescription or a plan resolves to nobody for a
+    // practitioner, which create_notification turns into a skip.
+    expect(body).toContain("p_resource_type = 'appointment'");
+  });
+
+  it("gives a practitioner a doctor route and never a patient one", () => {
+    const body = currentBody("notification_link_path");
+    const practitionerBranch =
+      /when p_audience = 'practitioner' then([\s\S]*?)\bend\b/.exec(
+        body,
+      )?.[1] ?? "";
+
+    expect(practitionerBranch.length).toBeGreaterThan(20);
+    expect(practitionerBranch).toContain("'/doctor/appointments/'");
+    expect(practitionerBranch).not.toContain("/patient/");
+    expect(practitionerBranch).toContain("else null");
   });
 });
 
