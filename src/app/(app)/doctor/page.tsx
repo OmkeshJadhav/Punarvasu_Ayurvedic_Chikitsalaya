@@ -7,10 +7,12 @@ import { Section, SectionHeader } from "@/components/layout/section";
 import { DoctorDaySummaryPanel } from "@/components/doctor/day-summary";
 import { DoctorSchedule } from "@/components/doctor/doctor-schedule";
 import { NextPatientPanel } from "@/components/doctor/next-patient";
+import { RecentNotifications } from "@/components/notifications/recent-notifications";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorState } from "@/components/shared/error-state";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { DASHBOARD_NOTIFICATION_COUNT } from "@/config/notifications";
 import {
   addDaysToIsoDate,
   clinicWallClockToInstant,
@@ -19,6 +21,7 @@ import {
 } from "@/features/appointments/time";
 import {
   DOCTOR_AREA,
+  DOCTOR_NOTIFICATIONS_COPY,
   DOCTOR_SCHEDULE_COPY,
   DOCTOR_SCOPE_NOTICE,
   DOCTOR_TODAY_COPY,
@@ -34,6 +37,9 @@ import type {
   DoctorDaySummary,
 } from "@/features/doctor/types";
 import { doctorDaySchema } from "@/features/doctor/validation";
+import { NOTIFICATIONS_PATH } from "@/features/notifications/content";
+import { listRecentNotifications } from "@/features/notifications/queries";
+import type { NotificationListResult } from "@/features/notifications/types";
 import { requirePermission } from "@/lib/authorization/guards";
 
 export const metadata: Metadata = {
@@ -60,6 +66,18 @@ const DOCTOR_HOME = "/doctor";
  * clock claiming otherwise, and no polling. Section 35 permits realtime and
  * then says to use server revalidation where it is unnecessary; every status
  * action revalidates this page, which is when it actually changes.
+ *
+ * ## What has changed underneath them
+ *
+ * `phase_15.md` section 57. The front desk books, moves and cancels, and
+ * without a notification a practitioner finds that out by noticing. The panel
+ * near the foot is the last few of those changes — the same component the
+ * patient dashboard uses, with the practitioner's words — and it sits below
+ * the day rather than above it because the day is what they came for.
+ *
+ * It is read with its own bounded query, concurrently with the diary, and it
+ * fails on its own: a notification outage renders a sentence inside the panel
+ * while the schedule above it still shows.
  *
  * ## Three states, not one
  *
@@ -88,11 +106,21 @@ export default async function DoctorHomePage({
     (parsed.success ? parsed.data.date : undefined) ??
     toClinicIsoDate(new Date());
 
-  const identity = await getDoctorIdentity();
+  // Concurrent, and independent: the notification panel is about this
+  // account, not about the day being looked at, so it is read once whichever
+  // date the diary is showing.
+  const [identity, recentNotifications] = await Promise.all([
+    getDoctorIdentity(),
+    listRecentNotifications(DASHBOARD_NOTIFICATION_COUNT),
+  ]);
 
   if (identity.status === "not_a_practitioner") {
     return (
-      <HomeShell heading={DOCTOR_AREA.home.heading} date={date}>
+      <HomeShell
+        heading={DOCTOR_AREA.home.heading}
+        date={date}
+        notifications={recentNotifications}
+      >
         <Alert tone="warning" title={NO_PRACTITIONER_RECORD.title}>
           {NO_PRACTITIONER_RECORD.body}
         </Alert>
@@ -110,6 +138,7 @@ export default async function DoctorHomePage({
           : DOCTOR_AREA.home.heading
       }
       date={date}
+      notifications={recentNotifications}
     >
       {result.status === "unavailable" ? (
         <ErrorState
@@ -218,10 +247,12 @@ function TodayContent({
 function HomeShell({
   heading,
   date,
+  notifications,
   children,
 }: {
   readonly heading: string;
   readonly date: string;
+  readonly notifications: NotificationListResult;
   readonly children: React.ReactNode;
 }) {
   const previousDay = addDaysToIsoDate(date, -1);
@@ -280,6 +311,38 @@ function HomeShell({
         </nav>
 
         <div className="mt-8">{children}</div>
+
+        {/*
+          Below the day, deliberately. A practitioner opens this page to see
+          who they are seeing; what the front desk changed an hour ago matters
+          and is not what they came for. The notification centre is one link
+          away for the rest.
+        */}
+        <section
+          aria-labelledby="doctor-updates-heading"
+          className="border-border mt-12 border-t pt-8"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <h2
+              id="doctor-updates-heading"
+              className="text-h4 text-heading font-sans font-medium"
+            >
+              {DOCTOR_NOTIFICATIONS_COPY.heading}
+            </h2>
+            <Button asChild variant="ghost" size="sm">
+              <Link href={NOTIFICATIONS_PATH}>
+                {DOCTOR_NOTIFICATIONS_COPY.viewAllLabel}
+              </Link>
+            </Button>
+          </div>
+
+          <div className="mt-4">
+            <RecentNotifications
+              result={notifications}
+              copy={DOCTOR_NOTIFICATIONS_COPY}
+            />
+          </div>
+        </section>
 
         <div className="mt-12">
           <Alert tone="info" title={DOCTOR_SCOPE_NOTICE.title}>

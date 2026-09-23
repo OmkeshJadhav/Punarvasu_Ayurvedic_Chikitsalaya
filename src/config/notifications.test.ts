@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   APPOINTMENT_REMINDER_OFFSETS_MINUTES,
+  NOTIFICATION_AUDIENCE_CATEGORIES,
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_PAGE_SIZE,
@@ -10,8 +11,14 @@ import {
   NOTIFICATION_WORKER,
   UNREAD_COUNT_CAP,
   isMandatoryChannel,
+  notificationAudienceForRole,
+  notificationCategoryCopy,
 } from "./notifications";
-import type { NotificationCategory } from "@/features/notifications/types";
+import type {
+  NotificationAudience,
+  NotificationCategory,
+} from "@/features/notifications/types";
+import type { AppRole } from "@/types/database";
 
 /**
  * The notification configuration mirror.
@@ -214,5 +221,109 @@ describe("bounds", () => {
   it("backs off further each time", () => {
     const sorted = [...NOTIFICATION_RETRY.backoffSeconds].sort((a, b) => a - b);
     expect([...NOTIFICATION_RETRY.backoffSeconds]).toEqual(sorted);
+  });
+});
+
+/* ------------------------------------------------------------------------ */
+/* Audiences                                                                 */
+/* ------------------------------------------------------------------------ */
+
+describe("the audiences", () => {
+  const AUDIENCES: readonly NotificationAudience[] = [
+    "patient",
+    "practitioner",
+  ];
+
+  it("covers every value the database enum declares", () => {
+    const audienceMigration = readFileSync(
+      new URL(
+        "../../supabase/migrations/20260930120000_doctor_notifications.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+
+    const declared =
+      /create type public\.notification_audience as enum \(([^)]*)\)/.exec(
+        audienceMigration,
+      )?.[1] ?? "";
+
+    const values = [...declared.matchAll(/'([a-z_]+)'/g)].map(
+      (match) => match[1],
+    );
+
+    expect([...values].sort()).toEqual([...AUDIENCES].sort());
+    expect(Object.keys(NOTIFICATION_AUDIENCE_CATEGORIES).sort()).toEqual(
+      [...AUDIENCES].sort(),
+    );
+  });
+
+  it("offers each audience only categories that exist", () => {
+    for (const audience of AUDIENCES) {
+      for (const category of NOTIFICATION_AUDIENCE_CATEGORIES[audience]) {
+        expect(
+          NOTIFICATION_CATEGORIES[category],
+          `${audience} is offered an unknown category ${category}`,
+        ).toBeDefined();
+      }
+    }
+  });
+
+  it("gives a patient every category and a practitioner only their day", () => {
+    // Sections 56 and 61: staff are not flooded. A practitioner is sent no
+    // reminder and no clinical update, so neither is offered as a control
+    // over messages nobody will ever send them.
+    expect([...NOTIFICATION_AUDIENCE_CATEGORIES.patient].sort()).toEqual(
+      Object.keys(NOTIFICATION_CATEGORIES).sort(),
+    );
+    expect(NOTIFICATION_AUDIENCE_CATEGORIES.practitioner).toEqual([
+      "appointment_updates",
+    ]);
+  });
+
+  it("maps only the doctor role to the practitioner audience", () => {
+    const roles: readonly AppRole[] = [
+      "patient",
+      "doctor",
+      "receptionist",
+      "admin",
+    ];
+
+    for (const role of roles) {
+      expect(notificationAudienceForRole(role)).toBe(
+        role === "doctor" ? "practitioner" : "patient",
+      );
+    }
+
+    // An unresolved role gets the neutral wording rather than a throw.
+    expect(notificationAudienceForRole(null)).toBe("patient");
+  });
+
+  it("gives every offered category words for the audience reading them", () => {
+    for (const audience of AUDIENCES) {
+      for (const category of NOTIFICATION_AUDIENCE_CATEGORIES[audience]) {
+        const copy = notificationCategoryCopy(category, audience);
+        expect(copy.label.length).toBeGreaterThan(0);
+        expect(copy.description.length).toBeGreaterThan(0);
+      }
+    }
+
+    // And they are genuinely different words where both read the same
+    // category — "part of your care" is written for the person being cared
+    // for, not for the person providing it.
+    const patients = notificationCategoryCopy("appointment_updates", "patient");
+    const theirs = notificationCategoryCopy(
+      "appointment_updates",
+      "practitioner",
+    );
+
+    expect(theirs.description).not.toBe(patients.description);
+    expect(theirs.description.toLowerCase()).not.toContain("your care");
+  });
+
+  it("keeps a practitioner's one category mandatory in app", () => {
+    // Section 22. A change to somebody's working day made by the front desk
+    // has to reach them somewhere, and the in-app record is that somewhere.
+    expect(isMandatoryChannel("appointment_updates", "in_app")).toBe(true);
   });
 });

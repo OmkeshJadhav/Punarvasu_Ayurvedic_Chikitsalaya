@@ -18,13 +18,28 @@ import {
  * message by the shortest available route.
  */
 
-const MIGRATION = readFileSync(
-  new URL(
-    "../../../supabase/migrations/20260926120000_notifications.sql",
-    import.meta.url,
-  ),
-  "utf8",
-);
+/**
+ * Every migration that raises a `PV05x`.
+ *
+ * Read together, because the feature's error vocabulary is spread across
+ * them: `20260930120000` both re-raises PV050 in the replaced
+ * `create_notification` and introduces PV056. A test that read only the first
+ * file would report a code as undeclared when it is in fact raised, and would
+ * miss one raised only by the newer one.
+ */
+const MIGRATION = [
+  "20260926120000_notifications.sql",
+  "20260926130000_notification_function_grants_fix.sql",
+  "20260926140000_notification_preference_reader_gate.sql",
+  "20260930120000_doctor_notifications.sql",
+]
+  .map((name) =>
+    readFileSync(
+      new URL(`../../../supabase/migrations/${name}`, import.meta.url),
+      "utf8",
+    ),
+  )
+  .join("\n");
 
 describe("the error codes", () => {
   it("are all raised by the migration", () => {

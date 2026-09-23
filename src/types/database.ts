@@ -736,15 +736,17 @@ export interface Database {
         Relationships: [];
       };
       /**
-       * One thing a patient should know (Phase 15).
+       * One thing an account should know (Phase 15).
        *
        * `authenticated` holds a column-scoped `select` and nothing else;
        * read state and preferences change through definer functions that
        * take no user id, so both write shapes are `never`.
        *
-       * `dedupe_key`, `reminder_offset_minutes`, `cancelled_at` and
-       * `updated_at` are absent from the `Row` shape because they are absent
-       * from the select grant: they are the machinery, not the message.
+       * `dedupe_key`, `audience`, `reminder_offset_minutes`, `cancelled_at`
+       * and `updated_at` are absent from the `Row` shape because they are
+       * absent from the select grant: they are the machinery, not the
+       * message. The row carries the title and body that were rendered for
+       * its audience, and those are what a reader sees.
        */
       notifications: {
         Row: {
@@ -1494,9 +1496,15 @@ export interface Database {
         };
         Returns: boolean;
       };
-      /** The application route a notification points at. Derived, not stored. */
+      /**
+       * The application route a notification points at. Derived, not stored.
+       *
+       * Null where that audience has no route for that resource — a
+       * practitioner is not told about a prescription they wrote themselves.
+       */
       notification_link_path: {
         Args: {
+          p_audience: Database["public"]["Enums"]["notification_audience"];
           p_resource_type: Database["public"]["Enums"]["notification_subject_type"];
           p_resource_id: string;
         };
@@ -1563,12 +1571,16 @@ export interface Database {
 
       /**
        * The only way a notification is created. Resolves the recipient and
-       * the deep link from the resource — **neither is a parameter** — and is
-       * idempotent on `p_dedupe_key`.
+       * the deep link from the audience and the resource — **neither is a
+       * parameter** — and is idempotent on `p_dedupe_key`.
+       *
+       * `p_audience` is not a recipient: it is `patient` or `practitioner`,
+       * and neither value names anybody.
        */
       create_notification: {
         Args: {
           p_dedupe_key: string;
+          p_audience: Database["public"]["Enums"]["notification_audience"];
           p_event_type: Database["public"]["Enums"]["notification_event_type"];
           p_category: Database["public"]["Enums"]["notification_category"];
           p_resource_type: Database["public"]["Enums"]["notification_subject_type"];
@@ -2057,6 +2069,15 @@ export interface Database {
       /** What a notification is about, and what its deep link resolves to. */
       notification_subject_type:
         "appointment" | "prescription" | "treatment_plan";
+      /**
+       * Which side of an appointment a notification was written for.
+       *
+       * Two, because two exist. There is no `receptionist` and no
+       * `administrator`: no workflow has been designed for either, and an
+       * enum value nothing can produce is the pretence `phase_15.md` section
+       * 14 forbids.
+       */
+      notification_audience: "patient" | "practitioner";
       /**
        * The preference unit. `appointment_updates` and `clinical_updates` are
        * mandatory transactional communication whose in-app channel cannot be

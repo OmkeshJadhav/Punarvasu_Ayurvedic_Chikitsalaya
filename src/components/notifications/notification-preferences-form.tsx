@@ -5,13 +5,18 @@ import { useActionState } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
-  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_AUDIENCE_CATEGORIES,
   NOTIFICATION_CHANNELS,
+  notificationCategoryCopy,
 } from "@/config/notifications";
 import { setNotificationPreferenceAction } from "@/features/notifications/actions";
-import { NOTIFICATION_PREFERENCES_COPY } from "@/features/notifications/content";
+import {
+  NOTIFICATION_PREFERENCES_COPY,
+  notificationPreferencesCopy,
+} from "@/features/notifications/content";
 import {
   IDLE_NOTIFICATION_FORM_STATE,
+  type NotificationAudience,
   type NotificationCategory,
   type NotificationChannel,
   type NotificationPreference,
@@ -40,6 +45,14 @@ import {
  * a posted form that tries is answered with a sentence rather than silently
  * ignored.
  *
+ * ## Only the categories this reader is actually sent
+ *
+ * The grid is the audience's, not the enum's. A practitioner is shown the one
+ * category they receive — changes to their own day — rather than three, two of
+ * which would be controls over messages nobody will ever send them. The words
+ * beside it are theirs too: "part of your care" is written for the person
+ * being cared for.
+ *
  * ## An unconfigured channel is disabled, and says why
  *
  * Sections 12 and 14. Email is not switched on for this clinic, so the email
@@ -50,15 +63,19 @@ import {
  */
 export function NotificationPreferencesForm({
   preferences,
+  audience,
   emailConfigured,
 }: {
   readonly preferences: readonly NotificationPreference[];
+  readonly audience: NotificationAudience;
   readonly emailConfigured: boolean;
 }) {
   const [state, formAction, pending] = useActionState(
     setNotificationPreferenceAction,
     IDLE_NOTIFICATION_FORM_STATE,
   );
+
+  const copy = notificationPreferencesCopy(audience);
 
   const byCategory = new Map<NotificationCategory, NotificationPreference[]>();
   for (const preference of preferences) {
@@ -75,11 +92,15 @@ export function NotificationPreferencesForm({
         </Alert>
       ) : null}
 
-      {(Object.keys(NOTIFICATION_CATEGORIES) as NotificationCategory[]).map(
-        (category) => {
-          const rule = NOTIFICATION_CATEGORIES[category];
+      {NOTIFICATION_AUDIENCE_CATEGORIES[audience].map(
+        (category: NotificationCategory) => {
+          const rule = notificationCategoryCopy(category, audience);
           const rows = byCategory.get(category) ?? [];
           const headingId = `notification-category-${category}`;
+
+          // A category the query returned nothing for renders nothing, rather
+          // than a heading above an empty list.
+          if (rows.length === 0) return null;
 
           return (
             <section
@@ -119,8 +140,8 @@ export function NotificationPreferencesForm({
                         {locked ? (
                           <p className="text-caption text-muted-foreground measure mt-0.5">
                             {row.mandatory
-                              ? NOTIFICATION_PREFERENCES_COPY.mandatoryNote
-                              : NOTIFICATION_PREFERENCES_COPY.emailUnavailableNote}
+                              ? copy.mandatoryNote
+                              : copy.emailUnavailableNote}
                           </p>
                         ) : null}
                       </div>

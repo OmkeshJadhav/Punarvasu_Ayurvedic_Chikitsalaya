@@ -29,12 +29,13 @@ import "server-only";
  */
 
 import {
-  NOTIFICATION_CATEGORIES,
+  NOTIFICATION_AUDIENCE_CATEGORIES,
   NOTIFICATION_CHANNELS,
   NOTIFICATION_PAGE_SIZE,
   NOTIFICATION_RECENT_LIMIT_CAP as RECENT_LIMIT_CAP,
   UNREAD_COUNT_CAP,
   isMandatoryChannel,
+  notificationAudienceForRole,
 } from "@/config/notifications";
 import { assertPermission } from "@/lib/authorization/guards";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -44,6 +45,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type {
   Notification,
+  NotificationAudience,
   NotificationCategory,
   NotificationChannel,
   NotificationFilter,
@@ -262,9 +264,31 @@ export async function getUnreadNotificationCount(): Promise<UnreadCountResult> {
  * absent row meant. `mandatory` comes from the same table the database checks,
  * so a control that would be refused is rendered disabled instead of being
  * offered (section 22).
+ *
+ * ## Only the categories this reader can actually receive
+ *
+ * The grid is built from `NOTIFICATION_AUDIENCE_CATEGORIES`, so a practitioner
+ * is shown the one category they are sent and not the two they are not. That
+ * is presentation, not protection: the row-level policy on
+ * `notification_preferences` is what scopes the data, and
+ * `set_notification_preference` takes no user id, so section 97's
+ * `{"userId": "another-user"}` still has nowhere to arrive and section 98's
+ * staff accounts are scoped by exactly the same mechanism as a patient's.
+ *
+ * A stored row for a category this audience no longer sees is left alone
+ * rather than deleted. It is harmless — nothing sends that category to them —
+ * and deleting a person's stated preference because their role changed is a
+ * decision no query should make on its own.
  */
 export async function getNotificationPreferences(): Promise<NotificationPreferencesResult> {
   await assertPermission("notifications.write.self");
+
+  // Memoised per render pass by `getCurrentUser()`, and the role comes from
+  // the database rather than from anything the browser sent.
+  const user = await getCurrentUser();
+  const audience: NotificationAudience = notificationAudienceForRole(
+    user?.role ?? null,
+  );
 
   try {
     const supabase = await createSupabaseServerClient();
@@ -293,9 +317,7 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
 
     const preferences: NotificationPreference[] = [];
 
-    for (const category of Object.keys(
-      NOTIFICATION_CATEGORIES,
-    ) as NotificationCategory[]) {
+    for (const category of NOTIFICATION_AUDIENCE_CATEGORIES[audience]) {
       for (const channel of NOTIFICATION_CHANNELS) {
         const mandatory = isMandatoryChannel(category, channel);
         preferences.push({
@@ -310,7 +332,7 @@ export async function getNotificationPreferences(): Promise<NotificationPreferen
       }
     }
 
-    return { status: "ok", preferences };
+    return { status: "ok", audience, preferences };
   } catch (error) {
     logger.error("notification.preferences_error", error);
     return { status: "unavailable" };

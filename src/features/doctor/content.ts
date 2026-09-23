@@ -349,16 +349,46 @@ export const NO_PRACTITIONER_RECORD = {
 } as const;
 
 /**
+ * The practitioner's own notifications, on their day.
+ *
+ * The same panel the patient dashboard uses, with the practitioner's words.
+ * `phase_15.md` section 57: the messages here are about changes to their own
+ * diary made by somebody else, which is the thing a practitioner would
+ * otherwise discover only by looking.
+ *
+ * The empty state says what *will* appear rather than only that nothing has,
+ * because a practitioner who sees an empty panel should be able to tell
+ * "nothing has changed today" from "this does not work yet".
+ */
+export const DOCTOR_NOTIFICATIONS_COPY = {
+  heading: "Recent updates",
+  viewAllLabel: "All notifications",
+  emptyTitle: "Nothing new",
+  emptyBody:
+    "When an appointment in your diary is confirmed, moved or cancelled, it will appear here.",
+  errorBody:
+    "We couldn't load your updates just now. Please try again in a moment — your day above is unaffected.",
+} as const;
+
+/**
  * Shown at the top of the workspace.
  *
  * Every phase of this project has told the reader when what they are looking
  * at is not finished, rather than saying it only in a source comment. A
  * practitioner opening this workspace expecting a clinical record system
  * should find out immediately, and from the product.
+ *
+ * It used to say that Punarvasu sent nobody anything. It does now — Phase 15
+ * for the patient, and the panel above for the practitioner — so the notice
+ * says what actually reaches whom, and names the one thing that still does not
+ * work: a reminder is scheduled correctly and released only when something
+ * wakes it, and no scheduler is configured for this deployment
+ * (`progress_phase_15.md`, known issue 2). A practitioner assuming a patient
+ * has been reminded is exactly the wrong assumption to leave in place.
  */
 export const DOCTOR_SCOPE_NOTICE = {
-  title: "Reminders and notifications are still being built",
-  body: "Today's appointments, your patients, the consultations you document, the prescriptions and treatment plans you write, and the documents on a patient's record are all here. Punarvasu does not yet send a patient any reminder or notification, so anything that needs telling still needs telling.",
+  title: "What Punarvasu tells people, and what it does not",
+  body: "Punarvasu tells a patient when an appointment is confirmed, moved or cancelled, and when you issue a prescription or share a treatment plan. It tells you when an appointment in your diary changes. Reminders before an appointment are not being sent yet, so anything time-critical still needs telling.",
 } as const;
 
 /** Copy shared by every failure path that is not a specific one. */

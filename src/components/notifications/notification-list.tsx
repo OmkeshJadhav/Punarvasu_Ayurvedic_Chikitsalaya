@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import {
   NOTIFICATIONS_PATH,
   NOTIFICATION_CENTRE_COPY,
+  notificationEmptyBody,
 } from "@/features/notifications/content";
 import type {
+  NotificationAudience,
   NotificationFilter,
   NotificationPage,
 } from "@/features/notifications/types";
@@ -23,11 +25,16 @@ import { NotificationItem } from "./notification-item";
  * are cards on every screen size rather than a table: a notification is a
  * short message, not a row of fields, and nothing here is tabular.
  *
- * ## The empty state depends on the filter
+ * ## The empty state depends on the filter, and on the reader
  *
  * Section 89. "You're all caught up" is right for an empty inbox and wrong for
  * an empty *unread* filter, where the answer is "you have read everything —
  * switch to All". Two states, because they lead somewhere different.
+ *
+ * The empty inbox also says what *will* appear here, and that differs: a
+ * patient is waiting for their care, a practitioner for changes to their day.
+ * Promising a practitioner that we will tell them when their practitioner
+ * shares something would be nonsense.
  *
  * ## Pagination is a link
  *
@@ -40,9 +47,11 @@ import { NotificationItem } from "./notification-item";
 export function NotificationList({
   page,
   filter,
+  audience,
 }: {
   readonly page: NotificationPage;
   readonly filter: NotificationFilter;
+  readonly audience: NotificationAudience;
 }) {
   if (page.notifications.length === 0) {
     return (
@@ -56,7 +65,7 @@ export function NotificationList({
         description={
           filter === "unread"
             ? NOTIFICATION_CENTRE_COPY.emptyUnreadBody
-            : NOTIFICATION_CENTRE_COPY.emptyBody
+            : notificationEmptyBody(audience)
         }
         action={
           filter === "unread" ? (

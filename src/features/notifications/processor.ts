@@ -85,9 +85,15 @@ import { nextRetryAt } from "./retry";
 import {
   renderEmail,
   renderNotification,
+  renderPractitionerNotification,
   type NotificationTemplateData,
+  type PractitionerNotificationEvent,
 } from "./templates";
-import type { NotificationEventType, NotificationSubjectType } from "./types";
+import type {
+  NotificationAudience,
+  NotificationEventType,
+  NotificationSubjectType,
+} from "./types";
 
 type AdminClient = ReturnType<typeof createSupabaseAdminClient>;
 
@@ -332,7 +338,7 @@ async function handleAppointmentEvent(
   if (
     supersedable &&
     keyedEpoch !== null &&
-    keyedEpoch !== Math.floor(startsAt.getTime() / 1000)
+    keyedEpoch !== appointmentEpoch(startsAt)
   ) {
     return { kind: "skipped", reason: "superseded" };
   }
@@ -363,31 +369,73 @@ async function handleAppointmentEvent(
     }
   }
 
-  const rendered = renderNotification({
-    event: event.event_type,
-    data: {
-      practitionerName: context.practitioner_name,
-      appointmentTypeName: context.appointment_type_name,
-      startsAt,
-    },
-  } as NotificationTemplateData);
+  // `handleEvent` routes only the three appointment events here, and those
+  // are exactly the three a practitioner is told about. The outbox enum is
+  // wider, so the narrowing is stated rather than inferred.
+  const appointmentEvent = event.event_type as PractitionerNotificationEvent;
 
-  const notificationId = await createNotification(supabase, {
+  // One domain fact, two audiences. The patient is told what is happening to
+  // their care; the practitioner is told what is happening to their day. Each
+  // gets its own notification row under its own idempotency key, so
+  // processing this event twice still produces exactly one of each.
+  const patientNotificationId = await createNotification(supabase, {
     dedupeKey: event.dedupe_key,
+    audience: "patient",
     eventType: event.event_type,
     resourceType: "appointment",
     resourceId: event.subject_id,
-    rendered,
+    rendered: renderNotification({
+      event: event.event_type,
+      data: {
+        practitionerName: context.practitioner_name,
+        appointmentTypeName: context.appointment_type_name,
+        startsAt,
+      },
+    } as NotificationTemplateData),
   });
 
-  if (!notificationId) return { kind: "skipped", reason: "no_recipient" };
+  if (patientNotificationId) {
+    await enqueueDeliveries(supabase, channels, patientNotificationId);
+  }
 
-  await enqueueDeliveries(supabase, channels, notificationId);
+  // Note what is *not* passed: no patient name, no patient id, no
+  // practitioner name. `PractitionerAppointmentTemplateData` has no field for
+  // any of them, so a practitioner's message cannot put a patient on a lock
+  // screen (`phase_15.md` sections 36, 37, 57).
+  const practitionerNotificationId = await createNotification(supabase, {
+    dedupeKey: practitionerDedupeKey(
+      appointmentEvent,
+      event.subject_id,
+      startsAt,
+    ),
+    audience: "practitioner",
+    eventType: event.event_type,
+    resourceType: "appointment",
+    resourceId: event.subject_id,
+    rendered: renderPractitionerNotification({
+      event: appointmentEvent,
+      data: {
+        appointmentTypeName: context.appointment_type_name,
+        startsAt,
+      },
+    }),
+  });
+
+  if (practitionerNotificationId) {
+    await enqueueDeliveries(supabase, channels, practitionerNotificationId);
+  }
 
   // Sections 29, 30 and 68, and example 5. The reminder set is recomputed
   // from the authoritative appointment every time it changes, so a moved or
   // cancelled appointment invalidates its old reminders here rather than
   // relying on somebody remembering to cancel them.
+  //
+  // Unconditional, and deliberately not nested under "the patient was
+  // notified": cancelling reminders an appointment no longer justifies is
+  // cleanup that has to happen whether or not there was anybody to tell.
+  // Reminders remain a patient's alone — a practitioner with eight
+  // appointments does not want sixteen reminders about a day they are already
+  // looking at (sections 56, 61).
   if (event.event_type === "appointment_cancelled") {
     await supabase.rpc("cancel_appointment_reminders", {
       p_appointment_id: event.subject_id,
@@ -396,7 +444,48 @@ async function handleAppointmentEvent(
     await syncReminders(supabase, event.subject_id, context);
   }
 
+  // Nobody at all: a walk-in with no login, and an appointment whose
+  // practitioner record has gone. A skip rather than a failure, because
+  // retrying would produce the same answer for ever.
+  if (!patientNotificationId && !practitionerNotificationId) {
+    return { kind: "skipped", reason: "no_recipient" };
+  }
+
   return { kind: "processed" };
+}
+
+/**
+ * The practitioner's idempotency key for an appointment event.
+ *
+ * Built from the same parts as the patient's — the resource, what happened,
+ * and for a supersedable event the authoritative start instant — with the
+ * audience in the discriminator, so the two are distinct rows that each dedupe
+ * against themselves. It matches the database's `dedupe_key` shape constraint:
+ * `<type>:<uuid>:<what>[:<number>]`.
+ *
+ * The epoch comes from the appointment as it is **now**, not from the event's
+ * own key. By this point the caller has already refused an event describing a
+ * start the appointment no longer has, so the two agree — and deriving it from
+ * authoritative state rather than from a string means they still agree if an
+ * event ever arrives without one.
+ */
+function practitionerDedupeKey(
+  eventType: PractitionerNotificationEvent,
+  appointmentId: string,
+  startsAt: Date,
+): string {
+  const epoch = appointmentEpoch(startsAt);
+
+  switch (eventType) {
+    case "appointment_confirmed":
+      return `appointment:${appointmentId}:confirmed_practitioner:${epoch}`;
+    case "appointment_rescheduled":
+      return `appointment:${appointmentId}:rescheduled_practitioner:${epoch}`;
+    case "appointment_cancelled":
+      // Terminal, so the key needs no discriminator — exactly as the
+      // patient's cancellation key needs none.
+      return `appointment:${appointmentId}:cancelled_practitioner`;
+  }
 }
 
 async function handlePrescriptionEvent(
@@ -429,6 +518,7 @@ async function handlePrescriptionEvent(
 
   const notificationId = await createNotification(supabase, {
     dedupeKey: event.dedupe_key,
+    audience: "patient",
     eventType: "prescription_issued",
     resourceType: "prescription",
     resourceId: event.subject_id,
@@ -467,6 +557,7 @@ async function handleTreatmentPlanEvent(
 
   const notificationId = await createNotification(supabase, {
     dedupeKey: event.dedupe_key,
+    audience: "patient",
     eventType: "treatment_plan_activated",
     resourceType: "treatment_plan",
     resourceId: event.subject_id,
@@ -520,6 +611,7 @@ async function syncReminders(
 
     await createNotification(supabase, {
       dedupeKey: reminder.dedupe_key,
+      audience: "patient",
       eventType: "appointment_reminder",
       resourceType: "appointment",
       resourceId: appointmentId,
@@ -688,6 +780,13 @@ async function processDeliveries(
 
 interface CreateNotificationInput {
   readonly dedupeKey: string;
+  /**
+   * Which side of the appointment this row is for.
+   *
+   * Not a recipient. The database resolves an account from the audience and
+   * the resource; this names nobody, and there is no field here that could.
+   */
+  readonly audience: NotificationAudience;
   readonly eventType: NotificationEventType;
   readonly resourceType: NotificationSubjectType;
   readonly resourceId: string;
@@ -717,6 +816,7 @@ async function createNotification(
 ): Promise<string | null> {
   const { data, error } = await supabase.rpc("create_notification", {
     p_dedupe_key: input.dedupeKey,
+    p_audience: input.audience,
     p_event_type: input.eventType,
     p_category: input.rendered.category,
     p_resource_type: input.resourceType,
@@ -767,6 +867,33 @@ async function enqueueDeliveries(
       });
     }
   }
+}
+
+/**
+ * The epoch second an appointment's dedupe key encodes.
+ *
+ * **`Math.round`, not `Math.floor`, and that is the whole point.** Every key
+ * on the database side is built with `extract(epoch from starts_at)::bigint`,
+ * and a cast from `numeric` to `bigint` in PostgreSQL **rounds half away from
+ * zero**. JavaScript's `Math.floor` truncates. The two agree only while
+ * `starts_at` lands on a whole second.
+ *
+ * Nothing constrains it to. `book_appointment` and the staff booking path take
+ * `p_starts_at` and store it unaltered, and this database already holds rows
+ * at `…:48.675+00`. For any appointment whose fractional second is `.5` or
+ * more the trigger wrote one number and this file computed another, the
+ * supersession check below found them different, and the event was **skipped
+ * as `superseded` — so the patient was never told, silently.**
+ *
+ * Found by driving the real worker against a real outbox row; no test in the
+ * suite could see it, because every fixture used a whole-second time.
+ *
+ * The database is authoritative here: it writes the outbox key and the
+ * reminder keys, and rows already exist carrying them. So this matches the
+ * database rather than the other way round.
+ */
+function appointmentEpoch(startsAt: Date): number {
+  return Math.round(startsAt.getTime() / 1000);
 }
 
 /** The trailing `:<digits>` of a dedupe key, or `null`. */

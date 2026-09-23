@@ -54,11 +54,15 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     <div className="flex flex-col">
       <div className="border-border bg-muted/40 border-b">
         <Container>
-          <nav
-            aria-label={ADMIN_AREA.navLabel}
-            className="-mx-1 overflow-x-auto"
-          >
-            <ul className="flex items-center gap-1">
+          {/*
+            Wraps rather than scrolls. `overflow-x-auto` here would absorb any
+            overflow by hiding its own entries — the page would report no
+            horizontal overflow while a link sat outside the viewport, and
+            focusing it would not scroll it into view. Measured across
+            320-1440px; see `components/doctor/doctor-nav.tsx`.
+          */}
+          <nav aria-label={ADMIN_AREA.navLabel} className="-mx-1">
+            <ul className="flex flex-wrap items-center gap-1">
               <li>
                 <NavLink
                   // `match: "exact"` because this nav also lists a child of

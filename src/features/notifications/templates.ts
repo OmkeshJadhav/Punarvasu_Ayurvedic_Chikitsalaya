@@ -26,6 +26,27 @@
  * rule somebody has to remember when adding a template; it is the only thing
  * the inputs allow.
  *
+ * ## No article ever precedes an interpolated value
+ *
+ * The consultation type is **data**, so "a" cannot agree with it: the first
+ * live worker run rendered "A Initial consultation". The fix is to restructure
+ * the sentence so no article is needed, not to compute "a" against "an" —
+ * section 100 asks that localization stay possible, and a hard-coded English
+ * article rule is the opposite of that. `templates.test.ts` asserts it over
+ * every message, for a vowel-initial and a consonant-initial type.
+ *
+ * ## Two audiences, two vocabularies
+ *
+ * A patient's message and a practitioner's are about the same appointment and
+ * say different things, because they are read by different people for
+ * different reasons — "your appointment is confirmed" against "a new
+ * appointment is in your day". They are two separate unions and two separate
+ * renderers rather than one renderer with a flag, so the compiler refuses a
+ * patient's inputs in a practitioner's template and the other way round.
+ *
+ * That is what makes the practitioner rule structural: a practitioner template
+ * has no field for a patient's name, so it cannot put one on a lock screen.
+ *
  * ## Email privacy: the subject line is separate from the body
  *
  * Sections 37 and 82, and example 4. A subject line and its preview are read
@@ -67,8 +88,15 @@ import type { NotificationCategory, NotificationEventType } from "./types";
  * The wording revision.
  *
  * Raise it in the same change as any edit to the strings below.
+ *
+ * **2** — the practitioner appointment bodies stopped putting an indefinite
+ * article in front of the consultation type. "A Initial consultation" is what
+ * the first live worker run actually rendered, because the type name is data
+ * and "a" cannot agree with data. The patient wording is unchanged in this
+ * revision; the version is global, so a patient notification created from now
+ * on records 2 while reading exactly as 1 did.
  */
-export const NOTIFICATION_TEMPLATE_VERSION = 1;
+export const NOTIFICATION_TEMPLATE_VERSION = 2;
 
 /** The subject every clinical email carries. Deliberately says nothing. */
 export const NEUTRAL_EMAIL_SUBJECT = "New update from Punarvasu";
@@ -80,6 +108,26 @@ export const EMAIL_ACTION_LABEL = "Open Punarvasu";
 export interface AppointmentTemplateData {
   /** The practitioner's roster name, exactly as the clinic recorded it. */
   readonly practitionerName: string;
+  /** The consultation type — an operational category, never a treatment. */
+  readonly appointmentTypeName: string;
+  readonly startsAt: Date;
+}
+
+/**
+ * What a **practitioner's** appointment template is allowed to know.
+ *
+ * Note the two fields that are not here. There is no patient name, no
+ * preferred name, no phone number and no patient id — not because a
+ * practitioner may not know who is on their own list, but because a
+ * notification is the one thing this product sends that reaches a lock screen,
+ * a notification shade or a phone somebody else is holding (sections 36, 37,
+ * 57). A patient's name there is a disclosure the clinic did not have to make.
+ *
+ * And no practitioner name, because the reader *is* the practitioner.
+ *
+ * The message says the day changed. The diary behind the link says who.
+ */
+export interface PractitionerAppointmentTemplateData {
   /** The consultation type — an operational category, never a treatment. */
   readonly appointmentTypeName: string;
   readonly startsAt: Date;
@@ -120,6 +168,39 @@ export type NotificationTemplateData =
       readonly event: "treatment_plan_activated";
       readonly data: TreatmentPlanTemplateData;
     };
+
+/**
+ * The events a practitioner is told about.
+ *
+ * Three, and deliberately not six. A reminder is absent because a practitioner
+ * with eight appointments does not want sixteen reminders about a day they are
+ * already looking at — the day view *is* the reminder, and sections 56 and 61
+ * are explicit that staff must not be flooded. A prescription and a treatment
+ * plan are absent because the practitioner wrote them.
+ *
+ * A separate union rather than an `audience` field on the one above, so the
+ * type system refuses a patient's data in a practitioner's template and a
+ * practitioner's in a patient's. The privacy property this module claims —
+ * that no practitioner message can name a patient — is then something the
+ * compiler checks rather than something a reviewer has to notice.
+ */
+export type PractitionerNotificationTemplateData =
+  | {
+      readonly event: "appointment_confirmed";
+      readonly data: PractitionerAppointmentTemplateData;
+    }
+  | {
+      readonly event: "appointment_rescheduled";
+      readonly data: PractitionerAppointmentTemplateData;
+    }
+  | {
+      readonly event: "appointment_cancelled";
+      readonly data: PractitionerAppointmentTemplateData;
+    };
+
+/** The event types a practitioner notification can carry. */
+export type PractitionerNotificationEvent =
+  PractitionerNotificationTemplateData["event"];
 
 /** A rendered notification, ready to be stored. */
 export interface RenderedNotification {
@@ -209,6 +290,58 @@ export function renderNotification(
         templateVersion,
         title: "Treatment plan updated",
         body: `${input.data.practitionerName} has shared a treatment plan with you. Sign in to Punarvasu to review it.`,
+      };
+  }
+}
+
+/**
+ * Renders the in-app notification a **practitioner** receives.
+ *
+ * All three messages are about the practitioner's own day changing underneath
+ * them: the front desk books, moves or cancels, and without this the
+ * practitioner finds out when they next open their diary (`phase_15.md`
+ * section 57).
+ *
+ * They carry the consultation type, the authoritative time, and nothing else.
+ * The category is `appointment_updates`, the same preference unit a patient's
+ * appointment message uses, because it is the same fact about the same
+ * appointment — and mandatory in-app for the same reason: it is operational
+ * information the clinic has a duty to put somewhere the reader can find it.
+ */
+export function renderPractitionerNotification(
+  input: PractitionerNotificationTemplateData,
+): RenderedNotification {
+  const category = EVENT_CATEGORY[input.event];
+  const templateVersion = NOTIFICATION_TEMPLATE_VERSION;
+  const when = formatClinicDateTime(input.data.startsAt);
+
+  switch (input.event) {
+    case "appointment_confirmed":
+      return {
+        category,
+        templateVersion,
+        title: "New appointment in your day",
+        // "Open it to see who": the notification is deliberately the smaller
+        // half of the message, and the diary behind the link is the larger.
+        body: `${input.data.appointmentTypeName}, confirmed for ${when}. Open it to see who you are seeing.`,
+      };
+
+    case "appointment_rescheduled":
+      return {
+        category,
+        templateVersion,
+        title: "An appointment has moved",
+        body: `${input.data.appointmentTypeName} has moved to ${when}.`,
+      };
+
+    case "appointment_cancelled":
+      return {
+        category,
+        templateVersion,
+        // No reason, for the same reason a patient's carries none: a
+        // cancellation note is written by staff for staff (section 27).
+        title: "An appointment has been cancelled",
+        body: `${input.data.appointmentTypeName} on ${when} is no longer in your diary.`,
       };
   }
 }

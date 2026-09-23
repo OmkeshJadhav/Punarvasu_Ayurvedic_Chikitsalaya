@@ -8,12 +8,15 @@ import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { ErrorState } from "@/components/shared/error-state";
 import { Button } from "@/components/ui/button";
+import { notificationAudienceForRole } from "@/config/notifications";
 import {
   NOTIFICATIONS_PATH,
   NOTIFICATION_CENTRE_COPY,
   NOTIFICATION_PREFERENCES_PATH,
+  notificationCentreDescription,
 } from "@/features/notifications/content";
 import { listNotifications } from "@/features/notifications/queries";
+import { requireUser } from "@/lib/auth/current-user";
 import {
   parseNotificationCursor,
   parseNotificationFilter,
@@ -39,9 +42,16 @@ import {
  *
  * ## Available to every signed-in person
  *
- * Staff see an empty state today, and that is honest: no staff notification
- * exists yet. The alternative — hiding the page from three roles — would mean
- * removing it again when the first staff workflow arrives.
+ * One page, every role, because a notification is a message addressed to an
+ * account rather than to a kind of person. A practitioner reads their own
+ * schedule changes here; a receptionist and an administrator see the empty
+ * state, which is honest — no notification is written for either.
+ *
+ * The **words** differ by role and nothing else does. The list, the filters,
+ * the read state and the query are identical, and the audience below decides
+ * only how the page introduces itself. It decides nothing about what can be
+ * read: `notifications_select_own` scopes every row to `auth.uid()` whatever
+ * the role says.
  */
 export const metadata: Metadata = {
   title: NOTIFICATION_CENTRE_COPY.title,
@@ -52,6 +62,11 @@ export default async function NotificationsPage(
   props: PageProps<"/notifications">,
 ) {
   const searchParams = await props.searchParams;
+
+  // The role comes from the database through `requireUser()`, not from
+  // anything the browser sent. `listNotifications()` authorizes separately.
+  const user = await requireUser(NOTIFICATIONS_PATH);
+  const audience = notificationAudienceForRole(user.role);
 
   const filter = parseNotificationFilter(searchParams.filter);
   const cursor = parseNotificationCursor(searchParams.cursor);
@@ -74,7 +89,7 @@ export default async function NotificationsPage(
           {NOTIFICATION_CENTRE_COPY.title}
         </h1>
         <p className="text-body text-muted-foreground measure mt-2">
-          {NOTIFICATION_CENTRE_COPY.description}
+          {notificationCentreDescription(audience)}
         </p>
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
@@ -111,7 +126,11 @@ export default async function NotificationsPage(
                 <MarkAllNotificationsReadForm hasUnread={hasUnread} />
               ) : null}
 
-              <NotificationList page={result.page} filter={filter} />
+              <NotificationList
+                page={result.page}
+                filter={filter}
+                audience={audience}
+              />
             </>
           )}
         </div>

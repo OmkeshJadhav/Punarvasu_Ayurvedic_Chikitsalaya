@@ -233,9 +233,21 @@ export const CONSULTATION_WORKSPACE_COPY = {
    */
   aiSupportLinkLabel: "AI clinical support",
 
+  /**
+   * What the patient is and is not told when this consultation is written up.
+   *
+   * It said "the patient is not told automatically", which was true when
+   * Phase 12 wrote it and stopped being true when Phase 15 shipped. A
+   * practitioner deciding whether to telephone somebody needs this sentence to
+   * be current, so it now names exactly what reaches them — an issued
+   * prescription and an activated treatment plan, both saying only that
+   * something is waiting — and what still does not: the notes, the documents,
+   * and any reminder, which needs a scheduler this deployment has not
+   * configured.
+   */
   scopeNotice: {
-    title: "The patient is not told automatically",
-    body: "These notes, the prescription, the treatment plan and any document you attach are all recorded and kept. Punarvasu does not yet send the patient a reminder or a notification about any of them, so anything they need to be told still needs telling.",
+    title: "What the patient is told, and what they are not",
+    body: "Punarvasu tells the patient once you issue a prescription or activate a treatment plan — that something is waiting for them, never what is in it. Your notes and any document you attach are recorded and kept, and the patient is told nothing about either. Reminders are not being sent yet, so anything time-critical still needs telling.",
   },
 } as const;
 

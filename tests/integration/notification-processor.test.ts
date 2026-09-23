@@ -195,7 +195,10 @@ beforeEach(() => {
 /* ------------------------------------------------------------------------ */
 
 describe("appointment confirmation", () => {
-  it("creates one notification from the event", async () => {
+  it("creates one notification per audience from the one event", async () => {
+    // One domain fact, two readers. The outbox holds a single row — the
+    // appointment was confirmed — and who should be told is decided here,
+    // afterwards, rather than by a second trigger writing a second event.
     rpcResults.claim_notification_outbox = {
       data: [outboxEvent()],
       error: null,
@@ -206,11 +209,19 @@ describe("appointment confirmation", () => {
     expect(summary.outboxProcessed).toBe(1);
 
     const created = callsTo("create_notification");
-    expect(created).toHaveLength(1);
-    expect(created[0]?.args.p_event_type).toBe("appointment_confirmed");
-    expect(created[0]?.args.p_resource_type).toBe("appointment");
-    expect(created[0]?.args.p_resource_id).toBe(APPOINTMENT_ID);
-    expect(created[0]?.args.p_status).toBe("active");
+    expect(created).toHaveLength(2);
+
+    for (const call of created) {
+      expect(call.args.p_event_type).toBe("appointment_confirmed");
+      expect(call.args.p_resource_type).toBe("appointment");
+      expect(call.args.p_resource_id).toBe(APPOINTMENT_ID);
+      expect(call.args.p_status).toBe("active");
+    }
+
+    expect(created.map((call) => call.args.p_audience)).toEqual([
+      "patient",
+      "practitioner",
+    ]);
   });
 
   it("passes no recipient, no link and no channel", () => {
@@ -330,6 +341,283 @@ describe("appointment confirmation", () => {
   });
 });
 
+/* ------------------------------------------------------------------------ */
+/* The epoch in a dedupe key                                                 */
+/* ------------------------------------------------------------------------ */
+
+describe("an appointment whose start carries a fractional second", () => {
+  /**
+   * The defect a live run found, and no fixture could.
+   *
+   * Every dedupe key on the database side is built with
+   * `extract(epoch from starts_at)::bigint`, and `numeric -> bigint` in
+   * PostgreSQL **rounds half away from zero**. The processor used
+   * `Math.floor`, which truncates. They agree only while `starts_at` lands on
+   * a whole second — which every fixture in this file did, and which nothing
+   * in the schema requires: `book_appointment` stores `p_starts_at` unaltered
+   * and the live database already held rows at `…:48.675+00`.
+   *
+   * For any appointment `.5` seconds or more past the second, the trigger
+   * wrote one number and the processor computed another, the supersession
+   * check found them different, and the event was skipped as `superseded`.
+   * **The patient was never told, and nothing logged an error** — a skip is a
+   * decision, not a failure.
+   */
+  const FRACTIONAL = "2026-09-19T05:00:00.627Z";
+  /** What PostgreSQL's `::bigint` cast produces: rounded, not truncated. */
+  const PG_EPOCH = Math.round(Date.parse(FRACTIONAL) / 1000);
+
+  beforeEach(() => {
+    rpcResults.notification_appointment_context = {
+      data: appointmentContext("confirmed", FRACTIONAL),
+      error: null,
+    };
+    rpcResults.claim_notification_outbox = {
+      data: [
+        outboxEvent({
+          dedupe_key: `appointment:${APPOINTMENT_ID}:confirmed:${PG_EPOCH}`,
+        }),
+      ],
+      error: null,
+    };
+  });
+
+  it("is NOT treated as superseded", async () => {
+    const summary = await runNotificationWorker();
+
+    expect(summary.outboxSkipped).toBe(0);
+    expect(summary.outboxProcessed).toBe(1);
+  });
+
+  it("still notifies both audiences", async () => {
+    await runNotificationWorker();
+
+    expect(
+      callsTo("create_notification").map((call) => call.args.p_audience),
+    ).toEqual(["patient", "practitioner"]);
+  });
+
+  it("builds the practitioner key with the SAME rounding the database used", async () => {
+    // If these two disagreed, the practitioner's key would drift from the
+    // patient's on every appointment with a fractional start.
+    await runNotificationWorker();
+
+    const keys = callsTo("create_notification").map(
+      (call) => call.args.p_dedupe_key,
+    );
+
+    expect(keys).toEqual([
+      `appointment:${APPOINTMENT_ID}:confirmed:${PG_EPOCH}`,
+      `appointment:${APPOINTMENT_ID}:confirmed_practitioner:${PG_EPOCH}`,
+    ]);
+  });
+
+  it("a genuinely superseded event is still skipped", async () => {
+    // The guard must not be loosened into uselessness: an event describing a
+    // start the appointment no longer has is still refused (section 118).
+    rpcResults.claim_notification_outbox = {
+      data: [
+        outboxEvent({
+          dedupe_key: `appointment:${APPOINTMENT_ID}:confirmed:${PG_EPOCH - 3600}`,
+        }),
+      ],
+      error: null,
+    };
+
+    const summary = await runNotificationWorker();
+
+    expect(summary.outboxSkipped).toBe(1);
+    expect(summary.outboxProcessed).toBe(0);
+  });
+});
+
+/* ------------------------------------------------------------------------ */
+/* The practitioner's copy                                                   */
+/* ------------------------------------------------------------------------ */
+
+describe("the practitioner's copy of an appointment event", () => {
+  function practitionerCall() {
+    return callsTo("create_notification").find(
+      (call) => call.args.p_audience === "practitioner",
+    );
+  }
+
+  it("is keyed distinctly from the patient's, so neither dedupes the other", () => {
+    // Two notification rows, two idempotency keys, one outbox row. If they
+    // shared a key the second insert would find the first and the second
+    // audience would silently never be told.
+    rpcResults.claim_notification_outbox = {
+      data: [outboxEvent()],
+      error: null,
+    };
+
+    return runNotificationWorker().then(() => {
+      const keys = callsTo("create_notification").map(
+        (call) => call.args.p_dedupe_key,
+      );
+
+      expect(keys).toEqual([
+        `appointment:${APPOINTMENT_ID}:confirmed:${STARTS_AT_EPOCH}`,
+        `appointment:${APPOINTMENT_ID}:confirmed_practitioner:${STARTS_AT_EPOCH}`,
+      ]);
+
+      // The database's own shape constraint, so a key this builds cannot be
+      // refused by the column it is written to.
+      const shape = /^[a-z_]+:[0-9a-f-]{36}:[a-z_]+(:[0-9]+){0,2}$/;
+      for (const key of keys) {
+        expect(shape.test(String(key)), `${String(key)} is malformed`).toBe(
+          true,
+        );
+      }
+    });
+  });
+
+  it("uses a terminal key for a cancellation, with no discriminator", async () => {
+    rpcResults.claim_notification_outbox = {
+      data: [
+        outboxEvent({
+          event_type: "appointment_cancelled",
+          dedupe_key: `appointment:${APPOINTMENT_ID}:cancelled`,
+        }),
+      ],
+      error: null,
+    };
+    rpcResults.notification_appointment_context = {
+      data: appointmentContext("cancelled"),
+      error: null,
+    };
+
+    await runNotificationWorker();
+
+    expect(practitionerCall()?.args.p_dedupe_key).toBe(
+      `appointment:${APPOINTMENT_ID}:cancelled_practitioner`,
+    );
+  });
+
+  it("re-keys on the new start when the appointment moves", async () => {
+    const movedTo = "2026-09-20T06:00:00.000Z";
+    const movedEpoch = Math.floor(Date.parse(movedTo) / 1000);
+
+    rpcResults.claim_notification_outbox = {
+      data: [
+        outboxEvent({
+          event_type: "appointment_rescheduled",
+          dedupe_key: `appointment:${APPOINTMENT_ID}:rescheduled:${movedEpoch}`,
+        }),
+      ],
+      error: null,
+    };
+    rpcResults.notification_appointment_context = {
+      data: appointmentContext("confirmed", movedTo),
+      error: null,
+    };
+
+    await runNotificationWorker();
+
+    expect(practitionerCall()?.args.p_dedupe_key).toBe(
+      `appointment:${APPOINTMENT_ID}:rescheduled_practitioner:${movedEpoch}`,
+    );
+  });
+
+  it("passes no patient name, no patient id and no practitioner name", () => {
+    // Sections 36, 37 and 57. The practitioner template has no field for any
+    // of them, so this asserts the second line of defence: that none reaches
+    // the stored text either.
+    rpcResults.claim_notification_outbox = {
+      data: [outboxEvent()],
+      error: null,
+    };
+
+    return runNotificationWorker().then(() => {
+      const args = practitionerCall()?.args ?? {};
+      const text = `${String(args.p_title)} ${String(args.p_body)}`;
+
+      expect(text).not.toContain(PRACTITIONER);
+      expect(text.toLowerCase()).not.toContain("patient");
+      expect(text).toContain("Initial consultation");
+    });
+  });
+
+  it("is never created for a prescription or a treatment plan", async () => {
+    // Those are documents the practitioner wrote. Telling them they have
+    // issued the prescription they just issued is the noise section 56
+    // exists to prevent.
+    rpcResults.claim_notification_outbox = {
+      data: [
+        outboxEvent({
+          event_type: "prescription_issued",
+          subject_type: "prescription",
+          subject_id: PRESCRIPTION_ID,
+          dedupe_key: `prescription:${PRESCRIPTION_ID}:issued`,
+        }),
+        outboxEvent({
+          id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+          event_type: "treatment_plan_activated",
+          subject_type: "treatment_plan",
+          subject_id: PLAN_ID,
+          dedupe_key: `treatment_plan:${PLAN_ID}:activated`,
+        }),
+      ],
+      error: null,
+    };
+
+    await runNotificationWorker();
+
+    const audiences = callsTo("create_notification").map(
+      (call) => call.args.p_audience,
+    );
+    expect(audiences).toEqual(["patient", "patient"]);
+  });
+
+  it("plans no reminder for the practitioner", async () => {
+    // Sections 56 and 61: somebody with eight appointments does not want
+    // sixteen reminders about a day they are already looking at.
+    rpcResults.claim_notification_outbox = {
+      data: [outboxEvent()],
+      error: null,
+    };
+    rpcResults.plan_appointment_reminders = {
+      data: [
+        {
+          offset_minutes: 120,
+          scheduled_for: "2026-09-19T03:00:00.000Z",
+          dedupe_key: `appointment:${APPOINTMENT_ID}:reminder:120:${STARTS_AT_EPOCH}`,
+        },
+      ],
+      error: null,
+    };
+
+    await runNotificationWorker();
+
+    const reminders = callsTo("create_notification").filter(
+      (call) => call.args.p_event_type === "appointment_reminder",
+    );
+
+    expect(reminders).toHaveLength(1);
+    expect(reminders[0]?.args.p_audience).toBe("patient");
+  });
+
+  it("still reaches the practitioner when the patient has no login", async () => {
+    // A walk-in registered at the front desk has a clinic record and no
+    // account. The practitioner's diary still changed, and they are still
+    // told — so the patient's `PV050` must not short-circuit the event.
+    rpcResults.claim_notification_outbox = {
+      data: [outboxEvent()],
+      error: null,
+    };
+    rpcQueues.create_notification = [
+      { data: null, error: pgError("PV050") },
+      { data: NOTIFICATION_ID, error: null },
+    ];
+
+    const summary = await runNotificationWorker();
+
+    expect(summary.outboxProcessed).toBe(1);
+    expect(summary.outboxSkipped).toBe(0);
+    expect(practitionerCall()).toBeDefined();
+  });
+});
+
 describe("idempotency", () => {
   it("uses the event's own key, so processing it twice creates one notification", async () => {
     // Sections 119 and 120, and example 7. The key is the outbox row's, which
@@ -353,7 +641,7 @@ describe("idempotency", () => {
     );
   });
 
-  it("enqueues one delivery per channel, keyed by the notification", async () => {
+  it("enqueues one delivery per channel per notification", async () => {
     channels = [emailChannel()];
     rpcResults.claim_notification_outbox = {
       data: [outboxEvent()],
@@ -362,10 +650,16 @@ describe("idempotency", () => {
 
     await runNotificationWorker();
 
+    // Two notifications — the patient's and the practitioner's — one channel
+    // each. The stub returns the same notification id for both, which is why
+    // this counts calls rather than distinct ids; the database's unique
+    // `(notification_id, channel)` is what makes a real duplicate impossible.
     const enqueued = callsTo("enqueue_notification_delivery");
-    expect(enqueued).toHaveLength(1);
-    expect(enqueued[0]?.args.p_notification_id).toBe(NOTIFICATION_ID);
-    expect(enqueued[0]?.args.p_channel).toBe("email");
+    expect(enqueued).toHaveLength(2);
+    for (const call of enqueued) {
+      expect(call.args.p_notification_id).toBe(NOTIFICATION_ID);
+      expect(call.args.p_channel).toBe("email");
+    }
   });
 });
 
@@ -493,8 +787,9 @@ describe("reminders", () => {
     expect(reminder?.args.p_status).toBe("scheduled");
 
     // A scheduled reminder gets no delivery until it is released. Only the
-    // confirmation's own notification was enqueued.
-    expect(callsTo("enqueue_notification_delivery")).toHaveLength(1);
+    // confirmation's own notifications were enqueued — the patient's and the
+    // practitioner's, and neither is the reminder.
+    expect(callsTo("enqueue_notification_delivery")).toHaveLength(2);
   });
 
   it("enqueues a delivery only for a reminder that was released", async () => {

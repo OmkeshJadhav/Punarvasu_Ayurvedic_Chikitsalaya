@@ -32,9 +32,11 @@
  */
 
 import type {
+  NotificationAudience,
   NotificationCategory,
   NotificationChannel,
 } from "@/features/notifications/types";
+import type { AppRole } from "@/types/database";
 
 /**
  * Minutes before an appointment at which a reminder is due.
@@ -85,6 +87,21 @@ export interface NotificationCategoryRule {
    * information the patient wants, and the in-app record answers it.
    */
   readonly mandatoryChannels: readonly NotificationChannel[];
+  /**
+   * How the same category reads to a practitioner.
+   *
+   * The category is the same preference unit — "an appointment was confirmed,
+   * moved or cancelled" — but "part of your care" is a sentence written for
+   * the person being cared for. A practitioner reading their own settings is
+   * told what the messages are about instead.
+   *
+   * Absent where an audience never receives the category, which
+   * `NOTIFICATION_AUDIENCE_CATEGORIES` already keeps off their screen.
+   */
+  readonly practitioner?: {
+    readonly label: string;
+    readonly description: string;
+  };
 }
 
 /**
@@ -102,6 +119,11 @@ export const NOTIFICATION_CATEGORIES: Readonly<
     description:
       "When an appointment is confirmed, moved or cancelled. These are part of your care and always appear in Punarvasu.",
     mandatoryChannels: ["in_app"],
+    practitioner: {
+      label: "Changes to your day",
+      description:
+        "When an appointment in your diary is confirmed, moved or cancelled. These always appear in Punarvasu, so a change made at the front desk reaches you.",
+    },
   },
   appointment_reminders: {
     label: "Appointment reminders",
@@ -116,6 +138,68 @@ export const NOTIFICATION_CATEGORIES: Readonly<
     mandatoryChannels: ["in_app"],
   },
 };
+
+/**
+ * Which categories each audience can actually receive.
+ *
+ * A patient receives all three. A practitioner receives **one** — the
+ * schedule changes that happen to their day without them.
+ *
+ * There is no `appointment_reminders` for a practitioner because none is sent:
+ * somebody with eight appointments does not want sixteen reminders about a day
+ * they are already looking at, and the day view is the reminder (`phase_15.md`
+ * sections 56 and 61). And no `clinical_updates`, because a prescription
+ * notification would tell a practitioner about the prescription they had just
+ * written.
+ *
+ * The preferences screen renders from this, so nobody is shown a control over
+ * messages they will never be sent. That is the honesty rule the rest of this
+ * feature follows — an unconfigured email channel is disabled and says why
+ * rather than silently doing nothing — applied to categories.
+ */
+export const NOTIFICATION_AUDIENCE_CATEGORIES: Readonly<
+  Record<NotificationAudience, readonly NotificationCategory[]>
+> = {
+  patient: ["appointment_updates", "appointment_reminders", "clinical_updates"],
+  practitioner: ["appointment_updates"],
+};
+
+/**
+ * The audience a signed-in role reads and writes notifications as.
+ *
+ * Presentation only. It decides which preference controls a person is shown
+ * and which words the notification centre introduces itself with; it decides
+ * **nothing** about what they can read. That is `notifications_select_own`,
+ * which scopes every row to `auth.uid()` whatever this returns.
+ *
+ * A receptionist or an administrator maps to `patient` because that is the
+ * full preference grid and the neutral wording — not because either receives a
+ * patient's notifications. Neither receives any notification at all today, and
+ * both see the empty state, which is honest.
+ *
+ * `null` — a session whose role has not resolved — maps there too, for the
+ * same reason: the neutral wording is the safe thing to show somebody whose
+ * role is not known, and nothing about what they can read depends on it.
+ */
+export function notificationAudienceForRole(
+  role: AppRole | null,
+): NotificationAudience {
+  return role === "doctor" ? "practitioner" : "patient";
+}
+
+/** What this category is called for this audience, and what it covers. */
+export function notificationCategoryCopy(
+  category: NotificationCategory,
+  audience: NotificationAudience,
+): { readonly label: string; readonly description: string } {
+  const rule = NOTIFICATION_CATEGORIES[category];
+
+  if (audience === "practitioner" && rule.practitioner) {
+    return rule.practitioner;
+  }
+
+  return { label: rule.label, description: rule.description };
+}
 
 /** True when this channel may not be switched off for this category. */
 export function isMandatoryChannel(
