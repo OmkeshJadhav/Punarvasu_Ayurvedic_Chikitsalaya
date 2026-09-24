@@ -58,14 +58,24 @@ export function SectionHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3",
+        "flex flex-col gap-4",
         align === "center" && "items-center text-center",
         className,
       )}
       {...props}
     >
       {eyebrow ? (
-        <p className="text-caption text-eyebrow font-sans font-medium tracking-[0.12em] uppercase">
+        // A hairline leads the eyebrow - and closes it too when the block is
+        // centred, so the label reads as set between two rules rather than
+        // hanging off one. Decorative, so the rules are pseudo-elements.
+        <p
+          className={cn(
+            "text-caption text-eyebrow inline-flex items-center gap-3 font-sans font-medium tracking-[0.18em] uppercase",
+            "before:h-px before:w-8 before:bg-current before:content-['']",
+            align === "center" &&
+              "after:h-px after:w-8 after:bg-current after:content-['']",
+          )}
+        >
           {eyebrow}
         </p>
       ) : null}

@@ -44,14 +44,23 @@ export interface FaqEntry {
 export interface FaqAccordionProps {
   readonly items: readonly FaqEntry[];
   readonly headingLevel?: "h2" | "h3" | "h4";
+  /**
+   * `editorial` sets each question in the serif at heading size with a
+   * plus/minus marker, for a list that is a section's main content rather
+   * than a block inside an article.
+   */
+  readonly appearance?: "default" | "editorial";
   readonly className?: string;
 }
 
 export function FaqAccordion({
   items,
   headingLevel = "h3",
+  appearance = "default",
   className,
 }: FaqAccordionProps) {
+  const editorial = appearance === "editorial";
+
   if (items.length === 0) {
     return null;
   }
@@ -60,14 +69,28 @@ export function FaqAccordion({
     <Accordion
       type="single"
       collapsible
-      className={cn("border-border border-t", className)}
+      className={cn(
+        "border-t",
+        editorial ? "border-border-strong" : "border-border",
+        className,
+      )}
     >
       {items.map((item) => (
         <AccordionItem key={item.id} value={item.id}>
-          <AccordionTrigger headingLevel={headingLevel}>
+          <AccordionTrigger
+            headingLevel={headingLevel}
+            indicator={editorial ? "plus" : "chevron"}
+            className={
+              editorial ? "text-h5 py-6 font-serif font-normal" : undefined
+            }
+          >
             {item.question}
           </AccordionTrigger>
-          <AccordionContent>{item.answer}</AccordionContent>
+          <AccordionContent
+            className={editorial ? "text-body-sm -mt-1 pb-6" : undefined}
+          >
+            {item.answer}
+          </AccordionContent>
         </AccordionItem>
       ))}
     </Accordion>

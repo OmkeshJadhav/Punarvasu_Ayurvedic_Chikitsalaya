@@ -57,10 +57,21 @@ export const HERO_CONTENT = {
    * promise the clinic can actually keep: attention to the individual.
    */
   headline: ["Ancient wisdom.", "Personalized care."],
+  /** Set in italic within the headline. See `Emphasis`. */
+  headlineEmphasis: "Personalized",
   description:
     "Punarvasu is an Ayurvedic clinic built around one idea — that care should begin with understanding the person, not the symptom. Every consultation starts with a conversation.",
   primaryAction: { label: "Book a Consultation" },
   secondaryAction: { label: "Explore our approach" },
+  /**
+   * The caption card on the hero photograph. The meaning of the clinic's name,
+   * taken from the About page's etymology (`features/about/content.ts`) - a
+   * statement about a word, not about care or outcomes.
+   */
+  nameNote: {
+    label: "Punarvasu",
+    text: "In Sanskrit, a return — of light, of what was there before.",
+  },
 } as const;
 
 /**
@@ -96,6 +107,9 @@ export const TRUST_POINTS: readonly { title: string; description: string }[] = [
 export const INTRO_CONTENT = {
   eyebrow: "What is Punarvasu",
   title: "An Ayurvedic clinic, practised patiently",
+  titleEmphasis: "patiently",
+  /** Lifted from the first paragraph, for the card on the photograph. */
+  pullQuote: "The same complaint in two bodies can have two different causes.",
   paragraphs: [
     "Punarvasu is a clinic for people who want to understand their health rather than only manage it. Ayurveda begins from the view that no two people are the same — that the same complaint in two bodies can have two different causes, and so two different paths back to balance.",
     "That belief shapes how a visit works here. A consultation is unhurried. A practitioner asks about sleep, digestion, work, season and stress before discussing anything else, because those are the details that make guidance fit a real life rather than a general one.",
@@ -118,6 +132,7 @@ export const INTRO_CONTENT = {
 export const APPROACH_CONTENT = {
   eyebrow: "Our approach",
   title: "Understand first. Then personalize. Then care.",
+  titleEmphasis: "Then care.",
   description:
     "Three commitments that shape every consultation at Punarvasu, in the order they happen.",
   steps: [
@@ -200,6 +215,7 @@ export const SERVICES_CONTENT = {
 export const WHY_CONTENT = {
   eyebrow: "Why Punarvasu",
   title: "A quieter kind of clinic",
+  titleEmphasis: "quieter",
   description:
     "Four things we hold to, which together describe the difference a visit here is meant to feel like.",
   points: [
@@ -277,6 +293,13 @@ export const JOURNEY_CONTENT = {
 export const PHILOSOPHY_CONTENT = {
   eyebrow: "Ayurveda at Punarvasu",
   title: "A more thoughtful approach to Ayurveda",
+  /**
+   * The section's second paragraph, set as a pull quote. It is the same
+   * sentence, not new copy - the page states it once, larger.
+   */
+  quote:
+    "Practised well, Ayurveda is unglamorous and specific. Most of what we recommend is ordinary. That is the point.",
+  quoteEmphasis: "That is the point.",
   paragraphs: [
     "Ayurveda is a system of understanding rather than a catalogue of remedies. It reads health through balance — of constitution, of digestion, of the rhythm of a day and a season — and treats the person the imbalance belongs to.",
     "Practised well, it is unglamorous and specific: what you eat, when you sleep, how you work, what your body has been doing for years. Most of what we recommend is ordinary. That is the point.",
@@ -349,7 +372,7 @@ export interface FaqItem {
  */
 export const FAQ_CONTENT = {
   eyebrow: "Questions",
-  title: "Frequently asked questions",
+  title: "Before you visit",
   description:
     "If your question is not here, ask it when you request a consultation — we would rather answer it properly.",
 } as const;
@@ -399,6 +422,7 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
 
 export const FINAL_CTA_CONTENT = {
   title: "Begin your Punarvasu journey",
+  titleEmphasis: "journey",
   description:
     "A consultation is a conversation first. Tell us what brought you here, and we will take it from there.",
   primaryAction: { label: "Book a Consultation" },

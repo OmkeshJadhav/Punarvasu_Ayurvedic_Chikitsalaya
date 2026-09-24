@@ -307,10 +307,10 @@ describe("LocationSection", () => {
     render(<LocationSection contact={contact} />);
 
     expect(screen.getByText("Mon-Sat, 9:00-19:00")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "+910000000000" })).toHaveAttribute(
-      "href",
-      "tel:+910000000000",
-    );
+    // Grouped for reading, dialled as the stored E.164 value.
+    expect(
+      screen.getByRole("link", { name: "+91 00000 00000" }),
+    ).toHaveAttribute("href", "tel:+910000000000");
     expect(screen.queryByText("Address")).not.toBeInTheDocument();
     expect(screen.queryByText("Email")).not.toBeInTheDocument();
   });

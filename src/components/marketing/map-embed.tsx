@@ -1,4 +1,5 @@
 import { CONTACT_PAGE } from "@/features/contact/content";
+import { cn } from "@/lib/utils/cn";
 
 /**
  * The clinic's location on a map.
@@ -51,17 +52,9 @@ export function MapEmbed({ embedUrl, addressLines }: MapEmbedProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="border-border bg-muted overflow-hidden rounded-xl border">
-        <iframe
-          src={embedUrl}
-          title={location.mapTitle}
-          loading="lazy"
-          // Sends only the origin to the map provider, never the full URL of
-          // the page the visitor is on.
-          referrerPolicy="strict-origin-when-cross-origin"
-          // No `allow` list: the map needs no camera, microphone or
-          // geolocation to show a fixed address, and the site-wide
-          // Permissions-Policy denies them anyway.
-          className="block aspect-[4/3] w-full border-0 sm:aspect-[16/10]"
+        <MapFrame
+          embedUrl={embedUrl}
+          className="aspect-[4/3] sm:aspect-[16/10]"
         />
       </div>
 
@@ -82,5 +75,35 @@ export function MapEmbed({ embedUrl, addressLines }: MapEmbedProps) {
         {location.mapPrivacyNote}
       </p>
     </div>
+  );
+}
+
+/**
+ * The bare map frame, without the address or the privacy note.
+ *
+ * For a composition that prints both itself - the home page's location card
+ * shows the address in its details list and the note beneath it. Whoever
+ * renders this is responsible for keeping `mapPrivacyNote` on the page.
+ */
+export function MapFrame({
+  embedUrl,
+  className,
+}: {
+  readonly embedUrl: string;
+  readonly className?: string;
+}) {
+  return (
+    <iframe
+      src={embedUrl}
+      title={CONTACT_PAGE.location.mapTitle}
+      loading="lazy"
+      // Sends only the origin to the map provider, never the full URL of
+      // the page the visitor is on.
+      referrerPolicy="strict-origin-when-cross-origin"
+      // No `allow` list: the map needs no camera, microphone or geolocation
+      // to show a fixed address, and the site-wide Permissions-Policy denies
+      // them anyway.
+      className={cn("block w-full border-0", className)}
+    />
   );
 }

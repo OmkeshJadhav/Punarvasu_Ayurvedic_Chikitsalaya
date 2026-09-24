@@ -1,9 +1,13 @@
 import Link from "next/link";
+import { ArrowRight, Flower2, Leaf, Sprout } from "lucide-react";
 
-import { MediaFrame } from "@/components/marketing/media-frame";
-import { Button } from "@/components/ui/button";
 import { Container } from "@/components/layout/container";
-import { CLINIC_IDENTITY } from "@/config/clinic";
+import { BotanicalMotif } from "@/components/marketing/botanical-motif";
+import { Emphasis } from "@/components/marketing/emphasis";
+import { MediaFrame } from "@/components/marketing/media-frame";
+import { TextLink } from "@/components/marketing/text-link";
+import { Button } from "@/components/ui/button";
+import { CLINIC_CONTACT, CLINIC_IDENTITY } from "@/config/clinic";
 import { HOME_IMAGES } from "@/config/images";
 import {
   HERO_CONTENT,
@@ -17,156 +21,185 @@ import { homeSectionHref, PRIMARY_CTA } from "@/config/navigation";
  *
  * A server component, and the only section that matters within the first
  * second, so it is built to be fast rather than clever: no client JavaScript,
- * no scroll effects, one priority image.
+ * one priority image.
  *
  * ## Composition
  *
- * A full-bleed photograph with the copy laid over it, rather than a
- * text-column-beside-an-image split. The split reads as a template: two equal
- * halves, a stock photo in a rounded box, and a headline that has to compete
- * with it for attention. Giving the photograph the whole band and putting the
- * words on top of it is what makes the page open like a clinic's front door
- * instead of a product landing page, and it is the treatment the brand
- * reference uses throughout.
+ * An editorial split: the words on linen at the left, the photograph in an
+ * arched frame at the right. It replaced a full-bleed photograph with the copy
+ * laid over it, which needed a 55% scrim to stay legible and turned a warm
+ * image into a brown one - the headline ended up sitting on a patient's face.
+ * Here the photograph is shown at full colour and nothing covers it.
  *
- * The copy sits at the *bottom* of the band on every screen. That keeps the
- * headline, the sentence under it and both actions together as one block
- * whatever the viewport height, and it leaves the top of the photograph - the
- * part with the subject in it - uncovered.
+ * The arch is the clinic's architecture rather than a UI shape: the doorways
+ * and temple niches the brand's imagery keeps returning to. A hairline arch
+ * offset behind it and a single drawn sprig are the only decoration, both in
+ * token colours at low contrast.
  *
- * ## Legibility
+ * ## Hierarchy
  *
- * White text on a photograph is only safe if the photograph is dark, and this
- * one can be replaced at any time. `MediaFrame`'s `strong` scrim is the
- * contract: its opacity is verified in `lib/design/contrast.test.ts` against a
- * pure-white image, so the worst photograph anyone could swap in still carries
- * this copy at AA. Nothing here relies on the current file being dark.
+ * One filled button. "Book a Consultation" is the reason the site exists, so
+ * it is the only solid shape in the band; "Explore our approach" is a text
+ * link. Two equal buttons ask a visitor to choose between them.
  *
  * ## Performance
  *
- * The photograph is the LCP element, so it carries `priority` - the one image
- * on the page that does. It is full-bleed at every breakpoint, hence
- * `sizes="100vw"`.
- *
- * ## Motion
- *
- * There is none here beyond the design system's own hover and focus
- * transitions. A hero that animates in delays the LCP paint and the first
- * thing a new visitor sees should not be a page assembling itself
- * (`docs/DESIGN_SYSTEM.md` section 41).
+ * The photograph carries `priority` - the one image on the page that does.
+ * Its settle-in is a scale transform only, never opacity, so it paints on the
+ * first frame and the animation cannot delay LCP. `motion-safe` removes it for
+ * anyone who asked for less movement.
  *
  * ## Headings
  *
  * This section owns the page's single `<h1>`.
  */
 export function Hero() {
-  return (
-    <section aria-labelledby="hero-title" className="bg-background">
-      {/* `isolate` keeps the scrim's stacking context inside the band, so the
-          sticky header still paints above it. */}
-      <div className="relative isolate overflow-hidden">
-        <MediaFrame
-          image={HOME_IMAGES.hero}
-          aspect="fill"
-          radius="none"
-          scrim="soft"
-          priority
-          sizes="100vw"
-        />
+  const [firstLine, secondLine] = HERO_CONTENT.headline;
 
-        <Container
-          width="wide"
-          // See `[data-surface="inverted"]` in `globals.css`: the focus ring is
-          // the primary green and would vanish against the photograph.
-          data-surface="inverted"
-          className="hero-band relative flex flex-col justify-end pt-20 pb-12 sm:pb-14 lg:pt-28 lg:pb-20"
-        >
-          <p className="text-caption text-brand-surface-accent font-sans font-medium tracking-[0.18em] uppercase">
+  return (
+    <section
+      aria-labelledby="hero-title"
+      className="bg-background relative isolate overflow-hidden"
+    >
+      <Container
+        width="wide"
+        className="grid items-center gap-14 pt-12 pb-16 sm:pt-16 lg:grid-cols-12 lg:gap-10 lg:pt-20 lg:pb-24"
+      >
+        <div className="lg:col-span-7">
+          <p className="text-caption text-eyebrow inline-flex items-center gap-3 font-sans font-medium tracking-[0.18em] uppercase">
+            <span aria-hidden="true" className="h-px w-8 bg-current" />
             {HERO_CONTENT.eyebrow}
-            <span className="ml-2 font-serif text-base tracking-normal normal-case">
-              {CLINIC_IDENTITY.devanagariName}
-            </span>
+            {CLINIC_CONTACT.address ? (
+              <> · {CLINIC_CONTACT.address.locality}</>
+            ) : null}
           </p>
 
           <h1
             id="hero-title"
-            className="text-display-xl text-scrim-foreground mt-4 font-normal"
+            className="text-display-2xl text-heading mt-6 font-normal"
           >
-            {HERO_CONTENT.headline[0]}
+            {firstLine}
             <br />
-            {HERO_CONTENT.headline[1]}
+            <Emphasis
+              text={secondLine}
+              phrase={HERO_CONTENT.headlineEmphasis}
+              className="text-primary"
+            />
           </h1>
 
-          <p className="text-body-lg text-scrim-foreground measure mt-5">
+          <p className="text-body-lg text-prose mt-7 max-w-136">
             {HERO_CONTENT.description}
           </p>
 
-          <div className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
-            <Button asChild size="lg" block className="sm:w-auto">
+          <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-8">
+            <Button asChild size="lg" className="group w-full sm:w-auto">
               <Link href={PRIMARY_CTA.href}>
                 {HERO_CONTENT.primaryAction.label}
+                <ArrowRight
+                  aria-hidden="true"
+                  className="ease-natural transition-transform duration-(--duration-normal) group-hover:translate-x-0.5"
+                />
               </Link>
             </Button>
-            {/*
-              `outline` would draw a dim border against an unknown photograph.
-              `secondary` is the sand chip - an opaque surface with its own
-              verified foreground, so the second action stays readable over any
-              image the clinic swaps in.
-            */}
-            <Button
-              asChild
-              size="lg"
-              variant="secondary"
-              block
-              className="sm:w-auto"
-            >
-              <Link href={homeSectionHref(HOME_SECTIONS.approach)}>
-                {HERO_CONTENT.secondaryAction.label}
-              </Link>
-            </Button>
+            <TextLink href={homeSectionHref(HOME_SECTIONS.approach)}>
+              {HERO_CONTENT.secondaryAction.label}
+            </TextLink>
           </div>
-        </Container>
+
+          <TrustPoints />
+        </div>
+
+        <HeroPortrait />
+      </Container>
+    </section>
+  );
+}
+
+/**
+ * The arched photograph and its caption.
+ *
+ * Decorative layers are absolutely positioned *outside* the frame's overflow
+ * clip, so the offset arch and the sprig can break its edge. `MediaFrame`
+ * supplies the image, the fixed crop and the placeholder surface; the arch is
+ * a wrapper's `rounded-t-full`, which keeps `MediaFrame`'s own radius options
+ * unchanged for every other caller.
+ */
+function HeroPortrait() {
+  return (
+    <div className="relative mx-auto w-full max-w-md lg:col-span-5 lg:mr-0 lg:max-w-120">
+      {/* The offset hairline arch. */}
+      <div
+        aria-hidden="true"
+        className="border-gold/35 absolute inset-0 translate-x-4 -translate-y-4 rounded-t-full border sm:translate-x-6 sm:-translate-y-6"
+      />
+
+      <BotanicalMotif className="text-gold/45 absolute -bottom-6 -left-10 hidden h-72 w-28 -rotate-12 sm:block lg:-left-16" />
+
+      <div className="relative aspect-4/5 overflow-hidden rounded-t-full shadow-lg">
+        <MediaFrame
+          image={HOME_IMAGES.hero}
+          aspect="fill"
+          radius="none"
+          priority
+          sizes="(min-width: 1280px) 30rem, (min-width: 1024px) 40vw, 28rem"
+          imageClassName="motion-safe:animate-settle"
+        />
       </div>
 
-      <TrustStrip />
-    </section>
+      <figure className="border-border bg-card/95 absolute -bottom-8 left-4 max-w-68 rounded-lg border p-5 shadow-md backdrop-blur-sm sm:-right-4 sm:left-auto lg:-right-8 lg:bottom-12">
+        <figcaption className="text-caption text-eyebrow font-sans font-medium tracking-[0.18em] uppercase">
+          {HERO_CONTENT.nameNote.label}
+          <span lang="sa" className="ml-2 font-serif text-sm tracking-normal">
+            {CLINIC_IDENTITY.devanagariName}
+          </span>
+        </figcaption>
+        <p className="text-body text-heading mt-2 font-serif italic">
+          {HERO_CONTENT.nameNote.text}
+        </p>
+      </figure>
+    </div>
   );
 }
 
 /**
  * Trust indicators.
  *
- * Three qualitative statements, sitting on the seam between the hero and the
- * page proper. Deliberately not a statistics bar: no patient count, rating or
- * success figure has been verified, and a fabricated one on a healthcare site
- * is the worst thing this page could contain
- * (`docs/implementation-plan/phase_03.md` sections 13-14).
+ * Three qualitative statements, directly under the actions. Deliberately not
+ * a statistics bar: no patient count, rating or success figure has been
+ * verified, and a fabricated one on a healthcare site is the worst thing this
+ * page could contain (`docs/implementation-plan/phase_03.md` sections 13-14).
  *
- * Rendered as a `<ul>` so it is a list to a screen reader too, and each item
- * leads with a bold line - these are labels, not sections, so they stay out of
- * the document outline. The rules between them replace the card borders that
- * would otherwise turn three sentences into three boxes.
+ * The icons are botanical and decorative - the bold line beside each already
+ * says what it is - so they are hidden from assistive technology. They are
+ * matched by position because the three statements are a fixed set, and a
+ * missing one falls back to the leaf rather than to nothing.
  */
-function TrustStrip() {
+const TRUST_ICONS = [Sprout, Leaf, Flower2] as const;
+
+function TrustPoints() {
   return (
-    <div className="border-border bg-background border-b">
-      <Container width="wide">
-        <ul className="grid gap-x-10 gap-y-6 py-8 sm:grid-cols-3 md:py-10">
-          {TRUST_POINTS.map((point) => (
-            <li
-              key={point.title}
-              className="border-border flex flex-col gap-1.5 sm:border-l sm:pl-6 sm:first:border-l-0 sm:first:pl-0"
+    <ul className="border-border mt-14 grid gap-6 border-t pt-8 sm:grid-cols-3 sm:gap-5">
+      {TRUST_POINTS.map((point, index) => {
+        const Icon = TRUST_ICONS[index] ?? Leaf;
+        return (
+          <li key={point.title} className="flex items-start gap-3 sm:flex-col">
+            <span
+              aria-hidden="true"
+              className="border-gold/30 bg-gold-surface text-gold flex size-10 shrink-0 items-center justify-center rounded-full border"
             >
-              <span className="text-label text-eyebrow font-semibold">
+              <Icon className="size-4.5" strokeWidth={1.5} />
+            </span>
+            <span className="flex flex-col gap-1">
+              <span className="text-label text-heading font-semibold">
                 {point.title}
               </span>
-              <span className="text-body-sm text-prose">
+              <span className="text-body-sm text-muted-foreground">
                 {point.description}
               </span>
-            </li>
-          ))}
-        </ul>
-      </Container>
-    </div>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

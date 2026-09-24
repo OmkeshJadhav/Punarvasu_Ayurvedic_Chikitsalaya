@@ -151,6 +151,14 @@ describe("text contrast meets WCAG AA (4.5:1)", () => {
     ["gold on background", PALETTE.gold, PALETTE.background],
     ["gold on card", PALETTE.gold, PALETTE.card],
     ["gold on its surface", PALETTE.gold, PALETTE.goldSurface],
+    // The home page's approach numerals sit on the muted band.
+    ["gold on muted", PALETTE.gold, PALETTE.muted],
+    // The `inverse` button: the one filled action on a dark band.
+    [
+      "heading on the inverse button",
+      PALETTE.heading,
+      PALETTE.brandSurfaceAccent,
+    ],
     ["terracotta on background", PALETTE.terracotta, PALETTE.background],
     ["terracotta on card", PALETTE.terracotta, PALETTE.card],
     // `--primary` is the eyebrow and link colour, so it has to hold on every

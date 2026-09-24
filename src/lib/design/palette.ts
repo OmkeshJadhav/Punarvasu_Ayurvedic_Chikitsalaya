@@ -11,16 +11,16 @@
  */
 
 export const PALETTE = {
-  background: "#fff8e1",
+  background: "#faf6ee",
   foreground: "#3e2723",
 
   card: "#ffffff",
   cardForeground: "#3e2723",
 
-  muted: "#f9efd6",
+  muted: "#f3ece0",
   mutedForeground: "#5a423c",
 
-  secondary: "#f4e7c8",
+  secondary: "#ede3d0",
   secondaryForeground: "#3e2723",
 
   accent: "#e7efe8",
@@ -45,10 +45,10 @@ export const PALETTE = {
    * `--chart-series` in `globals.css` for why a data mark is not `--primary`.
    */
   chartSeries: "#355a49",
-  chartTrack: "#f4e7c8",
+  chartTrack: "#ede3d0",
 
-  border: "#ece0c8",
-  borderStrong: "#ddcca9",
+  border: "#e6dccb",
+  borderStrong: "#d6c7ad",
   input: "#8d746c",
   ring: "#2a473a",
 
@@ -80,7 +80,7 @@ export const PALETTE = {
   brandSurfaceForeground: "#ffffff",
   brandSurfaceMuted: "#d3e0d6",
   brandSurfaceBorder: "#467058",
-  brandSurfaceAccent: "#f4e7c8",
+  brandSurfaceAccent: "#ede3d0",
 
   gold: "#8a6519",
   goldSurface: "#f6eeda",

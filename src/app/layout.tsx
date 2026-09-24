@@ -38,6 +38,9 @@ const playfair = Playfair_Display({
   // 400 for display headings, 500-600 for the smaller headings that sit
   // inside cards and lists. Nothing here needs a bolder cut.
   weight: ["400", "500", "600"],
+  // Italic carries editorial emphasis in display headings - one word or
+  // phrase per heading, never a whole line (`components/marketing/emphasis.tsx`).
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -71,7 +74,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   // Matches `--background`, so the browser chrome on mobile blends with the
   // page instead of framing it in white.
-  themeColor: "#fff8e1",
+  themeColor: "#faf6ee",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

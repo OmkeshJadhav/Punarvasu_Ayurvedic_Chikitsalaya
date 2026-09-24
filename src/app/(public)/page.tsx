@@ -13,7 +13,11 @@ import { ServicePreviewSection } from "@/components/marketing/service-preview";
 import { WhyPunarvasuSection } from "@/components/marketing/why-punarvasu";
 import { CLINIC_CONTACT, CLINIC_SOCIAL_LINKS } from "@/config/clinic";
 import { getSiteConfig } from "@/config/env.public";
-import { FAQ_ITEMS, FEATURED_SERVICES } from "@/config/marketing-content";
+import {
+  FAQ_ITEMS,
+  FEATURED_SERVICES,
+  FINAL_CTA_CONTENT,
+} from "@/config/marketing-content";
 import { getPractitionerPreviews } from "@/features/practitioners/directory";
 import { buildClinicJsonLd, serializeJsonLd } from "@/lib/seo/structured-data";
 
@@ -38,8 +42,16 @@ import { buildClinicJsonLd, serializeJsonLd } from "@/lib/seo/structured-data";
  * ## Narrative order
  *
  * Introduce → build trust → explain the approach → show where people start →
- * differentiate → remove uncertainty → state the philosophy → introduce the
- * people → answer the questions → invite.
+ * state the philosophy → differentiate → remove uncertainty → introduce the
+ * people → answer the questions, beside the way in → invite.
+ *
+ * The philosophy band moved up, after the consultation areas, in the premium
+ * redesign: it is the page's one dark interruption, and placed there it
+ * splits the page into two halves of roughly equal length instead of arriving
+ * two-thirds of the way down, where the eye has already settled into the
+ * rhythm of the light sections. After the opening spread - the hero and the
+ * introduction share the linen page and read as one - surfaces alternate
+ * linen and sand, so no two other neighbouring sections share a colour.
  *
  * Testimonials are absent by decision, not omission: no verified patient
  * testimonial exists, and inventing one is out of the question, so the section
@@ -105,13 +117,18 @@ export default function HomePage() {
       <IntroSection />
       <ApproachSection />
       <ServicePreviewSection services={FEATURED_SERVICES} />
+      <PhilosophySection />
       <WhyPunarvasuSection />
       <PatientJourneySection />
-      <PhilosophySection />
       <PractitionerPreviewSection practitioners={practitioners} />
-      <FaqSection items={FAQ_ITEMS} />
-      <LocationSection contact={CLINIC_CONTACT} />
-      <FinalCtaSection />
+      <FaqSection
+        items={FAQ_ITEMS}
+        aside={<LocationSection contact={CLINIC_CONTACT} />}
+      />
+      <FinalCtaSection
+        tone="brand"
+        titleEmphasis={FINAL_CTA_CONTENT.titleEmphasis}
+      />
     </>
   );
 }

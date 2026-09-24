@@ -1,9 +1,10 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { Quote } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
+import { Emphasis } from "@/components/marketing/emphasis";
 import { MediaFrame } from "@/components/marketing/media-frame";
+import { TextLink } from "@/components/marketing/text-link";
 import { Reveal } from "@/components/shared/reveal";
 import { HOME_IMAGES } from "@/config/images";
 import { HOME_SECTIONS, INTRO_CONTENT } from "@/config/marketing-content";
@@ -13,15 +14,16 @@ import { HOME_SECTIONS, INTRO_CONTENT } from "@/config/marketing-content";
  *
  * The narrative hinge: the hero says what the clinic promises, this says what
  * it actually is. Kept to two paragraphs - the home page introduces, the About
- * page (a later phase) explains.
+ * page explains.
  *
- * Layout alternates against the hero: image on the *left* from `lg`, copy on
- * the right. That alternation is the main thing stopping a long marketing page
- * reading as one column of stacked cards.
+ * The photograph is portrait and on the left, against the hero's arch on the
+ * right: the page swings from side to side rather than stacking the same
+ * composition twice. A card carrying one sentence from the copy overlaps its
+ * corner - a pull quote, not new content, and marked up as one.
  *
- * The "read our story" action points at `/about`, which Phase 05 built. It
- * used to scroll to this page's own philosophy section, because a link that
- * 404s is worse than one that scrolls.
+ * The columns are deliberately unequal (6 and 5 of 12, with a gutter column
+ * between) so the text sits in a reading measure rather than stretching to
+ * match the image.
  */
 export function IntroSection() {
   return (
@@ -31,20 +33,46 @@ export function IntroSection() {
       className="anchor-offset bg-background"
     >
       <Container width="wide">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-          <Reveal className="lg:order-2">
-            <p className="text-caption text-eyebrow font-sans font-medium tracking-[0.18em] uppercase">
+        <div className="grid items-center gap-16 lg:grid-cols-12 lg:gap-10">
+          <Reveal className="relative lg:col-span-6">
+            <MediaFrame
+              image={HOME_IMAGES.intro}
+              aspect="portrait"
+              radius="xl"
+              className="max-h-160 w-full"
+              sizes="(min-width: 1280px) 38rem, (min-width: 1024px) 48vw, 100vw"
+            />
+
+            <blockquote className="border-border bg-card absolute -right-2 -bottom-10 max-w-72 rounded-lg border p-6 shadow-md sm:right-6 lg:-right-10">
+              <Quote
+                aria-hidden="true"
+                className="text-gold size-5"
+                strokeWidth={1.5}
+              />
+              <p className="text-h5 text-heading mt-3 font-serif italic">
+                {INTRO_CONTENT.pullQuote}
+              </p>
+            </blockquote>
+          </Reveal>
+
+          <Reveal delay={80} className="lg:col-span-5 lg:col-start-8">
+            <p className="text-caption text-eyebrow inline-flex items-center gap-3 font-sans font-medium tracking-[0.18em] uppercase">
+              <span aria-hidden="true" className="h-px w-8 bg-current" />
               {INTRO_CONTENT.eyebrow}
             </p>
 
             <h2
               id="intro-title"
-              className="text-h2 text-heading mt-4 font-normal"
+              className="text-display text-heading mt-5 font-normal"
             >
-              {INTRO_CONTENT.title}
+              <Emphasis
+                text={INTRO_CONTENT.title}
+                phrase={INTRO_CONTENT.titleEmphasis}
+                className="text-primary"
+              />
             </h2>
 
-            <div className="measure mt-6 flex flex-col gap-4">
+            <div className="measure mt-7 flex flex-col gap-5">
               {INTRO_CONTENT.paragraphs.map((paragraph) => (
                 <p key={paragraph} className="text-body-lg text-prose">
                   {paragraph}
@@ -52,22 +80,9 @@ export function IntroSection() {
               ))}
             </div>
 
-            <Link
-              href={INTRO_CONTENT.readMore.href}
-              className="text-label text-primary ease-natural hover:text-primary-hover focus-visible:outline-ring mt-7 inline-flex min-h-11 items-center gap-2 rounded-sm font-medium transition-colors duration-(--duration-fast) focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
+            <TextLink href={INTRO_CONTENT.readMore.href} className="mt-8">
               {INTRO_CONTENT.readMore.label}
-              <ArrowRight aria-hidden="true" className="size-4" />
-            </Link>
-          </Reveal>
-
-          <Reveal className="lg:order-1">
-            <MediaFrame
-              image={HOME_IMAGES.intro}
-              aspect="wide"
-              radius="xl"
-              sizes="(min-width: 1280px) 37rem, (min-width: 1024px) 45vw, 100vw"
-            />
+            </TextLink>
           </Reveal>
         </div>
       </Container>

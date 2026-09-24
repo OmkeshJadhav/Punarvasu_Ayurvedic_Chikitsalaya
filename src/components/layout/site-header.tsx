@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils/cn";
 
 import { Container } from "./container";
 import { MobileNav } from "./mobile-nav";
+import { ScrollAwareHeader } from "./scroll-aware-header";
 import { NavLink } from "./nav-link";
 
 /**
@@ -32,7 +33,9 @@ import { NavLink } from "./nav-link";
  *   - `<header>` and `<nav aria-label="Main">` are landmarks, so a screen
  *     reader user can jump straight past them.
  *   - Sticky positioning only; the header does not hide and reappear on scroll,
- *     which is disorienting and steals the top of the viewport on a phone.
+ *     which is disorienting and steals the top of the viewport on a phone. It
+ *     changes surface on scroll - translucent at the top, solid once content
+ *     passes beneath it - and never changes height, so nothing below it moves.
  */
 export interface SiteHeaderProps {
   readonly navItems: readonly NavItem[];
@@ -43,6 +46,15 @@ export interface SiteHeaderProps {
    * the primary action on desktop and inside the mobile menu.
    */
   readonly accountSlot?: ReactNode;
+  /**
+   * A slim band above the bar - the public site's location and phone. It sits
+   * inside `<header>`, after the skip link, so "Skip to main content" stays
+   * the first thing a keyboard reaches. The header's negative sticky offset
+   * (the band's own 36px height) lets the band scroll away while the bar
+   * beneath it stays pinned. The band is `md`-and-up only, so the offset is
+   * too.
+   */
+  readonly utilityBar?: ReactNode;
   readonly className?: string;
 }
 
@@ -50,6 +62,7 @@ export function SiteHeader({
   navItems,
   primaryAction,
   accountSlot,
+  utilityBar,
   className,
 }: SiteHeaderProps) {
   const cta = primaryAction ? (
@@ -59,24 +72,36 @@ export function SiteHeader({
   ) : null;
 
   return (
-    <header
+    <ScrollAwareHeader
       data-print="hide"
       className={cn(
-        "border-border bg-background/95 sticky top-0 z-(--z-sticky) w-full border-b",
-        // A light blur behind a translucent bar keeps text legible as content
-        // scrolls under it. This is the only place the effect is used.
+        "sticky top-0 z-(--z-sticky) w-full border-b",
+        utilityBar ? "md:-top-9" : null,
+        "ease-natural transition-[background-color,border-color,box-shadow] duration-(--duration-normal)",
+        // At rest: translucent linen, no rule, so the bar belongs to the
+        // opening composition. The blur keeps it legible over the hero's
+        // photograph where the two meet on a narrow screen.
         //
-        // 90%, not 80%: the home page opens on a full-bleed photograph, and a
-        // bar that lets a fifth of a dark image through reads as a smudge
-        // rather than as glass. The remaining 10% is enough to show that
-        // something is moving underneath.
-        "supports-[backdrop-filter:blur(0px)]:bg-background/90 supports-[backdrop-filter:blur(0px)]:backdrop-blur-sm",
+        // Scrolled: solid, with a hairline and a soft shadow, because body
+        // copy sliding under a see-through bar reads as a rendering fault.
+        // `data-scrolled` is set by `ScrollAwareHeader`; everything visual
+        // lives here.
+        "bg-background/80 border-transparent",
+        "supports-[backdrop-filter:blur(0px)]:bg-background/70 supports-[backdrop-filter:blur(0px)]:backdrop-blur-md",
+        "data-scrolled:border-border data-scrolled:bg-background/95 data-scrolled:shadow-sm",
         className,
       )}
     >
       <SkipLink />
+      {utilityBar}
 
-      <Container className="flex h-16 items-center justify-between gap-4 lg:h-20">
+      {/* `wide`, matching every marketing section beneath it. At `content`
+          the logo and the CTA sat 80px inside the page's own edges, which is
+          the misalignment a trained eye notices before anything else. */}
+      <Container
+        width="wide"
+        className="flex h-16 items-center justify-between gap-4 lg:h-20"
+      >
         <Logo />
 
         <nav aria-label="Main" className="hidden lg:block">
@@ -123,7 +148,7 @@ export function SiteHeader({
           </span>
         </div>
       </Container>
-    </header>
+    </ScrollAwareHeader>
   );
 }
 

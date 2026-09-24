@@ -1,41 +1,47 @@
 import Link from "next/link";
-import { Clock, Mail, MapPin, Phone } from "lucide-react";
+import { MapPin, Phone } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Container } from "@/components/layout/container";
-import { Section, SectionHeader } from "@/components/layout/section";
+import { MapFrame } from "@/components/marketing/map-embed";
 import { Button } from "@/components/ui/button";
 import {
-  formatAddress,
+  addressLines,
+  formatPhone,
   hasPublishableContact,
   type ClinicContact,
 } from "@/config/clinic";
 import { HOME_SECTIONS } from "@/config/marketing-content";
+import { CONTACT_PAGE } from "@/features/contact/content";
 
 /**
- * "Visit us".
+ * "Visit the clinic" - the home page's location card.
  *
- * ## Why this renders nothing today
+ * Sits beside the questions in `FaqSection`, because the two answer the same
+ * thing - what a first visit involves - and a visitor who has read the one
+ * usually wants the other next. It is still its own `<section>` and its own
+ * anchor (`#book`), so the footer's deep link and a screen reader's region list
+ * both reach it directly.
  *
- * No clinic address, phone number, email or opening hours has been supplied to
- * this repository. An address is the one piece of content on a clinic website
- * that a visitor physically acts on, and a plausible invented one sends
- * someone to the wrong building. So the section renders `null` unless
- * `config/clinic.ts` actually holds a detail — the documented "hide the
- * optional section" path from `docs/implementation-plan/phase_03.md` section
- * 48, rather than a card grid full of "Address: TBC".
+ * ## What renders
  *
- * Filling in `CLINIC_CONTACT` is the entire change needed to publish it: this
- * component, the footer's contact block and the JSON-LD all read from that one
- * module.
+ * Only what `config/clinic.ts` actually holds. An address is the one piece of
+ * content on a clinic website that a visitor physically acts on, and a
+ * plausible invented one sends someone to the wrong building, so every detail
+ * is conditional and the card renders `null` when none is known
+ * (`docs/implementation-plan/phase_03.md` section 48). Opening hours appear
+ * the moment the clinic supplies them; until then there is no row.
  *
- * ## Map
+ * ## Composition
  *
- * There is deliberately no embedded map. A third-party map iframe is a
- * third-party script, a set of cookies and a chunk of render-blocking weight
- * on a page whose whole point is loading fast — and there is no address to
- * centre it on anyway. `directionsUrl` gives a plain link out to a map
- * provider instead, which costs nothing.
+ * The clinic's real map on top, then a deep green panel holding the details
+ * as label/value rows and two pill actions. The map is `MapFrame` - lazily
+ * loaded, so it costs nothing until it scrolls into view - and the privacy
+ * note `MapEmbed` would print under it is printed at the foot of the panel
+ * instead. The phone number is grouped for reading (`formatPhone`) while the
+ * `tel:` target stays the stored E.164 value.
+ *
+ * "Get directions" is the linen pill: on this panel it is the primary action,
+ * and "Book a Consultation" is not in the card to compete with it.
  */
 export interface LocationSectionProps {
   readonly contact: ClinicContact;
@@ -46,107 +52,122 @@ export function LocationSection({ contact }: LocationSectionProps) {
     return null;
   }
 
-  const address = formatAddress(contact.address);
+  const lines = addressLines(contact.address);
+  const phone = formatPhone(contact.phone);
 
   return (
-    <Section
+    <section
       id={HOME_SECTIONS.contact}
       aria-labelledby="location-title"
-      className="anchor-offset bg-muted border-border border-y"
+      className="anchor-offset border-border overflow-hidden rounded-xl border shadow-md"
     >
-      <Container width="wide">
-        <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
-          <div className="lg:col-span-5">
-            <SectionHeader
-              titleId="location-title"
-              eyebrow="Visit us"
-              title="Finding the clinic"
-              description="Everything you need to plan a visit."
-            />
+      {contact.mapEmbedUrl ? (
+        <MapFrame embedUrl={contact.mapEmbedUrl} className="bg-muted h-60" />
+      ) : null}
 
-            {contact.directionsUrl ? (
-              <Button asChild variant="outline" className="mt-7">
-                <Link
-                  href={contact.directionsUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                >
-                  Get directions
-                  <span className="sr-only"> (opens in a new tab)</span>
-                </Link>
-              </Button>
-            ) : null}
-          </div>
+      <div
+        // See `[data-surface="inverted"]` in `globals.css`.
+        data-surface="inverted"
+        className="bg-brand-surface text-brand-surface-foreground px-6 py-8 sm:px-8"
+      >
+        <h2
+          id="location-title"
+          className="text-caption text-brand-surface-accent inline-flex items-center gap-3 font-sans font-medium tracking-[0.18em] uppercase before:h-px before:w-8 before:bg-current before:content-['']"
+        >
+          Visit the clinic
+        </h2>
 
-          <dl className="grid gap-6 sm:grid-cols-2 lg:col-span-7">
-            {address ? (
-              <ContactDetail icon={<MapPin />} label="Address">
-                {address}
-              </ContactDetail>
-            ) : null}
+        <dl className="mt-5">
+          {lines.length > 0 ? (
+            <ContactDetail label="Address">
+              {lines.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </ContactDetail>
+          ) : null}
 
-            {contact.openingHours ? (
-              <ContactDetail icon={<Clock />} label="Opening hours">
-                {contact.openingHours}
-              </ContactDetail>
-            ) : null}
+          {contact.openingHours ? (
+            <ContactDetail label="Hours">{contact.openingHours}</ContactDetail>
+          ) : null}
 
-            {contact.phone ? (
-              <ContactDetail icon={<Phone />} label="Phone">
-                <a
-                  href={`tel:${contact.phone}`}
-                  className="hover:text-primary focus-visible:outline-ring inline-flex min-h-11 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  {contact.phone}
-                </a>
-              </ContactDetail>
-            ) : null}
+          {contact.phone ? (
+            <ContactDetail label="Phone">
+              <a
+                href={`tel:${contact.phone}`}
+                className="link-underline hover:link-underline-active rounded-sm"
+              >
+                {phone}
+              </a>
+            </ContactDetail>
+          ) : null}
 
-            {contact.email ? (
-              <ContactDetail icon={<Mail />} label="Email">
-                <a
-                  href={`mailto:${contact.email}`}
-                  className="hover:text-primary focus-visible:outline-ring inline-flex min-h-11 items-center rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  {contact.email}
-                </a>
-              </ContactDetail>
-            ) : null}
-          </dl>
+          {contact.email ? (
+            <ContactDetail label="Email">
+              <a
+                href={`mailto:${contact.email}`}
+                className="link-underline hover:link-underline-active rounded-sm"
+              >
+                {contact.email}
+              </a>
+            </ContactDetail>
+          ) : null}
+        </dl>
+
+        <div className="mt-7 flex flex-wrap gap-3">
+          {contact.directionsUrl ? (
+            <Button asChild variant="inverse" className="rounded-full px-6">
+              <Link
+                href={contact.directionsUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <MapPin aria-hidden="true" />
+                Get directions
+                <span className="sr-only"> (opens in a new tab)</span>
+              </Link>
+            </Button>
+          ) : null}
+
+          {contact.phone ? (
+            <Button
+              asChild
+              variant="outline"
+              className="border-brand-surface-border text-brand-surface-foreground hover:text-brand-surface-foreground rounded-full px-6 hover:border-current hover:bg-transparent"
+            >
+              <a href={`tel:${contact.phone}`}>
+                <Phone aria-hidden="true" />
+                Call the clinic
+              </a>
+            </Button>
+          ) : null}
         </div>
-      </Container>
-    </Section>
+
+        {contact.mapEmbedUrl ? (
+          <p className="text-caption text-brand-surface-muted mt-7">
+            {CONTACT_PAGE.location.mapPrivacyNote}
+          </p>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
-/**
- * One labelled detail. The icon is decorative — the `<dt>` already names the
- * detail, so repeating it to a screen reader adds nothing.
- */
+/** One label/value row, divided from the next by a hairline. */
 function ContactDetail({
-  icon,
   label,
   children,
 }: {
-  readonly icon: ReactNode;
   readonly label: string;
   readonly children: ReactNode;
 }) {
   return (
-    // `<dt>`/`<dd>` must be *direct* children of the wrapping `<div>` for the
-    // definition list to stay valid, so the icon is placed by the grid rather
-    // than by an extra nesting level.
-    <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
-      <span
-        aria-hidden="true"
-        className="text-primary row-span-2 mt-0.5 shrink-0 [&_svg]:size-5"
-      >
-        {icon}
-      </span>
-      <dt className="text-caption text-muted-foreground font-medium tracking-[0.12em] uppercase">
+    <div className="border-brand-surface-border/60 grid gap-1 border-b py-4 first:border-t sm:grid-cols-[6rem_1fr] sm:gap-5">
+      <dt className="text-caption text-brand-surface-muted pt-0.5 font-medium tracking-[0.14em] uppercase">
         {label}
       </dt>
-      <dd className="text-body text-foreground">{children}</dd>
+      <dd className="text-body-sm text-brand-surface-foreground">{children}</dd>
     </div>
   );
 }

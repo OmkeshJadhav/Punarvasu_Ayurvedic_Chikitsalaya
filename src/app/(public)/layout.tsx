@@ -4,6 +4,7 @@ import {
   type ContactDetail,
 } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { SiteUtilityBar } from "@/components/layout/site-utility-bar";
 import {
   CLINIC_CONTACT,
   CLINIC_IDENTITY,
@@ -50,6 +51,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
         navItems={PUBLIC_NAV_ITEMS}
         primaryAction={PRIMARY_CTA}
         accountSlot={<AccountNav />}
+        utilityBar={<SiteUtilityBar />}
       />
 
       <main id="main-content" className="flex-1">
@@ -65,7 +67,7 @@ export default function PublicLayout({ children }: LayoutProps<"/">) {
           external: true,
         }))}
         tagline={CLINIC_IDENTITY.tagline}
-        disclaimer="Information on this website is general in nature. It is not medical advice, and it is not a substitute for professional diagnosis, treatment or emergency care. Please consult a qualified practitioner about your own health."
+        // disclaimer="Information on this website is general in nature. It is not medical advice, and it is not a substitute for professional diagnosis, treatment or emergency care. Please consult a qualified practitioner about your own health."
       />
     </>
   );

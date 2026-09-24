@@ -54,12 +54,17 @@
   /* Surface neutrals - unbleached paper, raw silk, turmeric-stained cotton.
      A separate ramp from the text neutrals because the two warm in different
      directions: surfaces run yellow, type runs red. Mixing them into one ramp
-     is what produced the muddy middle tones this palette replaces. */
-  --punarvasu-sand-300: #ddcca9;
-  --punarvasu-sand-200: #ece0c8;
-  --punarvasu-sand-100: #f4e7c8;
-  --punarvasu-sand-50: #f9efd6;
-  --punarvasu-cream: #fff8e1;
+     is what produced the muddy middle tones this palette replaces.
+
+     Desaturated in the home page redesign: the previous butter-yellow cream
+     (#fff8e1) read as a template default next to cinematic photography. The
+     ramp now sits closer to unbleached linen - still warm, but quiet enough
+     that the photographs and the green carry the colour. */
+  --punarvasu-sand-300: #d6c7ad;
+  --punarvasu-sand-200: #e6dccb;
+  --punarvasu-sand-100: #ede3d0;
+  --punarvasu-sand-50: #f3ece0;
+  --punarvasu-cream: #faf6ee;
 
   /* Accents. Used in small quantities, never as a large surface. */
   --punarvasu-gold: #8a6519;
@@ -307,6 +312,12 @@
   /* Fluid type scale. Each step interpolates between its mobile and desktop
      size across the 375px-1280px range, so nothing is a shrunken desktop
      heading and nothing needs a breakpoint override. */
+  /* The home page hero only. One size above display-xl, so the page's opening
+     line is set like a book cover rather than like a section heading. */
+  --text-display-2xl: clamp(2.875rem, 1.6rem + 5.2vw, 5rem);
+  --text-display-2xl--line-height: 1.02;
+  --text-display-2xl--letter-spacing: -0.025em;
+
   --text-display-xl: clamp(2.625rem, 1.75rem + 3.73vw, 4rem);
   --text-display-xl--line-height: 1.05;
   --text-display-xl--letter-spacing: -0.02em;
@@ -376,6 +387,18 @@
   --animate-sheet-in-right: sheet-in-right var(--duration-normal)
     var(--ease-natural);
   --animate-shimmer: shimmer 1.6s linear infinite;
+  /* A photograph settling into its frame. Scale only - opacity never starts
+     at 0, so the LCP image is painted on the first frame either way. */
+  --animate-settle: settle 1.8s var(--ease-natural);
+
+  @keyframes settle {
+    from {
+      transform: scale(1.06);
+    }
+    to {
+      transform: none;
+    }
+  }
 
   @keyframes fade-in {
     from {
@@ -568,6 +591,24 @@
   @variant lg {
     min-block-size: 40rem;
   }
+}
+
+/* An underline that draws in from the left on hover and focus, for text links
+   in editorial copy. A background image rather than `text-decoration`, because
+   only a background can animate its length. Apply it to the text span, not to
+   a flex link that also holds an icon, or the line runs under the arrow too. */
+@utility link-underline {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  transition: background-size var(--duration-normal) var(--ease-natural);
+}
+
+/* Two jobs: the hover state, and the resting state of a link that is
+   already "on" (the current page). */
+@utility link-underline-active {
+  background-size: 100% 1px;
 }
 
 /* A comfortable reading measure: roughly 60-72 characters. */

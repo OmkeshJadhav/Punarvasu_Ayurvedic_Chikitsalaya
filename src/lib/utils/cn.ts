@@ -22,6 +22,7 @@ import { extendTailwindMerge } from "tailwind-merge";
  * `src/lib/utils/cn.test.ts` fails if a step goes missing.
  */
 export const TYPE_SCALE_STEPS = [
+  "display-2xl",
   "display-xl",
   "display",
   "h1",

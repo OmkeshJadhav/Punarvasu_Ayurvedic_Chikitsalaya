@@ -71,10 +71,15 @@ export function SiteFooter({
       data-surface="inverted"
       className={cn(
         "bg-brand-surface text-brand-surface-foreground mt-auto",
+        // A hairline where the footer meets a green closing band above it;
+        // on a light page it is simply the edge of the footer.
+        "border-brand-surface-border/50 border-t",
         className,
       )}
     >
-      <Container className="section-y flex flex-col gap-10">
+      {/* `wide`, so the footer's columns share their edges with the header and
+          every marketing section above them. */}
+      <Container width="wide" className="section-y flex flex-col gap-10">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-3 lg:col-span-1">
             {/* The footer's brand column is one of four, and narrower than the

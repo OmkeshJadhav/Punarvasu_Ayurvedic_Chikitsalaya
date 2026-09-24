@@ -72,6 +72,13 @@ const buttonVariants = cva(
           "border border-border-strong bg-transparent text-foreground hover:border-primary/40 hover:bg-accent hover:text-accent-foreground",
         ghost:
           "bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground",
+        /**
+         * The primary action on a dark band. A green fill on the deep green
+         * brand surface all but disappears, so the one filled button there is
+         * light linen with the heading green on it - the same pair, inverted.
+         */
+        inverse:
+          "bg-brand-surface-accent text-heading shadow-sm hover:bg-card active:bg-brand-surface-accent",
         link: "min-h-0 bg-transparent p-0 text-primary underline-offset-4 hover:text-primary-hover hover:underline",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:brightness-95 active:brightness-90",

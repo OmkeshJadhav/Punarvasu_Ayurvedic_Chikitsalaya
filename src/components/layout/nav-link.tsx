@@ -70,9 +70,15 @@ export function NavLink({
         appearance === "header"
           ? cn(
               "text-foreground min-h-11 px-3",
-              // Underline rather than a colour swap, and it is always present
-              // for the current page rather than only on hover.
-              "aria-[current=page]:text-primary aria-[current=page]:underline aria-[current=page]:decoration-2 aria-[current=page]:underline-offset-[0.65rem]",
+              // A hairline that draws in on hover and stays drawn for the
+              // current page - so "you are here" is a mark, not a colour
+              // alone. `bg-origin-content` sizes it to the label rather than
+              // to the padded hit area.
+              "link-underline hover:link-underline-active bg-origin-content",
+              // Replaces MOTION_MICRO's property list (tailwind-merge keeps
+              // the last), which would otherwise drop the underline's own.
+              "transition-[color,background-size] duration-(--duration-normal)",
+              "aria-[current=page]:text-primary aria-[current=page]:link-underline-active",
             )
           : cn(
               "text-muted-foreground min-h-11 w-full",

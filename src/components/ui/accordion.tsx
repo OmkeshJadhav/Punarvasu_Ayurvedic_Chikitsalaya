@@ -42,12 +42,19 @@ export interface AccordionTriggerProps extends ComponentProps<
 > {
   /** The heading level this item occupies in the page outline. */
   readonly headingLevel?: "h2" | "h3" | "h4";
+  /**
+   * `chevron` turns over when open. `plus` is two hairlines whose upright
+   * collapses, leaving a minus - the quieter marker an editorial list uses
+   * (the home page's "Before you visit").
+   */
+  readonly indicator?: "chevron" | "plus";
 }
 
 export function AccordionTrigger({
   className,
   children,
   headingLevel = "h3",
+  indicator = "chevron",
   ...props
 }: AccordionTriggerProps) {
   const Heading = headingLevel;
@@ -60,7 +67,7 @@ export function AccordionTrigger({
             // heading element, and the base layer gives every heading the
             // brand serif. A disclosure control is functional UI, not brand
             // voice, so it opts back into Inter (`docs/DESIGN_SYSTEM.md`).
-            "text-body text-heading flex flex-1 cursor-pointer items-center justify-between gap-4 py-4 text-left font-sans font-medium",
+            "group text-body text-heading flex flex-1 cursor-pointer items-center justify-between gap-4 py-4 text-left font-sans font-medium",
             "ease-natural transition-colors duration-(--duration-fast)",
             "hover:text-primary",
             "focus-visible:outline-ring focus-visible:outline-2 focus-visible:-outline-offset-2",
@@ -70,10 +77,22 @@ export function AccordionTrigger({
           {...props}
         >
           {children}
-          <ChevronDown
-            aria-hidden="true"
-            className="text-muted-foreground ease-natural size-5 shrink-0 transition-transform duration-(--duration-normal)"
-          />
+          {indicator === "plus" ? (
+            <span
+              aria-hidden="true"
+              className={cn(
+                "text-muted-foreground relative size-3.5 shrink-0",
+                "before:absolute before:inset-x-0 before:top-1/2 before:h-px before:-translate-y-1/2 before:bg-current",
+                "after:absolute after:inset-y-0 after:left-1/2 after:w-px after:-translate-x-1/2 after:bg-current",
+                "after:ease-natural after:transition-transform after:duration-(--duration-normal) group-data-[state=open]:after:scale-y-0",
+              )}
+            />
+          ) : (
+            <ChevronDown
+              aria-hidden="true"
+              className="text-muted-foreground ease-natural size-5 shrink-0 transition-transform duration-(--duration-normal)"
+            />
+          )}
         </AccordionPrimitive.Trigger>
       </Heading>
     </AccordionPrimitive.Header>

@@ -23,7 +23,7 @@ export default function GlobalError({
           justifyContent: "center",
           fontFamily: "system-ui, sans-serif",
           color: "#3e2723",
-          background: "#fff8e1",
+          background: "#faf6ee",
         }}
       >
         <main

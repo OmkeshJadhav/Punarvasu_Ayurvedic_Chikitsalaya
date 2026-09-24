@@ -20,7 +20,7 @@ export function PatientJourneySection() {
     <Section
       id={HOME_SECTIONS.journey}
       aria-labelledby="journey-title"
-      className="anchor-offset bg-background"
+      className="anchor-offset bg-muted"
     >
       <Container width="wide">
         <SectionHeader
