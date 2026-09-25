@@ -66,6 +66,11 @@
   --punarvasu-sand-50: #f3ece0;
   --punarvasu-cream: #faf6ee;
 
+  /* Muted sage - dried tulsi, a washed linen. The one tinted surface a
+     marketing band may use besides sand: it cools a long run of warm bands
+     without introducing a colour the brand does not already own. */
+  --punarvasu-sage-100: #e7eae0;
+
   /* Accents. Used in small quantities, never as a large surface. */
   --punarvasu-gold: #8a6519;
   --punarvasu-gold-surface: #f6eeda;
@@ -91,6 +96,9 @@
      band in the page rhythm. */
   --muted: var(--punarvasu-sand-50);
   --muted-foreground: var(--punarvasu-neutral-700);
+
+  /* A cool alternate band. See the raw palette note on sage. */
+  --surface-sage: var(--punarvasu-sage-100);
 
   /* Secondary: warm, paper-like. Used for secondary buttons, chips and the
      closing call-to-action band. */
@@ -262,6 +270,7 @@
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
+  --color-sage: var(--surface-sage);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -390,6 +399,21 @@
   /* A photograph settling into its frame. Scale only - opacity never starts
      at 0, so the LCP image is painted on the first frame either way. */
   --animate-settle: settle 1.8s var(--ease-natural);
+  /* A photograph uncovered from the bottom edge as it scrolls into view.
+     `clip-path` only, so the image is laid out and decoded before it shows
+     and nothing around it moves. Applied through `<Reveal effect="unveil">`. */
+  --animate-unveil: unveil 1.1s var(--ease-natural);
+
+  @keyframes unveil {
+    from {
+      clip-path: inset(18% 0 0 0);
+      transform: translateY(1.5rem);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+      transform: none;
+    }
+  }
 
   @keyframes settle {
     from {

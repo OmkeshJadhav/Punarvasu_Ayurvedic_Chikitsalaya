@@ -256,7 +256,6 @@ describe("every public page can be shared", () => {
     "src/app/(public)/about",
     "src/app/(public)/services",
     "src/app/(public)/services/[slug]",
-    "src/app/(public)/practitioners",
     "src/app/(public)/contact",
   ] as const;
 
@@ -278,10 +277,11 @@ describe("the sitemap agrees with the canonical URLs", () => {
     expect(source).not.toMatch(/url:\s*`\$\{origin\}\/`/);
   });
 
-  it("generates treatment and practitioner entries rather than listing them", () => {
+  it("generates treatment entries rather than listing them", () => {
     const source = withoutComments(read("src/app/sitemap.ts"));
     expect(source).toMatch(/getTreatmentSlugs\(\)/);
-    expect(source).toMatch(/getPractitionerSlugs\(\)/);
+    // `/practitioners` was retired in favour of a modal on the About page.
+    expect(source).not.toMatch(/practitioner/i);
   });
 });
 

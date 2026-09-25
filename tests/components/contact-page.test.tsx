@@ -91,14 +91,13 @@ describe("contact page", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("says the opening hours are unconfirmed rather than inventing them", () => {
+  it("shows the opening hours the clinic supplied, and no fallback", () => {
     render(<ContactPage />);
 
-    expect(
-      screen.getByText(CONTACT_PAGE.unavailable.hours),
-    ).toBeInTheDocument();
-    // Nothing that looks like a published schedule.
-    expect(screen.queryByText(/Monday\s*[-–]\s*Saturday/i)).toBeNull();
+    const hours = CLINIC_CONTACT.openingHours ?? "";
+    expect(hours).not.toBe("");
+    expect(screen.getAllByText(hours).length).toBeGreaterThan(0);
+    expect(screen.queryByText(CONTACT_PAGE.unavailable.hours)).toBeNull();
   });
 
   it("says no email address has been published rather than inventing one", () => {

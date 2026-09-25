@@ -18,6 +18,8 @@ export const PALETTE = {
   cardForeground: "#3e2723",
 
   muted: "#f3ece0",
+  /** The cool alternate band. See `--surface-sage` in `globals.css`. */
+  sage: "#e7eae0",
   mutedForeground: "#5a423c",
 
   secondary: "#ede3d0",

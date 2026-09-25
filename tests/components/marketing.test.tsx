@@ -14,8 +14,10 @@ import {
   FEATURED_SERVICES,
   type ServicePreview,
 } from "@/config/marketing-content";
-import { PRACTITIONERS } from "@/features/practitioners/content";
-import type { PublishedPractitioner } from "@/features/practitioners/types";
+import type {
+  Practitioner,
+  PublishedPractitioner,
+} from "@/features/practitioners/types";
 import { PRIMARY_CTA } from "@/config/navigation";
 
 import { expectNoAxeViolations } from "../support/axe";
@@ -141,17 +143,32 @@ describe("PractitionerPreviewSection", () => {
     shortBio: "An introduction.",
   };
 
+  // The shipped roster is confirmed now, so the unverified path is proven
+  // with pending fixtures that carry the placeholder photographs.
+  const PENDING_ROSTER: readonly Practitioner[] = [
+    {
+      slug: "pending-one",
+      status: "pending-verification",
+      image: PRACTITIONER_IMAGES.one,
+    },
+    {
+      slug: "pending-two",
+      status: "pending-verification",
+      image: PRACTITIONER_IMAGES.two,
+    },
+  ];
+
   it("never invents a name for an unverified profile", () => {
-    render(<PractitionerPreviewSection practitioners={PRACTITIONERS} />);
+    render(<PractitionerPreviewSection practitioners={PENDING_ROSTER} />);
 
     // The shipped data has no names. Each card must say so rather than fill
     // the gap - a fabricated clinician is a patient-safety problem.
     const markers = screen.getAllByText("Profile to be published");
-    expect(markers).toHaveLength(PRACTITIONERS.length);
+    expect(markers).toHaveLength(PENDING_ROSTER.length);
   });
 
   it("marks the placeholder photographs as placeholders in their alt text", () => {
-    render(<PractitionerPreviewSection practitioners={PRACTITIONERS} />);
+    render(<PractitionerPreviewSection practitioners={PENDING_ROSTER} />);
 
     for (const image of screen.getAllByRole("img")) {
       expect(image.getAttribute("alt")).toMatch(/placeholder/i);
@@ -171,10 +188,10 @@ describe("PractitionerPreviewSection", () => {
   });
 
   it("gives every card a heading, published or not", () => {
-    render(<PractitionerPreviewSection practitioners={PRACTITIONERS} />);
+    render(<PractitionerPreviewSection practitioners={PENDING_ROSTER} />);
 
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(
-      PRACTITIONERS.length,
+      PENDING_ROSTER.length,
     );
   });
 
@@ -187,7 +204,7 @@ describe("PractitionerPreviewSection", () => {
 
   it("has no axe violations", async () => {
     const { container } = render(
-      <PractitionerPreviewSection practitioners={PRACTITIONERS} />,
+      <PractitionerPreviewSection practitioners={PENDING_ROSTER} />,
     );
     await expectNoAxeViolations(container);
   });

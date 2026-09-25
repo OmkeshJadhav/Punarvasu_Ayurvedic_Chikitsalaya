@@ -23,10 +23,6 @@ import type { FaqItem } from "@/config/marketing-content";
  * A server component: the disclosure state lives in `FaqAccordion`, the one
  * client component all three FAQ surfaces share. `headingLevel="h3"` sits
  * correctly under this section's `<h2>`.
- *
- * Nothing medical or legal is hidden in here. The medical disclaimer is
- * rendered in the open in the philosophy section and in the footer
- * (`docs/implementation-plan/phase_03.md` section 28).
  */
 export interface FaqSectionProps {
   readonly items: readonly FaqItem[];

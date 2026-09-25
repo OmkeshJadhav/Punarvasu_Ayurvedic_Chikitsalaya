@@ -1,4 +1,4 @@
-import { MapPin, Phone } from "lucide-react";
+import { Clock, MapPin, Phone } from "lucide-react";
 
 import {
   CLINIC_CONTACT,
@@ -19,8 +19,8 @@ import { Container } from "./container";
  *
  * Built only from verified contact details: each item renders when
  * `config/clinic.ts` holds it and not otherwise, and the whole band renders
- * nothing when neither is known. Opening hours are deliberately absent until
- * the clinic confirms them.
+ * nothing when neither the location nor the phone is known. The opening
+ * hours sit beside the phone from `lg`, where there is room for them.
  *
  * Hidden below `md`. On a phone the header's menu is one tap away and a second
  * bar would push the hero below the fold.
@@ -63,16 +63,25 @@ export function SiteUtilityBar({
           ) : null}
         </p>
 
-        {phone && contact.phone ? (
-          <a
-            href={`tel:${contact.phone}`}
-            className="hover:text-brand-surface-foreground ease-natural inline-flex items-center gap-2 rounded-sm transition-colors duration-(--duration-fast)"
-          >
-            <Phone aria-hidden="true" className="size-3.5" />
-            <span className="sr-only">Call the clinic: </span>
-            {phone}
-          </a>
-        ) : null}
+        <div className="flex items-center gap-6">
+          {contact.openingHours ? (
+            <p className="hidden items-center gap-2 lg:inline-flex">
+              <Clock aria-hidden="true" className="size-3.5" />
+              {contact.openingHours}
+            </p>
+          ) : null}
+
+          {phone && contact.phone ? (
+            <a
+              href={`tel:${contact.phone}`}
+              className="hover:text-brand-surface-foreground ease-natural inline-flex items-center gap-2 rounded-sm transition-colors duration-(--duration-fast)"
+            >
+              <Phone aria-hidden="true" className="size-3.5" />
+              <span className="sr-only">Call the clinic: </span>
+              {phone}
+            </a>
+          ) : null}
+        </div>
       </Container>
     </div>
   );

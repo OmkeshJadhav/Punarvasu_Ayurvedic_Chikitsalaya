@@ -50,7 +50,7 @@ export default function OpengraphImage() {
           textTransform: "uppercase",
         }}
       >
-        Ayurvedic Chikitsalaya
+        Punarvasu Ayurvedic Chikitsalaya
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>

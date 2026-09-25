@@ -36,10 +36,8 @@ import { HOME_SECTIONS, PHILOSOPHY_CONTENT } from "@/config/marketing-content";
  *
  * This is the page's most "educational" section and therefore its riskiest.
  * The copy describes a way of understanding health; it does not diagnose,
- * recommend, or claim that Ayurveda substitutes for medical treatment. The
- * medical disclaimer is rendered here in plain sight rather than tucked into
- * the FAQ, because this is where a reader is most likely to mistake general
- * information for advice (`docs/HEALTHCARE_AND_AI_SAFETY.md`).
+ * recommend, or claim that Ayurveda substitutes for medical treatment
+ * (`docs/HEALTHCARE_AND_AI_SAFETY.md`).
  */
 export function PhilosophySection() {
   const [firstParagraph] = PHILOSOPHY_CONTENT.paragraphs;

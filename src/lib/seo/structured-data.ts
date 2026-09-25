@@ -11,8 +11,8 @@
  *
  * So this builder emits a property only when a real value exists. There are no
  * defaults, no examples and no placeholders, and the shapes that most invite
- * fabrication - `aggregateRating`, `review`, `priceRange`, `openingHours` with
- * a guess in it - are simply not constructed unless the data is present
+ * fabrication - `aggregateRating`, `review`, `priceRange`, and opening hours
+ * - are simply not constructed unless the clinic has supplied the data
  * (`docs/implementation-plan/phase_03.md` section 36).
  *
  * ## Type choice
@@ -47,6 +47,7 @@ export interface ClinicJsonLd {
   readonly name: string;
   readonly legalName: string;
   readonly alternateName: string;
+  readonly foundingDate: string;
   readonly description: string;
   readonly url: string;
   readonly logo: string;
@@ -55,6 +56,14 @@ export interface ClinicJsonLd {
   readonly telephone?: string;
   readonly email?: string;
   readonly sameAs?: readonly string[];
+  readonly openingHoursSpecification?: readonly JsonLdOpeningHours[];
+}
+
+interface JsonLdOpeningHours {
+  readonly "@type": "OpeningHoursSpecification";
+  readonly dayOfWeek: readonly string[];
+  readonly opens: string;
+  readonly closes: string;
 }
 
 function toJsonLdAddress(address: PostalAddress): JsonLdPostalAddress {
@@ -89,6 +98,8 @@ export function buildClinicJsonLd({
     name: CLINIC_IDENTITY.name,
     legalName: CLINIC_IDENTITY.legalName,
     alternateName: CLINIC_IDENTITY.devanagariName,
+    // Supplied by the clinic (`CLINIC_IDENTITY.foundedYear`).
+    foundingDate: String(CLINIC_IDENTITY.foundedYear),
     description,
     url: `${origin}/`,
     logo: `${origin}/images/logo.png`,
@@ -97,6 +108,21 @@ export function buildClinicJsonLd({
     ...(contact.address ? { address: toJsonLdAddress(contact.address) } : {}),
     ...(contact.phone ? { telephone: contact.phone } : {}),
     ...(contact.email ? { email: contact.email } : {}),
+    // The clinic's supplied hours, one entry per session. Never derived from
+    // the display string, which is prose.
+    ...(contact.openingHoursSpecification &&
+    contact.openingHoursSpecification.length > 0
+      ? {
+          openingHoursSpecification: contact.openingHoursSpecification.map(
+            (period) => ({
+              "@type": "OpeningHoursSpecification" as const,
+              dayOfWeek: period.days.map((day) => `https://schema.org/${day}`),
+              opens: period.opens,
+              closes: period.closes,
+            }),
+          ),
+        }
+      : {}),
     ...(socialLinks.length > 0
       ? { sameAs: socialLinks.map((link) => link.href) }
       : {}),

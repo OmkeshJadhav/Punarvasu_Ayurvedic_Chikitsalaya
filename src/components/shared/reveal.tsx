@@ -37,11 +37,17 @@ export interface RevealProps extends ComponentProps<"div"> {
    * stop being a list to a screen reader purely to gain an animation.
    */
   readonly asChild?: boolean;
+  /**
+   * `rise` (the default) fades and lifts. `unveil` uncovers a photograph from
+   * its lower edge - for large images only, where a fade reads as a slow load.
+   */
+  readonly effect?: "rise" | "unveil";
 }
 
 export function Reveal({
   delay = 0,
   asChild = false,
+  effect = "rise",
   className,
   style,
   ...props
@@ -87,7 +93,10 @@ export function Reveal({
       className={cn(
         // The animation only applies once revealed; content is visible either
         // way, so a failed observer degrades to "no animation", not "no page".
-        revealed && "motion-safe:animate-rise-in",
+        revealed &&
+          (effect === "unveil"
+            ? "motion-safe:animate-unveil"
+            : "motion-safe:animate-rise-in"),
         className,
       )}
       style={{

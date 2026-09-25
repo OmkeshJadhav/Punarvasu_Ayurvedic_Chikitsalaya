@@ -151,6 +151,11 @@ describe("text contrast meets WCAG AA (4.5:1)", () => {
     ["gold on background", PALETTE.gold, PALETTE.background],
     ["gold on card", PALETTE.gold, PALETTE.card],
     ["gold on its surface", PALETTE.gold, PALETTE.goldSurface],
+    // The About page's sage band carries editorial copy only. Gold measured
+    // below 4.5:1 on it, so gold never sits on sage.
+    ["heading on sage", PALETTE.heading, PALETTE.sage],
+    ["prose on sage", PALETTE.prose, PALETTE.sage],
+    ["eyebrow on sage", PALETTE.eyebrow, PALETTE.sage],
     // The home page's approach numerals sit on the muted band.
     ["gold on muted", PALETTE.gold, PALETTE.muted],
     // The `inverse` button: the one filled action on a dark band.

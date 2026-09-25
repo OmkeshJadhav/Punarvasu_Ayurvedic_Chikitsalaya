@@ -1,16 +1,13 @@
-import Link from "next/link";
-import { UserRound } from "lucide-react";
-
 import { Container } from "@/components/layout/container";
 import { Section, SectionHeader } from "@/components/layout/section";
 import { Emphasis } from "@/components/marketing/emphasis";
-import { MediaFrame } from "@/components/marketing/media-frame";
+import { PractitionerPortrait } from "@/components/marketing/practitioner-portrait";
 import { TextLink } from "@/components/marketing/text-link";
 import { Reveal } from "@/components/shared/reveal";
 import { HOME_SECTIONS } from "@/config/marketing-content";
-import { PRACTITIONERS_PATH, practitionerPath } from "@/config/navigation";
+import { PRACTITIONERS_HREF } from "@/config/navigation";
 import { PRACTITIONERS_PAGE } from "@/features/practitioners/content";
-import { isPublished, type Practitioner } from "@/features/practitioners/types";
+import type { Practitioner } from "@/features/practitioners/types";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -76,7 +73,7 @@ export function PractitionerPreviewSection({
               }
               description={PRACTITIONERS_PAGE.hero.description}
             />
-            <TextLink href={PRACTITIONERS_PATH} className="mt-6">
+            <TextLink href={PRACTITIONERS_HREF} className="mt-6">
               Meet our practitioners
             </TextLink>
           </Reveal>
@@ -93,90 +90,5 @@ export function PractitionerPreviewSection({
         </div>
       </Container>
     </Section>
-  );
-}
-
-/**
- * One portrait and the lines beneath it.
- *
- * A published profile is a link to its page, stretched over the whole block
- * with the same pseudo-element technique as `CardLink`, so the photograph is
- * clickable but the accessible name is only the practitioner's name. A
- * placeholder profile links nowhere: there is no page behind it.
- *
- * `qualifications` renders as its own line rather than inside a longer
- * sentence, so it reads as a credential and can be matched exactly.
- */
-function PractitionerPortrait({
-  practitioner,
-}: {
-  readonly practitioner: Practitioner;
-}) {
-  const published = isPublished(practitioner);
-  const image = practitioner.image;
-
-  return (
-    <article className="group focus-within:outline-ring relative rounded-lg focus-within:outline-2 focus-within:outline-offset-4">
-      <div className="bg-secondary relative overflow-hidden rounded-lg">
-        {image ? (
-          <MediaFrame
-            image={image}
-            aspect="portrait"
-            radius="none"
-            sizes="(min-width: 1280px) 22rem, (min-width: 640px) 45vw, 100vw"
-            imageClassName="motion-safe:ease-natural motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-105"
-          />
-        ) : (
-          <div className="text-muted-foreground flex aspect-4/5 items-center justify-center">
-            <UserRound aria-hidden="true" className="size-16" strokeWidth={1} />
-          </div>
-        )}
-
-        {!image || image.placeholder ? (
-          <span className="text-caption bg-card/90 text-muted-foreground absolute bottom-4 left-4 rounded-sm px-2.5 py-1 font-medium tracking-[0.14em] uppercase backdrop-blur-sm">
-            {image ? "Placeholder portrait" : "Portrait to follow"}
-          </span>
-        ) : null}
-      </div>
-
-      <div className="mt-5 flex flex-col gap-1.5">
-        {published ? (
-          <>
-            <h3 className="text-h4 text-heading font-normal">
-              <Link
-                href={practitionerPath(practitioner.slug)}
-                className="link-underline group-hover:link-underline-active after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
-              >
-                {practitioner.name}
-              </Link>
-            </h3>
-            {practitioner.qualifications &&
-            practitioner.qualifications.length > 0 ? (
-              <p className="text-label text-eyebrow font-medium">
-                {practitioner.qualifications.join(", ")}
-              </p>
-            ) : null}
-            {practitioner.specialties && practitioner.specialties.length > 0 ? (
-              <p className="text-body-sm text-prose">
-                {practitioner.specialties.join(" · ")}
-              </p>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <p className="text-caption text-eyebrow font-medium tracking-[0.14em] uppercase">
-              Profile to be published
-            </p>
-            <h3 className="text-h4 text-heading font-normal">
-              Practitioner profile
-            </h3>
-            <p className="text-body-sm text-muted-foreground">
-              Name, qualifications and registration details will appear here
-              once the clinic has confirmed them.
-            </p>
-          </>
-        )}
-      </div>
-    </article>
   );
 }

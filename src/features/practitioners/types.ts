@@ -50,6 +50,11 @@ export interface PublishedPractitionerDetails {
   readonly biography?: readonly string[];
   /** How this practitioner works with a patient. Their own words where possible. */
   readonly approach?: readonly string[];
+  /**
+   * The practitioner's registration with the state medical council, exactly
+   * as it appears on the certificate.
+   */
+  readonly registrationNumber?: string;
   /** As stated by the clinic, e.g. "In practice since 2014". */
   readonly experience?: string;
   readonly languages?: readonly string[];

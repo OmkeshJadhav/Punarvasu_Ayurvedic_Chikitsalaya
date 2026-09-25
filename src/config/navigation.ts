@@ -80,21 +80,16 @@ export function treatmentPath(slug: string): string {
 
 /** The remaining public routes, all of which exist as of Phase 05. */
 export const ABOUT_PATH = "/about";
-export const PRACTITIONERS_PATH = "/practitioners";
 export const CONTACT_PATH = "/contact";
 
 /**
- * A practitioner's public URL.
+ * Where the practitioners are introduced.
  *
- * As with `treatmentPath`, the slug is not escaped here: slugs are roster
- * constants validated against a fixed pattern in
- * `features/practitioners/directory.test.ts`, and a value reaching this
- * function has already been resolved against the directory. Nothing
- * user-supplied is ever formatted into a URL by this helper.
+ * There is no `/practitioners` page: the About page's practitioners section
+ * shows each doctor, and the full profile opens in a modal. `next.config.ts`
+ * redirects the old URLs here.
  */
-export function practitionerPath(slug: string): string {
-  return `${PRACTITIONERS_PATH}/${slug}`;
-}
+export const PRACTITIONERS_HREF = `${ABOUT_PATH}#practitioners`;
 
 /**
  * Primary public navigation.
@@ -106,7 +101,6 @@ export function practitionerPath(slug: string): string {
 export const PUBLIC_NAV_ITEMS: readonly NavItem[] = [
   { label: "About", href: ABOUT_PATH },
   { label: "Treatments", href: SERVICES_PATH },
-  { label: "Practitioners", href: PRACTITIONERS_PATH },
   { label: "Contact", href: CONTACT_PATH },
 ];
 
@@ -147,7 +141,7 @@ export const FOOTER_NAV_GROUPS: readonly NavGroup[] = [
     title: "Clinic",
     items: [
       { label: "About Punarvasu", href: ABOUT_PATH },
-      { label: "Our practitioners", href: PRACTITIONERS_PATH },
+      { label: "Our practitioners", href: PRACTITIONERS_HREF },
       { label: "Visit the clinic", href: CONTACT_PATH },
     ],
   },

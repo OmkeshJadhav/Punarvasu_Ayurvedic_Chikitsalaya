@@ -7,7 +7,7 @@ import { Emphasis } from "@/components/marketing/emphasis";
 import { MediaFrame } from "@/components/marketing/media-frame";
 import { TextLink } from "@/components/marketing/text-link";
 import { Button } from "@/components/ui/button";
-import { CLINIC_CONTACT, CLINIC_IDENTITY } from "@/config/clinic";
+import { CLINIC_IDENTITY } from "@/config/clinic";
 import { HOME_IMAGES } from "@/config/images";
 import {
   HERO_CONTENT,
@@ -69,9 +69,7 @@ export function Hero() {
           <p className="text-caption text-eyebrow inline-flex items-center gap-3 font-sans font-medium tracking-[0.18em] uppercase">
             <span aria-hidden="true" className="h-px w-8 bg-current" />
             {HERO_CONTENT.eyebrow}
-            {CLINIC_CONTACT.address ? (
-              <> · {CLINIC_CONTACT.address.locality}</>
-            ) : null}
+            <> · Since {CLINIC_IDENTITY.foundedYear}</>
           </p>
 
           <h1

@@ -6,7 +6,9 @@ import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
 import { BotanicalMotif } from "@/components/marketing/botanical-motif";
 import { Emphasis } from "@/components/marketing/emphasis";
+import { MediaFrame } from "@/components/marketing/media-frame";
 import { Button } from "@/components/ui/button";
+import type { ImageAsset } from "@/config/images";
 import { FINAL_CTA_CONTENT } from "@/config/marketing-content";
 import { PRIMARY_CTA } from "@/config/navigation";
 import { cn } from "@/lib/utils/cn";
@@ -50,6 +52,12 @@ export interface FinalCtaSectionProps {
   /** Distinct per page only when two of these could ever share a document. */
   readonly titleId?: string;
   readonly tone?: "light" | "brand";
+  /**
+   * A photograph behind a `brand` band - the About page's cinematic close.
+   * It sits under `MediaFrame`'s `strong` scrim, whose opacity is verified
+   * against a pure-white image, so the white copy clears AA over any file.
+   */
+  readonly image?: ImageAsset;
 }
 
 export function FinalCtaSection({
@@ -60,8 +68,10 @@ export function FinalCtaSection({
   secondaryAction,
   titleId = "final-cta-title",
   tone = "light",
+  image,
 }: FinalCtaSectionProps) {
   const brand = tone === "brand";
+  const photographic = brand && image !== undefined;
 
   return (
     <Section
@@ -75,14 +85,26 @@ export function FinalCtaSection({
           : "bg-secondary border-border border-t",
       )}
     >
-      {brand ? (
+      {photographic ? (
+        <MediaFrame
+          image={image}
+          aspect="fill"
+          radius="none"
+          scrim="strong"
+          className="-z-10"
+          sizes="100vw"
+        />
+      ) : brand ? (
         <>
           <BotanicalMotif className="text-brand-surface-border/60 pointer-events-none absolute top-8 -left-4 -z-10 hidden h-96 w-36 -rotate-12 md:block" />
           <BotanicalMotif className="text-brand-surface-border/60 pointer-events-none absolute -right-4 -bottom-16 -z-10 hidden h-96 w-36 scale-x-[-1] rotate-12 md:block" />
         </>
       ) : null}
 
-      <Container width="prose" className="text-center">
+      <Container
+        width="prose"
+        className={cn("text-center", photographic && "py-10 lg:py-16")}
+      >
         {brand ? (
           <BotanicalMotif
             variant="ornament"
@@ -111,7 +133,13 @@ export function FinalCtaSection({
         <p
           className={cn(
             "text-body-lg mt-5",
-            brand ? "text-brand-surface-muted" : "text-prose",
+            // Over a photograph only white is verified against the scrim's
+            // worst case; the muted green-white is verified on flat green.
+            photographic
+              ? "text-scrim-foreground"
+              : brand
+                ? "text-brand-surface-muted"
+                : "text-prose",
           )}
         >
           {description}

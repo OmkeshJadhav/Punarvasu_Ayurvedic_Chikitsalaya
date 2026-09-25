@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { ABOUT_PAGE, ABOUT_REVIEW_NOTICE } from "@/features/about/content";
+import { ABOUT_PAGE } from "@/features/about/content";
 import { CONTACT_PAGE } from "@/features/contact/content";
 
 import {
@@ -15,10 +15,11 @@ import { isPublished } from "./types";
  *
  * The services experience has its own scanner
  * (`features/services/content-safety.test.ts`); this is the same idea applied
- * to the three pages Phase 05 adds, plus the one rule that only matters here:
+ * to the three pages Phase 05 adds, plus the rules that only matter here:
  * **no practitioner may be named, credentialled or described until the clinic
  * has confirmed them** (`docs/implementation-plan/phase_05.md` sections 17-18
- * and 21).
+ * and 21), and a practitioner the clinic *has* confirmed is described without
+ * a medical claim.
  *
  * A pattern here is a rule, not a preference. If a genuine sentence trips
  * one, the sentence is almost certainly making a claim it should not, and
@@ -87,7 +88,6 @@ function aboutPassages(): Passage[] {
     },
     { where: "about.cta.title", text: p.cta.title },
     { where: "about.cta.description", text: p.cta.description },
-    { where: "about.reviewNotice", text: ABOUT_REVIEW_NOTICE.body },
   ];
 }
 
@@ -96,17 +96,6 @@ function practitionerPagePassages(): Passage[] {
   return [
     { where: "practitioners.hero.title", text: p.hero.title },
     { where: "practitioners.hero.description", text: p.hero.description },
-    { where: "practitioners.roster.title", text: p.roster.title },
-    { where: "practitioners.roster.description", text: p.roster.description },
-    { where: "practitioners.unpublished", text: p.unpublishedNotice.body },
-    { where: "practitioners.empty", text: p.emptyState.description },
-    { where: "practitioners.working.title", text: p.working.title },
-    ...p.working.paragraphs.map((text, i) => ({
-      where: `practitioners.working.paragraphs[${i}]`,
-      text,
-    })),
-    { where: "practitioners.cta.title", text: p.cta.title },
-    { where: "practitioners.cta.description", text: p.cta.description },
     { where: "practitioners.profileNote", text: PROFILE_CONSULTATION_NOTE },
   ];
 }
@@ -132,6 +121,38 @@ function contactPassages(): Passage[] {
     { where: "contact.cta.description", text: p.cta.description },
   ];
 }
+
+/**
+ * What the published profiles say about each practitioner.
+ *
+ * Scanned for claims and conditions like any other copy, but not by the
+ * fabrication patterns: a published profile is *supposed* to name its
+ * clinician and state their experience, because the clinic supplied both.
+ */
+function publishedProfilePassages(): Passage[] {
+  return PRACTITIONERS.filter(isPublished).flatMap((practitioner) => {
+    const where = `practitioners.${practitioner.slug}`;
+    return [
+      ...(practitioner.shortBio
+        ? [{ where: `${where}.shortBio`, text: practitioner.shortBio }]
+        : []),
+      ...(practitioner.biography ?? []).map((text, i) => ({
+        where: `${where}.biography[${i}]`,
+        text,
+      })),
+      ...(practitioner.approach ?? []).map((text, i) => ({
+        where: `${where}.approach[${i}]`,
+        text,
+      })),
+      ...(practitioner.specialties ?? []).map((text, i) => ({
+        where: `${where}.specialties[${i}]`,
+        text,
+      })),
+    ];
+  });
+}
+
+const PROFILE_PASSAGES: readonly Passage[] = publishedProfilePassages();
 
 const ALL_PASSAGES: readonly Passage[] = [
   ...aboutPassages(),
@@ -190,17 +211,17 @@ const FABRICATION_PATTERNS: readonly [RegExp, string][] = [
 
 describe("Phase 05 page copy makes no medical claim", () => {
   it.each(CLAIM_PATTERNS)("contains nothing that %s", (pattern) => {
-    const offenders = ALL_PASSAGES.filter((passage) =>
-      pattern.test(passage.text),
-    ).map((passage) => `${passage.where}: ${passage.text}`);
+    const offenders = [...ALL_PASSAGES, ...PROFILE_PASSAGES]
+      .filter((passage) => pattern.test(passage.text))
+      .map((passage) => `${passage.where}: ${passage.text}`);
 
     expect(offenders.join("\n"), offenders.join("\n") || undefined).toBe("");
   });
 
   it("names no medical condition", () => {
-    const offenders = ALL_PASSAGES.filter((passage) =>
-      CONDITION_PATTERN.test(passage.text),
-    ).map((passage) => `${passage.where}: ${passage.text}`);
+    const offenders = [...ALL_PASSAGES, ...PROFILE_PASSAGES]
+      .filter((passage) => CONDITION_PATTERN.test(passage.text))
+      .map((passage) => `${passage.where}: ${passage.text}`);
 
     expect(offenders.join("\n"), offenders.join("\n") || undefined).toBe("");
   });
@@ -217,12 +238,13 @@ describe("Phase 05 page copy fabricates nothing", () => {
 });
 
 describe("no practitioner is invented", () => {
-  it("names nobody in the shipped roster", () => {
-    for (const practitioner of PRACTITIONERS) {
+  it("publishes each confirmed practitioner with a name and qualifications", () => {
+    for (const practitioner of PRACTITIONERS.filter(isPublished)) {
+      expect(practitioner.name, practitioner.slug).toMatch(/\S/);
       expect(
-        isPublished(practitioner),
-        `"${practitioner.slug}" claims to be published; no practitioner has been verified`,
-      ).toBe(false);
+        practitioner.qualifications?.length ?? 0,
+        `"${practitioner.slug}" is published without a qualification`,
+      ).toBeGreaterThan(0);
     }
   });
 
@@ -240,6 +262,7 @@ describe("no practitioner is invented", () => {
       "approach",
       "experience",
       "languages",
+      "registrationnumber",
     ];
 
     for (const practitioner of PRACTITIONERS) {
@@ -256,16 +279,6 @@ describe("no practitioner is invented", () => {
     }
   });
 
-  it("says so to the reader, not only in a source comment", () => {
-    expect(PRACTITIONERS_PAGE.unpublishedNotice.body).toMatch(
-      /not yet confirmed|placeholder/i,
-    );
-    expect(PRACTITIONERS_PAGE.unpublishedNotice.body).toMatch(/call/i);
-    expect(PRACTITIONERS_PAGE.unpublishedNotice.title.length).toBeGreaterThan(
-      10,
-    );
-  });
-
   it("tells a visitor that choosing a practitioner does not decide the outcome", () => {
     expect(PROFILE_CONSULTATION_NOTE).toMatch(/assessment/i);
     expect(PROFILE_CONSULTATION_NOTE).toMatch(/in advance/i);
@@ -273,14 +286,13 @@ describe("no practitioner is invented", () => {
 });
 
 describe("unverified clinic facts are stated as unverified", () => {
-  it("says the founding story has not been supplied", () => {
-    expect(ABOUT_REVIEW_NOTICE.body).toMatch(/not yet supplied|has not/i);
+  it("says why the name was chosen has not been supplied", () => {
     expect(ABOUT_PAGE.name.paragraphs.join(" ")).toMatch(
       /has not published its own account/i,
     );
   });
 
-  it("says the opening hours are unconfirmed rather than guessing them", () => {
+  it("keeps an unconfirmed-hours message for a clinic without hours", () => {
     expect(CONTACT_PAGE.unavailable.hours).toMatch(/not confirmed/i);
     expect(CONTACT_PAGE.unavailable.hours).toMatch(/call/i);
   });

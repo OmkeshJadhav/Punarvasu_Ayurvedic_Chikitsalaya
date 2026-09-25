@@ -67,10 +67,18 @@ describe("roster integrity", () => {
     expect(getAllPractitioners()).toEqual(PRACTITIONERS);
   });
 
-  it("reports that the roster is still unverified", () => {
-    // This is the honest state today. When it changes, the page's notice
-    // disappears with it - so the assertion is a reminder, not a lock.
-    expect(hasUnverifiedPractitioners()).toBe(true);
+  it("reports whether any profile is still unverified", () => {
+    // Drives the practitioners page's "being prepared" notice. The clinic has
+    // confirmed everyone in the shipped roster, so today the notice is off.
+    expect(hasUnverifiedPractitioners()).toBe(
+      PRACTITIONERS.some((entry) => !isPublished(entry)),
+    );
+    expect(
+      hasUnverifiedPractitioners([
+        { slug: "pending-one", status: "pending-verification" },
+      ]),
+    ).toBe(true);
+    expect(hasUnverifiedPractitioners([FIXTURE])).toBe(false);
   });
 });
 
@@ -96,11 +104,13 @@ describe("published subset", () => {
     // The listing page prints placeholder cards, and their slugs are
     // guessable. Guessing one must still be a 404.
     const pending = PRACTITIONERS.filter((entry) => !isPublished(entry));
-    expect(pending.length).toBeGreaterThan(0);
 
     for (const practitioner of pending) {
       expect(getPractitionerBySlug(practitioner.slug)).toBeUndefined();
     }
+    // The slugs the old placeholder cards used must not resolve either.
+    expect(getPractitionerBySlug("practitioner-profile-1")).toBeUndefined();
+    expect(getPractitionerBySlug("practitioner-profile-2")).toBeUndefined();
   });
 
   it("previews published practitioners ahead of placeholders", () => {

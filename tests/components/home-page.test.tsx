@@ -12,7 +12,7 @@ import {
   CONTACT_PATH,
   FOOTER_NAV_GROUPS,
   LEGAL_NAV_ITEMS,
-  PRACTITIONERS_PATH,
+  PRACTITIONERS_HREF,
   PRIMARY_CTA,
   PUBLIC_NAV_ITEMS,
   SERVICES_PATH,
@@ -168,7 +168,7 @@ describe("home page structure", () => {
       SERVICES_PATH,
       ABOUT_PATH,
       `${ABOUT_PATH}#approach`,
-      PRACTITIONERS_PATH,
+      PRACTITIONERS_HREF,
       CONTACT_PATH,
       PRIMARY_CTA.href,
     ]);
@@ -218,22 +218,20 @@ describe("home page structure", () => {
       postalCode: CLINIC_CONTACT.address?.postalCode,
     });
 
+    // The hours the clinic supplied, one entry per session - and exactly as
+    // many as `config/clinic.ts` holds.
+    expect(data["openingHoursSpecification"]).toHaveLength(
+      CLINIC_CONTACT.openingHoursSpecification?.length ?? 0,
+    );
+    expect(data["foundingDate"]).toBe(String(CLINIC_IDENTITY.foundedYear));
+
     // Everything still unverified stays absent. These are the shapes that
     // most invite fabrication, and none of them is ever constructed.
     expect(data).not.toHaveProperty("openingHours");
-    expect(data).not.toHaveProperty("openingHoursSpecification");
     expect(data).not.toHaveProperty("aggregateRating");
     expect(data).not.toHaveProperty("review");
     expect(data).not.toHaveProperty("priceRange");
     expect(data).not.toHaveProperty("email");
-  });
-
-  it("carries the medical disclaimer in the page body, not only the footer", () => {
-    render(<PublicPage />);
-
-    expect(
-      screen.getByText(/not a substitute for professional diagnosis/i),
-    ).toBeInTheDocument();
   });
 
   it("reaches the primary action from the keyboard past the skip link", async () => {

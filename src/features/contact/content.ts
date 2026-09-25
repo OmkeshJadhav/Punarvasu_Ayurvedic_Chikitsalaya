@@ -22,6 +22,8 @@
  * rule being obeyed.
  */
 
+import { CLINIC_CONTACT } from "@/config/clinic";
+
 /**
  * How an enquiry would be delivered.
  *
@@ -181,7 +183,7 @@ export const CONTACT_PAGE = {
    *
    * Each answer is written so that it stays true whatever Punarvasu's
    * specific policies turn out to be. Questions whose only useful answer is a
-   * fact the clinic has not supplied - opening hours, whether walk-ins are
+   * fact the clinic has not supplied - whether walk-ins are
    * taken, parking - are answered by saying so and pointing at the phone,
    * rather than with a plausible guess (`phase_05.md` section 46).
    */
@@ -195,8 +197,11 @@ export const CONTACT_PAGE = {
     {
       id: "hours",
       question: "What are the clinic's opening hours?",
-      answer:
-        "The clinic has not confirmed its opening hours for publication, so this site does not state them rather than risk sending you at the wrong time. Please call before you set out.",
+      // Built from `CLINIC_CONTACT`, so the answer cannot drift from the hours
+      // shown beside it. The fallback is the unconfirmed-hours answer.
+      answer: CLINIC_CONTACT.openingHours
+        ? `The clinic is open ${CLINIC_CONTACT.openingHours}. If you are travelling some distance, a quick call before you set out is worthwhile.`
+        : "The clinic has not confirmed its opening hours for publication, so this site does not state them rather than risk sending you at the wrong time. Please call before you set out.",
     },
     {
       id: "appointment",

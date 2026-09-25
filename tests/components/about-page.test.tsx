@@ -7,7 +7,6 @@ import { StatementList } from "@/components/marketing/statement-list";
 import {
   ABOUT_PATH,
   CONTACT_PATH,
-  PRACTITIONERS_PATH,
   PRIMARY_CTA,
   SERVICES_PATH,
 } from "@/config/navigation";
@@ -86,7 +85,6 @@ describe("about page", () => {
       "/",
       ABOUT_PATH,
       SERVICES_PATH,
-      PRACTITIONERS_PATH,
       CONTACT_PATH,
       PRIMARY_CTA.href,
       "/#journey",
@@ -94,7 +92,14 @@ describe("about page", () => {
 
     for (const anchor of container.querySelectorAll("a[href]")) {
       const href = anchor.getAttribute("href") ?? "";
-      if (href.startsWith("http") || href.startsWith("#")) {
+      // `tel:` is the clinic card's phone number - a dialler target, not a
+      // route - and is skipped exactly as the home page's test skips it.
+      if (
+        href.startsWith("http") ||
+        href.startsWith("#") ||
+        href.startsWith("tel:") ||
+        href.startsWith("mailto:")
+      ) {
         continue;
       }
       expect(
@@ -104,7 +109,7 @@ describe("about page", () => {
     }
   });
 
-  it("offers a way on to the services, practitioners and contact pages", () => {
+  it("offers a way on to the services and contact pages", () => {
     const { container } = render(<AboutPage />);
 
     const hrefs = [...container.querySelectorAll("a[href]")].map((anchor) =>
@@ -112,19 +117,16 @@ describe("about page", () => {
     );
     // "The user should never feel trapped on a page" - phase_05.md section 5.
     expect(hrefs).toContain(SERVICES_PATH);
-    expect(hrefs).toContain(PRACTITIONERS_PATH);
     expect(hrefs).toContain(CONTACT_PATH);
     expect(hrefs).toContain(PRIMARY_CTA.href);
   });
 
-  it("says in the page that the content is awaiting the clinic's review", () => {
+  it("tells the clinic's own story, as the clinic supplied it", () => {
     render(<AboutPage />);
 
-    // Not a source comment. The person at risk of mistaking development copy
-    // for the clinic's own words is the reader.
-    expect(
-      screen.getByText(/has not yet supplied its own account/i),
-    ).toBeInTheDocument();
+    for (const paragraph of ABOUT_PAGE.purpose.paragraphs) {
+      expect(screen.getByText(paragraph)).toBeInTheDocument();
+    }
   });
 
   it("explains the name without claiming to know why it was chosen", () => {

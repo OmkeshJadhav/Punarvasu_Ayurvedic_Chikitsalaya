@@ -12,19 +12,25 @@
  *   - **The meaning of the word "Punarvasu"** is a statement about Sanskrit
  *     and about classical Indian astronomy. It is checkable, and it is
  *     phrased as what the word means rather than as why the clinic chose it.
- *   - **Why the clinic was founded, by whom, and when** has not been supplied
- *     to this repository. There is therefore no founder story here and none
- *     may be written (`docs/implementation-plan/phase_05.md` sections 9-10).
- *     `ABOUT_REVIEW_NOTICE` says so on the page.
+ *   - **The clinic's own account of itself** - founded in 2010 in Satara,
+ *     Panchakarma, diet counselling, its own pharmacy - was supplied by the
+ *     clinic and is `purpose` below. It was edited only where a sentence made
+ *     a therapeutic promise ("treat the root cause of ailments", "empower you
+ *     to achieve sustainable wellness"): each became a description of what
+ *     the clinic does rather than of what it will achieve. Nothing was added.
+ *   - **Why the name was chosen** has still not been supplied, and the name
+ *     chapter still says so.
  *   - **How the clinic practises** is describable: it is the same method the
  *     rest of this site already commits to publicly.
- *   - **No outcome, no ranking, no statistic, no credential.**
+ *   - **No outcome, no ranking, no statistic, no practitioner by name.**
  *     `content-safety.test.ts` fails the build if one appears.
  *
  * The section headings avoid the generic "Mission / Vision / Values" shape
  * deliberately (`phase_05.md` section 64). Each heading answers a question a
  * visitor actually has.
  */
+
+import { CLINIC_IDENTITY } from "@/config/clinic";
 
 /** Anchor ids for the about page's sections. */
 export const ABOUT_SECTIONS = {
@@ -41,8 +47,9 @@ export const ABOUT_PAGE = {
   hero: {
     eyebrow: "About Punarvasu",
     title: "A quieter way to practise Ayurveda",
+    titleEmphasis: "Ayurveda",
     description:
-      "Punarvasu is an Ayurvedic clinic in Satara, built around one unfashionable idea - that care should begin by understanding a person, and that this takes longer than it is usually given.",
+      "Founded in 2010, Punarvasu is an Ayurvedic clinic in Satara built around one unfashionable idea — that care should begin by understanding a person, and that this takes longer than it is usually given.",
   },
 
   /**
@@ -60,20 +67,48 @@ export const ABOUT_PAGE = {
       "The clinic has not published its own account of why the name was chosen, so this page does not offer one. What the word points at, though, is the shape of the work: not adding something new to a person, but helping what was already working find its way back.",
     ],
     devanagariLabel: "Punarvasu, written in Devanagari",
+    titleEmphasis: "Punarvasu",
+    /**
+     * The two halves of the word, restating the first paragraph as a gloss.
+     * No meaning here goes beyond what that paragraph already says.
+     */
+    glossary: [
+      {
+        devanagari: "पुनर्",
+        term: "punar",
+        meaning: "“again” — a return, a second time",
+      },
+      {
+        devanagari: "वसु",
+        term: "vasu",
+        meaning: "light, goodness, wellbeing",
+      },
+    ],
+    archCaption: "The return of light",
   },
 
+  /**
+   * The clinic's story, in its own words.
+   *
+   * VERIFIED - supplied by the clinic. Kept under the `purpose` key and the
+   * `why-punarvasu-exists` anchor so existing links keep working. See the
+   * file header for the edits made to it.
+   */
   purpose: {
-    eyebrow: "Why Punarvasu exists",
-    title: "For the questions a short appointment cannot hold",
+    eyebrow: "Our story",
+    title: "Caring for Satara since 2010",
+    titleEmphasis: "since 2010",
     paragraphs: [
-      "Most people arrive here having already been somewhere else. They have a diagnosis, or several, and a set of instructions that made sense on their own but never quite added up to a way of living. What they have rarely had is an unhurried conversation about the whole of it — sleep, digestion, work, season, appetite, and the years that led up to the complaint.",
-      "That conversation is what Punarvasu is organised around. Ayurveda begins from the view that the same complaint in two people can have two different causes, and therefore two different paths back. You cannot find which one applies without asking, and you cannot ask properly in a hurry.",
+      "Founded in 2010, Punarvasu Ayurveda Chikitsalaya has been a place of holistic Ayurvedic care in Satara. The clinic brings the classical wisdom of Ayurveda together with modern diagnostic understanding, and looks for the root cause of a complaint rather than only its symptoms.",
+      "Care here includes classical Panchakarma therapies, personalised diet counselling, and a pharmacy stocked with authentic Ayurvedic formulations. The clinic itself is kept calm by design — a place to step away from the pace of daily life and attend to your own balance.",
+      "At Punarvasu, health is understood as a harmony of body, mind and spirit. The clinic's practitioners build each treatment plan around the person in front of them, with the aim of wellbeing that fits, and lasts, in an ordinary life.",
     ],
   },
 
   beliefs: {
     eyebrow: "What we believe",
     title: "Ayurveda as a way of understanding, not a catalogue of remedies",
+    titleEmphasis: "not a catalogue of remedies",
     paragraphs: [
       "Practised carefully, Ayurveda is unglamorous and specific. It reads health as balance — of constitution, of digestion, of the rhythm of a day and a season — and it attends to the person an imbalance belongs to rather than to the name the imbalance has been given.",
       "Most of what follows from that is ordinary: what you eat, when you eat it, when you sleep, how you work, what your body has been doing for years. The ordinariness is the point. Guidance that cannot survive contact with a real week is not guidance.",
@@ -113,6 +148,7 @@ export const ABOUT_PAGE = {
   approach: {
     eyebrow: "Our approach to care",
     title: "What your practitioner does with the time",
+    titleEmphasis: "does with the time",
     description:
       "The same method, whoever you see. It is the part of a visit that decides everything after it.",
     steps: [
@@ -160,6 +196,7 @@ export const ABOUT_PAGE = {
   commitments: {
     eyebrow: "What makes Punarvasu different",
     title: "Four things we will not do",
+    titleEmphasis: "will not",
     description:
       "A difference is easier to trust when it is stated as a limit rather than as an adjective.",
     items: [
@@ -181,7 +218,7 @@ export const ABOUT_PAGE = {
       {
         title: "We will not publish what we have not checked",
         description:
-          "Where this site has no confirmed answer — a practitioner's qualification, the clinic's hours — it says so rather than filling the gap.",
+          "Everything this site states about the clinic and its practitioners came from the clinic. Where there is no confirmed answer, it says so rather than filling the gap.",
       },
     ],
   },
@@ -203,16 +240,48 @@ export const ABOUT_PAGE = {
     linkLabel: "Visit the clinic",
   },
 
+  /**
+   * Editorial figures.
+   *
+   * Set large, the way a prospectus sets its numbers. The founding year was
+   * supplied by the clinic; the other two are counts of what this page itself
+   * commits to, so each is true by construction. There is no patient count
+   * and no therapy count, because none has been supplied (`phase_05.md`
+   * section 15); when the clinic confirms one, it belongs in this list with
+   * its source noted beside it.
+   */
+  figures: {
+    eyebrow: "In numbers",
+    title: "Three figures we can stand behind",
+    items: [
+      {
+        value: String(CLINIC_IDENTITY.foundedYear),
+        label: "the year Punarvasu opened in Satara",
+        detail: "Caring for the town ever since.",
+      },
+      {
+        value: "6",
+        label: "steps in every consultation",
+        detail: "The same method, whoever you see.",
+      },
+      {
+        value: "0",
+        label: "therapies chosen before you are assessed",
+        detail: "Not online, not over the phone.",
+      },
+    ],
+  },
+
   practitioners: {
     eyebrow: "The people behind it",
     title: "Who you will meet",
     description:
-      "Consultations at Punarvasu are carried out by qualified Ayurvedic practitioners.",
-    linkLabel: "See our practitioners",
+      "Consultations at Punarvasu are carried out by qualified Ayurvedic practitioners. Open a profile for their full details.",
   },
 
   cta: {
-    title: "Come and be asked the long questions",
+    title: "Your healthier tomorrow begins here",
+    titleEmphasis: "begins here",
     description:
       "A first consultation is a conversation before it is anything else. Tell us what brought you here, and your practitioner will take it from there.",
     secondaryLabel: "Explore treatments",
@@ -220,14 +289,23 @@ export const ABOUT_PAGE = {
 } as const;
 
 /**
- * The About page's content-review notice.
+ * Patient testimonials.
  *
- * Phase 04 established that unverified copy says so to the reader rather than
- * only in a source comment. The same applies here, and more sharply: the
- * clinic's own story is exactly the part a visitor would assume came from the
- * clinic.
+ * **Empty, and it must stay empty until each entry is real.** A testimonial
+ * on a clinic's website is read as evidence, so every entry needs the
+ * patient's written consent to publish, the words exactly as they gave them,
+ * and a clinician's check that the quote makes no claim the clinic could not
+ * make itself. The type requires the consent record so an entry cannot be
+ * added without one. `TestimonialsSection` renders nothing while the list is
+ * empty (`docs/HEALTHCARE_AND_AI_SAFETY.md`).
  */
-export const ABOUT_REVIEW_NOTICE = {
-  title: "This page is awaiting the clinic's review",
-  body: "Punarvasu has not yet supplied its own account of how and why the clinic was founded, so none is given here. What you are reading describes how the clinic practises and what the name means; it has been prepared for review and has not been signed off. Nothing on this page states anything about a particular practitioner.",
-} as const;
+export interface Testimonial {
+  readonly id: string;
+  readonly quote: string;
+  /** As the patient agreed to be named - often a first name and a town. */
+  readonly attribution: string;
+  /** Where the signed consent is kept, e.g. a document reference. */
+  readonly consentRecord: string;
+}
+
+export const ABOUT_TESTIMONIALS: readonly Testimonial[] = [];

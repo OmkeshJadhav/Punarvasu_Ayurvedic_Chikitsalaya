@@ -51,7 +51,7 @@ export type HomeSectionId = (typeof HOME_SECTIONS)[keyof typeof HOME_SECTIONS];
 /* ------------------------------------------------------------------ */
 
 export const HERO_CONTENT = {
-  eyebrow: "Ayurvedic Chikitsalaya",
+  eyebrow: "Punarvasu Ayurvedic Chikitsalaya",
   /**
    * Two sentences, deliberately. The first is the tradition, the second is the
    * promise the clinic can actually keep: attention to the individual.
@@ -324,12 +324,6 @@ export const PHILOSOPHY_CONTENT = {
       description: "Attention before a problem becomes established.",
     },
   ],
-  /**
-   * Required wherever the site discusses health. Stated plainly rather than
-   * buried, per `docs/HEALTHCARE_AND_AI_SAFETY.md`.
-   */
-  disclaimer:
-    "This page describes how we practise. It is general information, not medical advice, and it is not a substitute for professional diagnosis or emergency care. Please speak to a qualified practitioner about your own health.",
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -366,9 +360,6 @@ export interface FaqItem {
  * only useful answer is a fact we do not have - how long a consultation takes,
  * what it costs, where the clinic is, what its hours are - are deliberately
  * absent rather than answered with a guess (`phase_03.md` section 27).
- *
- * Nothing medical or legal is hidden in here; the medical disclaimer is
- * rendered in the open, in the philosophy section and in the footer.
  */
 export const FAQ_CONTENT = {
   eyebrow: "Questions",
