@@ -11,7 +11,11 @@ import { describe, expect, it, vi } from "vitest";
 import ContactPage from "@/app/(public)/contact/page";
 import { ContactForm } from "@/components/marketing/contact-form";
 import { MapEmbed } from "@/components/marketing/map-embed";
-import { CLINIC_CONTACT, formatPhone } from "@/config/clinic";
+import {
+  CLINIC_CONTACT,
+  formatPhone,
+  openingHoursLines,
+} from "@/config/clinic";
 import { ABOUT_PATH, CONTACT_PATH, PRIMARY_CTA } from "@/config/navigation";
 import { CONTACT_PAGE, CONTACT_SECTIONS } from "@/features/contact/content";
 
@@ -94,9 +98,12 @@ describe("contact page", () => {
   it("shows the opening hours the clinic supplied, and no fallback", () => {
     render(<ContactPage />);
 
-    const hours = CLINIC_CONTACT.openingHours ?? "";
-    expect(hours).not.toBe("");
-    expect(screen.getAllByText(hours).length).toBeGreaterThan(0);
+    // Set as the days and then one line per session.
+    const lines = openingHoursLines(CLINIC_CONTACT.openingHours);
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) {
+      expect(screen.getAllByText(line).length).toBeGreaterThan(0);
+    }
     expect(screen.queryByText(CONTACT_PAGE.unavailable.hours)).toBeNull();
   });
 
@@ -533,6 +540,14 @@ describe("contact channels", () => {
     for (const label of ["Phone", "Visit us", "Opening hours", "Email"]) {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     }
+  });
+
+  it("splits the display hours into lines without rewording them", () => {
+    expect(
+      openingHoursLines("Mon–Sat · 10:00 am–2:00 pm, 5:00–8:30 pm"),
+    ).toEqual(["Mon–Sat", "10:00 am–2:00 pm", "5:00–8:30 pm"]);
+    expect(openingHoursLines("By appointment")).toEqual(["By appointment"]);
+    expect(openingHoursLines(undefined)).toEqual([]);
   });
 
   it("gives the address an address element", () => {

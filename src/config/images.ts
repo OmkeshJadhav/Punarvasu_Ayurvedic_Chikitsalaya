@@ -121,6 +121,17 @@ export const HOME_IMAGES = {
     objectPosition: "object-center",
     placeholder: true,
   },
+  cta: {
+    // Behind the closing invitation - decorative. Soft leaves on the left,
+    // a brass bowl of herbs on the right, where the copy's wash fades out.
+    // Supplied as alpha-free PNG (1.8 MB), encoded as JPEG.
+    src: "/images/cta-home.jpg",
+    width: 1600,
+    height: 633,
+    alt: "",
+    objectPosition: "object-right",
+    placeholder: true,
+  },
 } as const satisfies Record<string, ImageAsset>;
 
 /**
@@ -201,16 +212,74 @@ export const SERVICES_PAGE_IMAGES = {
     placeholder: true,
   },
   cta: {
-    // Dark water on the left, a brass bowl of herbs on the right: the copy
-    // sits over the dark half and the still life stays visible.
-    src: "/images/services-cta-water.jpg",
+    // A dark, empty ground on the left, a brass mortar and herbs on a stone
+    // on the right: the copy sits over the dark half and the still life
+    // stays visible. Supplied as alpha-free PNG (1.9 MB), encoded as JPEG.
+    src: "/images/cta-treatments.jpg",
     width: 1600,
-    height: 607,
+    height: 600,
     alt: "",
     objectPosition: "object-right",
     placeholder: true,
   },
 } as const satisfies Record<string, ImageAsset>;
+
+/**
+ * `/contact` page photography and artwork. As everywhere else, none of it is
+ * the clinic, its building or its surroundings - which matters more on this
+ * page than any other, because a visitor here is working out where to go.
+ *
+ *   - `hero` is described: it is the page's opening image.
+ *   - `landscape` sits under "Where the clinic is" and is **decorative and
+ *     uncaptioned** on purpose. A captioned or described landscape beside an
+ *     address reads as a view of that address, and Godoli is not these hills.
+ *   - `stones` is still-life texture beside the questions - decorative.
+ *
+ * The three photographs were supplied as alpha-free PNG (1.8-2.1 MB each) and
+ * are encoded here as JPEG, for the same reason as `SERVICES_PAGE_IMAGES`.
+ */
+export const CONTACT_PAGE_IMAGES = {
+  hero: {
+    src: "/images/contact-hero.jpg",
+    width: 1536,
+    height: 1024,
+    alt: "A brass mortar and pestle holding fresh herbs on a stone counter in soft morning light, beside a folded linen cloth.",
+    // The still life sits in the right half of the frame; anchoring there
+    // keeps the mortar in view whatever width the crop takes.
+    objectPosition: "object-[70%_center]",
+    placeholder: true,
+  },
+  landscape: {
+    src: "/images/contact-landscape.jpg",
+    width: 1600,
+    height: 609,
+    alt: "",
+    objectPosition: "object-bottom",
+    placeholder: true,
+  },
+  stones: {
+    src: "/images/contact-faq-stones.jpg",
+    width: 1200,
+    height: 800,
+    alt: "",
+    objectPosition: "object-left",
+    placeholder: true,
+  },
+} as const satisfies Record<string, ImageAsset>;
+
+/**
+ * The painted branch used as the botanical accent on the contact and services
+ * pages, through `LeafSprig`. A cut-out with a real alpha channel, which is
+ * why it stays PNG (resized from 1374px to 640px, 670 KB to 160 KB). Always
+ * decorative.
+ */
+export const LEAF_SPRIG_IMAGE: ImageAsset = {
+  src: "/images/leaf-sprig.png",
+  width: 640,
+  height: 533,
+  alt: "",
+  placeholder: true,
+};
 
 export const SERVICE_IMAGES = {
   joints: {

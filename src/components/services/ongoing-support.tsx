@@ -2,7 +2,7 @@ import { CalendarCheck, Salad, Sunrise } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { BotanicalMotif } from "@/components/marketing/botanical-motif";
+import { LeafSprig } from "@/components/marketing/leaf-sprig";
 import { Emphasis } from "@/components/marketing/emphasis";
 import { MediaFrame } from "@/components/marketing/media-frame";
 import { TextLink } from "@/components/marketing/text-link";
@@ -20,9 +20,9 @@ import {
  *
  * A statement and a link on the left, three stacked points in the middle, and
  * a still life of a mortar and herbs settling onto the section's lower edge,
- * with a frond above it - artwork in place of another row of cards. The
- * points are divided by hairlines: they describe one continuing relationship,
- * not three things to buy.
+ * with a painted branch above it - artwork in place of another row of cards.
+ * The points are divided by hairlines: they describe one continuing
+ * relationship, not three things to buy.
  *
  * The still life is shot on a flat linen ground. `mix-blend-multiply` drops
  * that ground into the page's own ivory and a radial mask softens the frame's
@@ -42,9 +42,9 @@ export function OngoingSupport() {
       aria-labelledby="ongoing-title"
       className="anchor-offset bg-background relative isolate overflow-hidden"
     >
-      <BotanicalMotif
-        variant="frond"
-        className="text-primary/20 pointer-events-none absolute -top-10 -right-16 -z-10 hidden h-112 w-62 scale-x-[-1] rotate-[-32deg] md:block"
+      <LeafSprig
+        sizes="22rem"
+        className="absolute -top-16 -right-36 -z-10 hidden w-88 rotate-[-150deg] opacity-25 saturate-50 md:block"
       />
 
       <Container width="wide">

@@ -51,11 +51,36 @@ export const CONTACT_PAGE = {
   hero: {
     eyebrow: "Contact",
     title: "Talk to the clinic",
+    /** Set in italic; see `Emphasis`. */
+    titleEmphasis: "clinic",
     // Deliberately promises no response time: the clinic has not stated one,
     // and "we reply within 24 hours" is exactly the sort of commitment a
     // website makes on a clinic's behalf without asking (`phase_05.md` s.28).
     description:
       "Questions about consultations, directions, or anything else about visiting Punarvasu. The fastest way to reach us is by phone.",
+    /**
+     * Qualities of the conversation, not service levels, set with the shared
+     * `TrustPoints` like the Home and Services heroes. "Quick responses" was
+     * considered and left out: it is a response-time promise the clinic has
+     * not made. The third point is about the visit, not about health advice
+     * over the phone.
+     */
+    commitments: [
+      {
+        title: "Real people",
+        description: "You speak with the clinic itself.",
+      },
+      {
+        title: "Plain answers",
+        description: "Where something is not confirmed, we say so.",
+      },
+      {
+        title: "Guidance for your visit",
+        description: "What to bring and what to expect.",
+      },
+    ],
+    /** A line set beside the photograph. Voice, not a claim. */
+    aside: "Healing begins with a conversation",
   },
 
   channels: {
@@ -86,8 +111,10 @@ export const CONTACT_PAGE = {
    * the visitor came with - silence leaves them looking.
    */
   unavailable: {
+    phone: "The clinic has not published a phone number yet.",
     email:
-      "The clinic has not published an email address. Please call instead, or use the enquiry details above.",
+      "The clinic has not published an email address. Please call instead.",
+    address: "The clinic has not published its address yet.",
     hours:
       "The clinic has not confirmed its opening hours for publication yet, so none are shown. Please call before visiting.",
   },
@@ -230,9 +257,10 @@ export const CONTACT_PAGE = {
   ],
 
   cta: {
-    title: "Ready when you are",
-    description:
-      "A first consultation is a conversation. Tell us what brought you here, and we will arrange a time.",
+    eyebrow: "Ready when you are",
+    title: "A first consultation is a conversation",
+    titleEmphasis: "a conversation",
+    description: "Tell us what brought you here, and we will arrange a time.",
     secondaryLabel: "Read about the clinic",
   },
 } as const;

@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { BotanicalMotif } from "@/components/marketing/botanical-motif";
+import { LeafSprig } from "@/components/marketing/leaf-sprig";
 import { ContentReviewNotice } from "@/components/marketing/content-review-notice";
 import { MediaFrame } from "@/components/marketing/media-frame";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -155,7 +155,7 @@ function ServiceTile({
             aria-hidden="true"
             className="bg-sage flex aspect-3/2 items-center justify-center overflow-hidden"
           >
-            <BotanicalMotif className="text-primary/35 h-[140%] w-auto rotate-12" />
+            <LeafSprig sizes="14rem" className="w-3/4 -rotate-12 opacity-70" />
           </div>
         )}
       </div>

@@ -52,8 +52,12 @@ export interface FaqAccordionProps {
    * `panel` sets the list inside a quiet linen panel - sans questions with a
    * plus/minus, hairlines between rows and none around the ends - for a list
    * that sits beside a section's heading as its companion.
+   *
+   * `rules` is `panel` without the panel: the same sans questions and
+   * plus/minus, set on open hairlines, for a section where the page itself is
+   * already the quiet surface.
    */
-  readonly appearance?: "default" | "editorial" | "panel";
+  readonly appearance?: "default" | "editorial" | "panel" | "rules";
   readonly className?: string;
 }
 
@@ -65,6 +69,7 @@ export function FaqAccordion({
 }: FaqAccordionProps) {
   const editorial = appearance === "editorial";
   const panel = appearance === "panel";
+  const plain = panel || appearance === "rules";
 
   if (items.length === 0) {
     return null;
@@ -86,11 +91,11 @@ export function FaqAccordion({
         <AccordionItem key={item.id} value={item.id}>
           <AccordionTrigger
             headingLevel={headingLevel}
-            indicator={editorial || panel ? "plus" : "chevron"}
+            indicator={editorial || plain ? "plus" : "chevron"}
             className={
               editorial
                 ? "text-h5 py-6 font-serif font-normal"
-                : panel
+                : plain
                   ? "text-body text-heading py-5 font-medium"
                   : undefined
             }
@@ -101,7 +106,7 @@ export function FaqAccordion({
             className={
               editorial
                 ? "text-body-sm -mt-1 pb-6"
-                : panel
+                : plain
                   ? "text-body-sm -mt-1 pb-5"
                   : undefined
             }

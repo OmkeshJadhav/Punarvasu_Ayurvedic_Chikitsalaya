@@ -9,7 +9,7 @@ import {
 
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { BotanicalMotif } from "@/components/marketing/botanical-motif";
+import { LeafSprig } from "@/components/marketing/leaf-sprig";
 import { Emphasis } from "@/components/marketing/emphasis";
 import { Reveal } from "@/components/shared/reveal";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,9 @@ import { SERVICES_PAGE, SERVICES_SECTIONS } from "@/features/services/content";
  * of one commitment, and four cards would read as four products. They are an
  * `<ol>` because the order is the point.
  *
- * Two fronds frame the section from its outer edges; they sit behind the
- * content and are hidden below `md`, where there is no margin for them.
+ * Two painted branches frame the section from its outer edges; they sit
+ * behind the content and are hidden below `md`, where there is no margin for
+ * them.
  *
  * A server component.
  */
@@ -40,15 +41,15 @@ export function AssessmentSection() {
       aria-labelledby="selection-title"
       className="anchor-offset bg-background relative isolate overflow-hidden"
     >
-      {/* A frond at each edge, cropped by the viewport, framing the
+      {/* A branch at each edge, cropped by the viewport, framing the
           statement on one side and the steps on the other. */}
-      <BotanicalMotif
-        variant="frond"
-        className="text-primary/20 pointer-events-none absolute top-8 -left-24 -z-10 hidden h-120 w-68 rotate-[28deg] md:block"
+      <LeafSprig
+        sizes="24rem"
+        className="absolute top-4 -left-40 -z-10 hidden w-96 scale-x-[-1] rotate-[-30deg] opacity-25 saturate-50 md:block"
       />
-      <BotanicalMotif
-        variant="frond"
-        className="text-primary/20 pointer-events-none absolute -right-24 bottom-0 -z-10 hidden h-120 w-68 scale-x-[-1] rotate-[-24deg] md:block"
+      <LeafSprig
+        sizes="24rem"
+        className="absolute -right-40 -bottom-8 -z-10 hidden w-96 rotate-[20deg] opacity-25 saturate-50 md:block"
       />
 
       <Container width="wide">

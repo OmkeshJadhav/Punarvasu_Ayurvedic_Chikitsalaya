@@ -2,7 +2,7 @@ import { Info } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
 import { Section } from "@/components/layout/section";
-import { BotanicalMotif } from "@/components/marketing/botanical-motif";
+import { LeafSprig } from "@/components/marketing/leaf-sprig";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
 import { MediaFrame } from "@/components/marketing/media-frame";
 import { Reveal } from "@/components/shared/reveal";
@@ -17,7 +17,8 @@ import {
 
 /**
  * "Before you choose": the heading and a still life on the left, the
- * questions in a quiet panel on the right, a frond behind them.
+ * questions in a quiet panel on the right, a painted branch rising from the
+ * lower-left corner.
  *
  * The still life is shot on a flat linen ground and blended into the page
  * with a brightness lift, `mix-blend-multiply` and a soft mask, as in
@@ -40,9 +41,11 @@ export function ServicesFaq() {
       aria-labelledby="services-faq-title"
       className="anchor-offset bg-background border-border relative isolate overflow-hidden border-t"
     >
-      <BotanicalMotif
-        variant="frond"
-        className="text-primary/15 pointer-events-none absolute -top-16 -right-20 -z-10 hidden h-120 w-68 scale-x-[-1] rotate-[-36deg] md:block"
+      {/* Rises from the lower-left corner, into the space under the still
+          life, with its stem cropped by the viewport. */}
+      <LeafSprig
+        sizes="24rem"
+        className="absolute -bottom-24 -left-36 -z-10 hidden w-96 scale-x-[-1] rotate-[-10deg] opacity-25 saturate-50 md:block"
       />
 
       <Container width="wide">

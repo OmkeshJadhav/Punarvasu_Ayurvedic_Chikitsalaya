@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
-import { BotanicalMotif } from "@/components/marketing/botanical-motif";
+import { LeafSprig } from "@/components/marketing/leaf-sprig";
 import { MediaFrame } from "@/components/marketing/media-frame";
 import { Reveal } from "@/components/shared/reveal";
 import { treatmentPath } from "@/config/navigation";
@@ -60,8 +60,14 @@ export function StartingPoints({ treatments }: StartingPointsProps) {
         data-surface="inverted"
         className="bg-brand-surface text-brand-surface-foreground relative isolate overflow-hidden"
       >
-        <BotanicalMotif className="text-brand-surface-border/50 pointer-events-none absolute top-0 -left-6 -z-10 hidden h-96 w-36 -rotate-12 md:block" />
-        <BotanicalMotif className="text-brand-surface-border/50 pointer-events-none absolute -right-4 bottom-0 -z-10 hidden h-96 w-36 scale-x-[-1] rotate-12 md:block" />
+        <LeafSprig
+          sizes="18rem"
+          className="absolute -top-10 -left-28 -z-10 hidden w-72 scale-x-[-1] rotate-[-20deg] opacity-20 brightness-150 md:block"
+        />
+        <LeafSprig
+          sizes="18rem"
+          className="absolute -right-28 -bottom-14 -z-10 hidden w-72 rotate-[160deg] opacity-20 brightness-150 md:block"
+        />
 
         <Container width="wide" className="py-10 lg:py-14">
           <Reveal className="max-w-2xl">
@@ -118,12 +124,13 @@ function StartingPointPanel({ treatment }: { readonly treatment: Treatment }) {
         />
       ) : (
         // No photograph honestly depicts a consultation here, so the frame
-        // holds the drawn sprig instead, at the same aspect as its siblings.
+        // holds the painted branch instead, at the same aspect as its
+        // siblings.
         <div
           aria-hidden="true"
           className="bg-sage relative flex aspect-3/2 items-center justify-center overflow-hidden"
         >
-          <BotanicalMotif className="text-primary/35 h-[140%] w-auto rotate-12" />
+          <LeafSprig sizes="16rem" className="w-3/4 -rotate-12 opacity-70" />
         </div>
       )}
 

@@ -1,3 +1,5 @@
+import { MapPin } from "lucide-react";
+
 import { CONTACT_PAGE } from "@/features/contact/content";
 import { cn } from "@/lib/utils/cn";
 
@@ -15,7 +17,8 @@ import { cn } from "@/lib/utils/cn";
  * grounds that an embedded map is a third-party request with cookies attached
  * and most visitors only want the address. That was reversed deliberately:
  * seeing where a clinic is, without an extra tap, is worth more to someone
- * planning a visit. `mapPrivacyNote` still discloses what the frame does.
+ * planning a visit. `mapPrivacyNote`, printed under the address whenever the
+ * frame is, still discloses what the frame does.
  *
  * ## Accessibility
  *
@@ -41,35 +44,43 @@ export interface MapEmbedProps {
 export function MapEmbed({ embedUrl, addressLines }: MapEmbedProps) {
   const { location } = CONTACT_PAGE;
 
-  if (!embedUrl) {
-    return (
-      <div className="border-border bg-muted text-body-sm text-muted-foreground rounded-xl border border-dashed p-6">
-        {location.mapUnavailable}
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-3">
-      <div className="border-border bg-muted overflow-hidden rounded-xl border">
-        <MapFrame
-          embedUrl={embedUrl}
-          className="aspect-[4/3] sm:aspect-[16/10]"
-        />
-      </div>
+      {embedUrl ? (
+        <div className="border-border bg-muted overflow-hidden rounded-[1.125rem] border">
+          <MapFrame embedUrl={embedUrl} className="aspect-4/3 sm:aspect-16/9" />
+        </div>
+      ) : (
+        <p className="border-border bg-muted text-body-sm text-muted-foreground rounded-[1.125rem] border border-dashed p-6">
+          {location.mapUnavailable}
+        </p>
+      )}
 
       {/*
         The address in text, beneath the frame. This is what makes the map an
         enhancement rather than the only route to the location: it works with
         images off, with the frame blocked, and for a screen reader.
       */}
-      <address className="text-body-sm text-prose not-italic">
-        {addressLines.map((line) => (
-          <span key={line} className="block">
-            {line}
-          </span>
-        ))}
-      </address>
+      <div className="border-border bg-muted/80 flex items-start gap-4 rounded-xl border px-6 py-5">
+        <MapPin
+          aria-hidden="true"
+          className="text-heading mt-0.5 size-5 shrink-0"
+          strokeWidth={1.5}
+        />
+        <address className="text-body-sm text-heading not-italic">
+          {addressLines.map((line) => (
+            <span key={line} className="block">
+              {line}
+            </span>
+          ))}
+        </address>
+      </div>
+
+      {embedUrl ? (
+        <p className="text-caption text-muted-foreground px-1">
+          {location.mapPrivacyNote}
+        </p>
+      ) : null}
     </div>
   );
 }

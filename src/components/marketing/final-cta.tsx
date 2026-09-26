@@ -26,9 +26,9 @@ import { cn } from "@/lib/utils/cn";
  * `light` is the sand band every inner page closes on. It is set apart from
  * the deep green footer beneath it by contrast.
  *
- * `brand` is the home page's: the deep green band, a pair of faint drawn
- * sprigs, and a linen button (`variant="inverse"`) because a green fill
- * vanishes on green. It flows into the footer as one closing block, the way a
+ * `brand` closes the About and Contact pages: the deep green band, a pair of
+ * faint drawn sprigs, and a linen button (`variant="inverse"`) because a
+ * green fill vanishes on green. It flows into the footer as one closing block, the way a
  * printed brochure ends on its back cover. It is opt-in rather than the
  * default because the inner pages pass `outline` buttons as their secondary
  * action, which are drawn for a light surface.
@@ -38,10 +38,16 @@ import { cn } from "@/lib/utils/cn";
  *
  * ## Props
  *
- * The copy defaults to the home page's, and every public page that ends in an
- * invitation passes its own.
+ * The copy defaults to the site-wide invitation (`FINAL_CTA_CONTENT`), and
+ * every public page that ends in an invitation passes its own. The home and
+ * services pages close on the compact photographic `PhotoCta` instead.
  */
 export interface FinalCtaSectionProps {
+  /**
+   * A short label above the heading. On a `brand` band it takes the place of
+   * the drawn ornament - one opener, not two.
+   */
+  readonly eyebrow?: string;
   readonly title?: string;
   /** A phrase inside `title` to set in italic. See `Emphasis`. */
   readonly titleEmphasis?: string;
@@ -61,6 +67,7 @@ export interface FinalCtaSectionProps {
 }
 
 export function FinalCtaSection({
+  eyebrow,
   title = FINAL_CTA_CONTENT.title,
   titleEmphasis,
   description = FINAL_CTA_CONTENT.description,
@@ -105,7 +112,21 @@ export function FinalCtaSection({
         width="prose"
         className={cn("text-center", photographic && "py-10 lg:py-16")}
       >
-        {brand ? (
+        {eyebrow ? (
+          <p
+            className={cn(
+              "text-caption mb-5 font-sans font-medium tracking-[0.22em] uppercase",
+              // The same verified pairs as the description below.
+              photographic
+                ? "text-scrim-foreground"
+                : brand
+                  ? "text-brand-surface-muted"
+                  : "text-eyebrow",
+            )}
+          >
+            {eyebrow}
+          </p>
+        ) : brand ? (
           <BotanicalMotif
             variant="ornament"
             className="text-brand-surface-accent mx-auto mb-6"

@@ -9,7 +9,7 @@
  *
  * Every field below is therefore optional, and the components that consume
  * them render nothing rather than a placeholder when a fact is absent
- * (`SiteFooter` contact block, `LocationSection`, `ContactChannels`, the
+ * (`SiteFooter` contact block, `LocationSection`, `ContactDetails`, the
  * JSON-LD builder).
  *
  * ## What is verified, as of Phase 05
@@ -187,6 +187,25 @@ export function addressLines(
     address.streetAddress,
     `${address.locality}, ${address.region} ${address.postalCode}`,
   ];
+}
+
+/**
+ * The display hours broken into lines: the days, then one line per session.
+ *
+ * Display only, and split on the separators `openingHours` is written with
+ * (" · " between days and sessions, ", " between sessions). A string written
+ * some other way comes back as a single line - unbroken, never reworded.
+ */
+export function openingHoursLines(
+  openingHours: string | undefined,
+): readonly string[] {
+  if (!openingHours) {
+    return [];
+  }
+  return openingHours
+    .split(/\s·\s|,\s/)
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 /**

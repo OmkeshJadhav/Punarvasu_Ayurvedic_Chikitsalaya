@@ -2,17 +2,18 @@ import type { Metadata } from "next";
 
 import { ApproachSection } from "@/components/marketing/approach-section";
 import { FaqSection } from "@/components/marketing/faq-section";
-import { FinalCtaSection } from "@/components/marketing/final-cta";
 import { Hero } from "@/components/marketing/hero";
 import { IntroSection } from "@/components/marketing/intro-section";
 import { LocationSection } from "@/components/marketing/location-section";
 import { PatientJourneySection } from "@/components/marketing/patient-journey";
 import { PhilosophySection } from "@/components/marketing/philosophy-section";
+import { PhotoCta } from "@/components/marketing/photo-cta";
 import { PractitionerPreviewSection } from "@/components/marketing/practitioner-preview";
 import { ServicePreviewSection } from "@/components/marketing/service-preview";
 import { WhyPunarvasuSection } from "@/components/marketing/why-punarvasu";
 import { CLINIC_CONTACT, CLINIC_SOCIAL_LINKS } from "@/config/clinic";
 import { getSiteConfig } from "@/config/env.public";
+import { HOME_IMAGES } from "@/config/images";
 import {
   FAQ_ITEMS,
   FEATURED_SERVICES,
@@ -125,9 +126,13 @@ export default function HomePage() {
         items={FAQ_ITEMS}
         aside={<LocationSection contact={CLINIC_CONTACT} />}
       />
-      <FinalCtaSection
-        tone="brand"
+      <PhotoCta
+        titleId="final-cta-title"
+        image={HOME_IMAGES.cta}
+        title={FINAL_CTA_CONTENT.title}
         titleEmphasis={FINAL_CTA_CONTENT.titleEmphasis}
+        description={FINAL_CTA_CONTENT.description}
+        primaryLabel={FINAL_CTA_CONTENT.primaryAction.label}
       />
     </>
   );

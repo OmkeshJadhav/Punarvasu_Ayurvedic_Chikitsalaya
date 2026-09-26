@@ -62,6 +62,7 @@ export function ServicesHero() {
         <div className="from-background absolute inset-x-0 bottom-0 h-24 bg-linear-to-t to-transparent" />
       </div>
 
+      {/* The About hero's drawn sprig, so the two openings share it. */}
       <BotanicalMotif className="text-gold/30 pointer-events-none absolute top-24 -left-8 -z-10 hidden h-96 w-36 rotate-12 xl:block" />
 
       <Container width="wide" className="pt-10 pb-14 lg:pt-14 lg:pb-20">
