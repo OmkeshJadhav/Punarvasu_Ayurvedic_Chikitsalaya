@@ -106,6 +106,12 @@ export interface Treatment {
    */
   readonly summary: string;
   /**
+   * A single short line for the compact tiles on `/services`, where the full
+   * summary would crowd a row of photographs. It describes what the therapy
+   * *is*, like the summary, and is held to the same content-safety rules.
+   */
+  readonly teaser: string;
+  /**
    * `undefined` where no photograph honestly depicts this treatment. The card
    * and the hero both handle its absence; no stock image is pressed into
    * service to fill a frame.

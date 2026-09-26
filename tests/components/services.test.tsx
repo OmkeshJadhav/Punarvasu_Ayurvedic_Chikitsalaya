@@ -7,18 +7,31 @@ import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { RelatedTreatments } from "@/components/marketing/related-treatments";
 import { TreatmentArticle } from "@/components/marketing/treatment-article";
 import { TreatmentCard } from "@/components/marketing/treatment-card";
-import { TreatmentCatalogue } from "@/components/marketing/treatment-catalogue";
 import { TreatmentHero } from "@/components/marketing/treatment-hero";
-import { PRIMARY_CTA, SERVICES_PATH, treatmentPath } from "@/config/navigation";
+import { ServiceCollection } from "@/components/services/service-collection";
+import { TestimonialCarousel } from "@/components/services/testimonial-carousel";
 import {
-  categoryAnchorId,
+  CONTACT_PATH,
+  PRIMARY_CTA,
+  SERVICES_PATH,
+  treatmentPath,
+} from "@/config/navigation";
+import {
   getAllTreatments,
   getCategory,
   getRelatedTreatments,
   getTreatmentBySlug,
   getTreatmentsByCategory,
 } from "@/features/services/catalogue";
-import { SERVICES_SECTIONS } from "@/features/services/content";
+import {
+  ONGOING_SUPPORT_SLUG,
+  SERVICES_PAGE,
+  SERVICES_SECTIONS,
+} from "@/features/services/content";
+import {
+  getDisplayTestimonials,
+  TESTIMONIALS,
+} from "@/features/testimonials/content";
 import type { Treatment } from "@/features/services/types";
 
 import { expectNoAxeViolations } from "../support/axe";
@@ -92,38 +105,63 @@ describe("services page", () => {
     }
   });
 
-  it("gives every jump-rail link a target that exists on the page", () => {
+  it("points the hero's secondary action at a section that exists", () => {
     const { container } = render(<ServicesPage />);
 
-    const rail = screen.getByRole("navigation", { name: "Service categories" });
-    const links = within(rail).getAllByRole("link");
-    expect(links.length).toBe(getTreatmentsByCategory().length);
-
-    for (const link of links) {
-      const targetId = (link.getAttribute("href") ?? "").replace(/^#/, "");
-      expect(
-        container.querySelector(`#${CSS.escape(targetId)}`),
-        `no element with id "${targetId}"`,
-      ).not.toBeNull();
-    }
+    const link = screen.getByRole("link", {
+      name: SERVICES_PAGE.hero.secondaryAction.label,
+    });
+    const targetId = (link.getAttribute("href") ?? "").replace(/^#/, "");
+    const target = container.querySelector(`#${CSS.escape(targetId)}`);
+    expect(target, `no element with id "${targetId}"`).not.toBeNull();
   });
 
-  it("gives each category section a scroll offset clear of the sticky header", () => {
+  it("gives every in-page section a scroll offset clear of the sticky header", () => {
     const { container } = render(<ServicesPage />);
-
-    for (const group of getTreatmentsByCategory()) {
-      const target = container.querySelector(
-        `#${CSS.escape(categoryAnchorId(group.category.id))}`,
-      );
-      expect(target).not.toBeNull();
-      expect(target?.className).toContain("anchor-offset");
-    }
 
     for (const id of Object.values(SERVICES_SECTIONS)) {
       const target = container.querySelector(`#${CSS.escape(id)}`);
-      if (target) {
-        expect(target.className).toContain("anchor-offset");
-      }
+      expect(target, `no section with id "${id}"`).not.toBeNull();
+      expect(target?.className).toContain("anchor-offset");
+    }
+  });
+
+  it("labels every treatment tile with its category", () => {
+    render(<ServicesPage />);
+
+    const collection = screen.getByRole("region", {
+      name: SERVICES_PAGE.catalogue.title,
+    });
+    for (const group of getTreatmentsByCategory()) {
+      expect(within(collection).getAllByText(group.category.name)).toHaveLength(
+        group.treatments.length,
+      );
+    }
+  });
+
+  it("links the ongoing-support section to a treatment that exists", () => {
+    render(<ServicesPage />);
+
+    expect(getTreatmentBySlug(ONGOING_SUPPORT_SLUG)).toBeDefined();
+    expect(
+      screen.getByRole("link", { name: SERVICES_PAGE.ongoing.actionLabel }),
+    ).toHaveAttribute("href", treatmentPath(ONGOING_SUPPORT_SLUG));
+  });
+
+  it("shows the patient's real words, attributed", () => {
+    render(<ServicesPage />);
+
+    for (const testimonial of TESTIMONIALS) {
+      expect(screen.getByText(testimonial.quote)).toBeInTheDocument();
+    }
+  });
+
+  it("names topics people raise rather than promising outcomes", () => {
+    render(<ServicesPage />);
+
+    for (const topic of SERVICES_PAGE.testimonials.topics) {
+      expect(topic).not.toMatch(/\b(better|improved|more|less|reduced)\b/i);
+      expect(screen.getByText(topic)).toBeInTheDocument();
     }
   });
 
@@ -140,16 +178,6 @@ describe("services page", () => {
 
     expect(
       screen.getByText(/awaiting review by a practitioner/i),
-    ).toBeInTheDocument();
-  });
-
-  it("states that it will not choose a treatment for the visitor", () => {
-    render(<ServicesPage />);
-
-    expect(
-      screen.getByRole("heading", {
-        name: /will not recommend a treatment/i,
-      }),
     ).toBeInTheDocument();
   });
 
@@ -190,6 +218,7 @@ describe("services page", () => {
         href === "/" ||
           href === SERVICES_PATH ||
           href === PRIMARY_CTA.href ||
+          href.startsWith(`${CONTACT_PATH}#`) ||
           href.startsWith("/#") ||
           treatmentHrefs.has(href),
         `unexpected internal link: ${href}`,
@@ -228,9 +257,9 @@ describe("services page", () => {
   });
 });
 
-describe("TreatmentCatalogue", () => {
+describe("ServiceCollection", () => {
   it("shows a useful empty state instead of an empty grid", () => {
-    render(<TreatmentCatalogue groups={[]} id="catalogue" />);
+    render(<ServiceCollection groups={[]} showReviewNotice={false} />);
 
     expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
     expect(
@@ -238,18 +267,104 @@ describe("TreatmentCatalogue", () => {
     ).toBeInTheDocument();
   });
 
-  it("keeps each category's cards in a real list", () => {
-    const groups = getTreatmentsByCategory();
-    render(<TreatmentCatalogue groups={groups} id="catalogue" />);
+  it("lists every treatment in a real list, one link per tile", () => {
+    render(
+      <ServiceCollection
+        groups={getTreatmentsByCategory()}
+        showReviewNotice={false}
+      />,
+    );
 
-    for (const group of groups) {
-      const section = screen.getByRole("region", {
-        name: group.category.name,
-      });
-      expect(within(section).getAllByRole("listitem")).toHaveLength(
-        group.treatments.length,
-      );
+    const treatments = getAllTreatments();
+    expect(screen.getAllByRole("listitem")).toHaveLength(treatments.length);
+    for (const treatment of treatments) {
+      expect(
+        screen.getAllByRole("link", { name: treatment.name }),
+      ).toHaveLength(1);
     }
+  });
+
+  it("shows the review notice only when asked to", () => {
+    const { rerender } = render(
+      <ServiceCollection
+        groups={getTreatmentsByCategory()}
+        showReviewNotice={false}
+      />,
+    );
+    expect(
+      screen.queryByText(/awaiting review by a practitioner/i),
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <ServiceCollection groups={getTreatmentsByCategory()} showReviewNotice />,
+    );
+    expect(
+      screen.getByText(/awaiting review by a practitioner/i),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("testimonials", () => {
+  it("never ships placeholders in a production build", () => {
+    expect(
+      getDisplayTestimonials(false).some((entry) => entry.placeholder),
+    ).toBe(false);
+    expect(getDisplayTestimonials(false)).toHaveLength(TESTIMONIALS.length);
+  });
+
+  it("requires a consent reference on every published testimonial", () => {
+    for (const testimonial of TESTIMONIALS) {
+      expect(testimonial.consentRecord.trim(), testimonial.id).not.toBe("");
+    }
+  });
+
+  it("marks every placeholder visibly", () => {
+    const entries = getDisplayTestimonials(true);
+    const placeholders = entries.filter((entry) => entry.placeholder);
+    expect(placeholders.length).toBeGreaterThan(0);
+
+    render(<TestimonialCarousel testimonials={placeholders} label="Quotes" />);
+    const labels = screen.getAllByText("Placeholder", { ignore: false });
+    expect(labels).toHaveLength(placeholders.length);
+    // The visible slide carries its label; hidden slides carry theirs too.
+    expect(labels[0]).toBeVisible();
+  });
+
+  it("moves between quotes from the keyboard, without a timer", async () => {
+    const user = userEvent.setup();
+    const entries = getDisplayTestimonials(true);
+    render(<TestimonialCarousel testimonials={entries} label="Quotes" />);
+
+    const slides = screen.getAllByRole("group", { hidden: true });
+    expect(slides).toHaveLength(entries.length);
+    expect(slides[0]).toBeVisible();
+    expect(slides[1]).not.toBeVisible();
+
+    screen.getByRole("button", { name: "Next testimonial" }).focus();
+    await user.keyboard("{Enter}");
+    expect(slides[0]).not.toBeVisible();
+    expect(slides[1]).toBeVisible();
+
+    await user.click(
+      screen.getByRole("button", { name: "Previous testimonial" }),
+    );
+    expect(slides[0]).toBeVisible();
+    expect(
+      screen.getByRole("button", {
+        name: `Show testimonial 1 of ${entries.length}`,
+      }),
+    ).toHaveAttribute("aria-current", "true");
+  });
+
+  it("renders no controls for a single quote", () => {
+    render(
+      <TestimonialCarousel
+        testimonials={getDisplayTestimonials(false)}
+        label="Quotes"
+      />,
+    );
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 });
 

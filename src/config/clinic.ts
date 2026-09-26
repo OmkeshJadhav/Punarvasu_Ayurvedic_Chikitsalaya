@@ -19,8 +19,10 @@
  * **opening hours** followed later and are published too, as display text
  * and as structured periods for `buildClinicJsonLd`.
  *
- * Still unsupplied, and therefore still absent: **email address** and
- * **social profiles**. The UI says so where a visitor would look for them
+ * The **email address** was supplied by the clinic afterwards and is
+ * published too.
+ *
+ * Still unsupplied, and therefore still absent: **social profiles**. The UI says so where a visitor would look for them
  * rather than guessing, and `buildClinicJsonLd` emits no property for them
  * at all — a guessed value in structured data is republished by search
  * engines with the clinic's name attached.
@@ -96,9 +98,9 @@ export interface ClinicContact {
  * session from 5 pm. The display string and the structured periods must say
  * the same thing.
  *
- * Do not add an `email` here until the clinic supplies one — a
- * plausible-looking value is indistinguishable from a real one once it is on
- * a healthcare website.
+ * `email` was supplied by the clinic. Replace it only with another value the
+ * clinic has supplied — a plausible-looking address is indistinguishable
+ * from a real one once it is on a healthcare website.
  */
 const MONDAY_TO_SATURDAY: readonly DayOfWeek[] = [
   "Monday",
@@ -111,6 +113,7 @@ const MONDAY_TO_SATURDAY: readonly DayOfWeek[] = [
 
 export const CLINIC_CONTACT: ClinicContact = {
   phone: "+917507043414",
+  email: "contact@punarvasu.com",
   openingHours: "Mon–Sat · 10:00 am–2:00 pm, 5:00–8:30 pm",
   openingHoursSpecification: [
     { days: MONDAY_TO_SATURDAY, opens: "10:00", closes: "14:00" },

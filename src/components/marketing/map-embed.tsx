@@ -70,10 +70,6 @@ export function MapEmbed({ embedUrl, addressLines }: MapEmbedProps) {
           </span>
         ))}
       </address>
-
-      <p className="text-caption text-muted-foreground measure">
-        {location.mapPrivacyNote}
-      </p>
     </div>
   );
 }

@@ -128,6 +128,7 @@ const AYURVEDIC_CONSULTATION: Treatment = {
   reviewStatus: "pending-clinical-review",
   summary:
     "An unhurried assessment of the person rather than of a single complaint. Everything else at Punarvasu follows from it.",
+  teaser: "Where every plan at Punarvasu begins.",
   // No photograph honestly depicts a consultation at this clinic, so this
   // entry carries none and the card renders its typographic composition
   // instead. See `config/images.ts`.
@@ -200,6 +201,7 @@ const PANCHAKARMA: Treatment = {
   image: TREATMENT_IMAGES.panchakarma,
   summary:
     "A staged classical programme of preparatory therapies, principal procedures and a guided return to ordinary routine. It is planned individually, not booked as a single appointment.",
+  teaser: "A staged classical programme, planned individually.",
   content: {
     overview: [
       "Panchakarma is a programme rather than a single therapy. Classically it runs in three stages: preparation (purvakarma), the principal procedures (pradhanakarma), and a graded return to ordinary diet and routine afterwards (paschatkarma).",
@@ -272,6 +274,7 @@ const ABHYANGA: Treatment = {
   image: TREATMENT_IMAGES.abhyanga,
   summary:
     "Warm medicated oil applied over the body and worked in by a therapist with long, sustained strokes. Used on its own and as preparation within a longer programme.",
+  teaser: "Warm medicated oil, worked in with long strokes.",
   content: {
     overview: [
       "Abhyanga is the application of warm oil to the body, worked in with rhythmic strokes by a therapist. In Ayurveda the oil itself is part of the therapy: which preparation is used is a decision the practitioner makes, not a detail.",
@@ -324,6 +327,7 @@ const SHIRODHARA: Treatment = {
   image: TREATMENT_IMAGES.shirodhara,
   summary:
     "A warm liquid, usually a medicated oil, poured in a slow and continuous stream across the forehead for a period the practitioner sets.",
+  teaser: "A slow, steady stream of warm oil across the forehead.",
   content: {
     overview: [
       "During shirodhara you lie still while a steady stream of warm liquid falls onto the forehead from a vessel suspended above it. The preparation used, its temperature and the length of the therapy are all set by the practitioner.",
@@ -376,6 +380,7 @@ const MUKHA_LEPA: Treatment = {
   image: TREATMENT_IMAGES.mukhaLepa,
   summary:
     "A prepared herbal paste applied to the face and left for a set time before removal, with the preparation chosen by the practitioner.",
+  teaser: "A herbal paste prepared for the face.",
   content: {
     overview: [
       "Lepa is the Ayurvedic term for a paste applied externally; mukha lepa is its application to the face. The herbs, what they are mixed with and how long the application is left are all chosen by the practitioner.",
@@ -419,6 +424,7 @@ const HERBAL_PREPARATIONS: Treatment = {
   image: TREATMENT_IMAGES.herbalPreparations,
   summary:
     "Internal Ayurvedic preparations, selected and adjusted by a practitioner as part of a plan rather than dispensed from a list.",
+  teaser: "Internal preparations, chosen by your practitioner.",
   content: {
     overview: [
       "Ayurvedic preparations are classically chosen for the person and the current imbalance rather than for the name of a complaint. Which preparation, in what form and for how long are decisions a practitioner makes after assessment, and revisits at follow-up.",
@@ -469,6 +475,7 @@ const LIFESTYLE_GUIDANCE: Treatment = {
   image: TREATMENT_IMAGES.lifestyleGuidance,
   summary:
     "Practical guidance on food, sleep, activity and the shape of a day, built around your assessment and revisited as things change.",
+  teaser: "Food, sleep and the shape of your day.",
   content: {
     overview: [
       "In Ayurveda the ordinary parts of a day — when you eat, what you eat, when you sleep, how you move — are treated as part of care rather than as advice added at the end of it. Dinacharya is the classical term for that daily routine.",
@@ -529,26 +536,56 @@ export const TREATMENTS: readonly Treatment[] = [
 export const SERVICES_SECTIONS = {
   selection: "how-treatment-is-chosen",
   catalogue: "all-services",
-  personalization: "personalization",
+  ongoing: "ongoing-support",
   faq: "questions",
 } as const;
 
+/**
+ * The slug the "ongoing support" section links to. Validated by the services
+ * test, so a renamed treatment fails there rather than rendering a dead link.
+ */
+export const ONGOING_SUPPORT_SLUG = "lifestyle-guidance";
+
 export const SERVICES_PAGE = {
   hero: {
-    eyebrow: "Services and treatments",
-    title: "Ayurvedic care, chosen for the person",
+    eyebrow: "Authentic Ayurvedic care",
+    /** Two lines, set as the page's single `<h1>`. The second is italic. */
+    title: ["Ayurvedic care,", "chosen for the person."],
     description:
-      "Punarvasu offers consultation, classical Ayurvedic therapies, and guidance that continues between visits. Which of them is appropriate — and whether any of them is — is decided with you after an assessment, never before it.",
+      "Consultation, classical therapies and guidance that continues between visits — chosen with you after an assessment, never before it.",
     secondaryAction: {
       label: "How treatment is chosen",
       targetId: SERVICES_SECTIONS.selection,
     },
+    /**
+     * What the clinic commits to, not what a therapy does. Each point is a
+     * statement about how care is organised, so none of them is an outcome.
+     */
+    commitments: [
+      {
+        title: "Personalised treatment",
+        description: "Every plan starts from your own assessment.",
+      },
+      {
+        title: "Authentic Ayurvedic therapies",
+        description: "Classical methods, explained before they begin.",
+      },
+      {
+        title: "Long-term guidance",
+        description: "Support that continues between visits.",
+      },
+    ],
+  },
+  reminder: {
+    label: "A gentle reminder",
+    text: "Ayurveda can sit alongside medical care; it does not replace it. If something is urgent, please see your doctor or go to the nearest hospital.",
   },
   selection: {
-    eyebrow: "Before any therapy",
+    eyebrow: "Our approach",
     title: "Assessment first. Every time.",
+    titleEmphasis: "Every time.",
     description:
-      "Four steps sit between an interest in a therapy and actually receiving one.",
+      "Every path at Punarvasu begins with an unhurried consultation about your constitution, your history and the way you live. Four steps sit between an interest in a therapy and actually receiving one.",
     steps: [
       {
         title: "Consultation",
@@ -572,23 +609,54 @@ export const SERVICES_PAGE = {
       },
     ] as const satisfies readonly TreatmentStep[],
   },
-  catalogue: {
-    eyebrow: "What we offer",
-    title: "Services and therapies",
-    description:
-      "Grouped by what they are for. Each page explains what a therapy is and what happens during it. None of them tells you whether it is right for you.",
-  },
   featured: {
     eyebrow: "Where most people begin",
     title: "Three starting points",
     description:
       "Most first visits involve one of these. They are the most asked about, not the most recommended — Punarvasu does not recommend a therapy before meeting you.",
   },
-  personalization: {
-    title: "Why this page will not recommend a treatment",
-    paragraphs: [
-      "In Ayurveda the same complaint in two people can have two different causes, and two different paths back. A website cannot see your constitution, your history, your digestion or the medicines you already take, so it cannot responsibly tell you which therapy you need. A page that did would be selling rather than practising.",
-      "Read these pages to understand what a therapy is and what receiving it is actually like. Bring the questions they raise to a consultation, where someone can answer them properly.",
+  catalogue: {
+    eyebrow: "Our services",
+    title: "Services and therapies",
+    description:
+      "Each page explains what a therapy is and what happens during it. None of them tells you whether it is right for you — that is what a consultation is for.",
+  },
+  testimonials: {
+    eyebrow: "In their words",
+    title: "What patients have told us",
+    /**
+     * Topics, not results. The design brief asked for outcome indicators
+     * ("better sleep", "more energy"); set next to a patient's quote those
+     * read as the clinic's promise, which `HEALTHCARE_AND_AI_SAFETY.md`
+     * section 2 forbids. What the clinic can truthfully say is what people
+     * come to talk about.
+     */
+    topicsLabel: "What people often come to talk about",
+    topics: ["Sleep", "Digestion", "Energy"],
+  },
+  ongoing: {
+    eyebrow: "Ongoing support",
+    title: "Ongoing support for lasting well-being",
+    titleEmphasis: "for lasting well-being",
+    description:
+      "Ayurvedic care is usually a path rather than a single appointment. Between visits your practitioner stays involved, with practical guidance and regular reviews that adjust the plan as your life changes.",
+    actionLabel: "Learn about ongoing care",
+    points: [
+      {
+        title: "Lifestyle guidance",
+        description:
+          "Simple, practical advice about the shape of your day, built around your assessment.",
+      },
+      {
+        title: "Diet and daily routine",
+        description:
+          "Suggestions about food and routine that take your constitution into account.",
+      },
+      {
+        title: "Regular follow-up",
+        description:
+          "Reviews with your practitioner, so the plan changes when you do.",
+      },
     ],
   },
   faq: {
@@ -598,10 +666,22 @@ export const SERVICES_PAGE = {
       "If your question is not answered here, ask it when you request a consultation — we would rather answer it properly than approximately.",
   },
   cta: {
-    title: "Not sure where to begin?",
+    eyebrow: "Your well-being journey",
+    title: "Not sure where to begin? Let's find the right path for you.",
+    titleEmphasis: "Let's find the right path for you.",
     description:
       "That is the usual starting point. A consultation is a conversation first: tell us what brought you here, and your practitioner will take it from there.",
-    secondaryLabel: "Read our approach",
+    secondaryLabel: "Request a call back",
+    /**
+     * What a first conversation is like - not what it costs or commits you
+     * to. "No obligation" and "free" were deliberately left out: neither is a
+     * policy the clinic has stated.
+     */
+    reassurances: [
+      "Personalised guidance",
+      "A conversation first",
+      "Your questions answered",
+    ],
   },
 } as const;
 

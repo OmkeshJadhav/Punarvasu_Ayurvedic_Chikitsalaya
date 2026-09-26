@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { TESTIMONIALS } from "@/features/testimonials/content";
+
 import {
   GENERAL_PRECAUTION_NOTE,
   REVIEW_NOTICE,
@@ -44,6 +46,7 @@ function treatmentPassages(treatment: Treatment): Passage[] {
   return [
     { where: at("name"), text: treatment.name },
     { where: at("summary"), text: treatment.summary },
+    { where: at("teaser"), text: treatment.teaser },
     ...content.overview.map((text, i) => ({
       where: at(`overview[${i}]`),
       text,
@@ -76,29 +79,53 @@ function treatmentPassages(treatment: Treatment): Passage[] {
 }
 
 function pagePassages(): Passage[] {
-  const { hero, selection, catalogue, featured, personalization, faq, cta } =
-    SERVICES_PAGE;
+  const {
+    hero,
+    reminder,
+    selection,
+    featured,
+    catalogue,
+    testimonials,
+    ongoing,
+    faq,
+    cta,
+  } = SERVICES_PAGE;
 
   return [
-    { where: "hero.title", text: hero.title },
+    ...hero.title.map((text, i) => ({ where: `hero.title[${i}]`, text })),
     { where: "hero.description", text: hero.description },
+    ...hero.commitments.flatMap((point, i) => [
+      { where: `hero.commitments[${i}].title`, text: point.title },
+      { where: `hero.commitments[${i}].description`, text: point.description },
+    ]),
+    { where: "reminder.text", text: reminder.text },
     { where: "selection.title", text: selection.title },
     { where: "selection.description", text: selection.description },
     ...selection.steps.flatMap((step, i) => [
       { where: `selection.steps[${i}].title`, text: step.title },
       { where: `selection.steps[${i}].description`, text: step.description },
     ]),
-    { where: "catalogue.description", text: catalogue.description },
     { where: "featured.title", text: featured.title },
     { where: "featured.description", text: featured.description },
-    { where: "personalization.title", text: personalization.title },
-    ...personalization.paragraphs.map((text, i) => ({
-      where: `personalization.paragraphs[${i}]`,
+    { where: "catalogue.description", text: catalogue.description },
+    { where: "testimonials.topicsLabel", text: testimonials.topicsLabel },
+    ...testimonials.topics.map((text, i) => ({
+      where: `testimonials.topics[${i}]`,
       text,
     })),
+    { where: "ongoing.title", text: ongoing.title },
+    { where: "ongoing.description", text: ongoing.description },
+    ...ongoing.points.flatMap((point, i) => [
+      { where: `ongoing.points[${i}].title`, text: point.title },
+      { where: `ongoing.points[${i}].description`, text: point.description },
+    ]),
     { where: "faq.description", text: faq.description },
     { where: "cta.title", text: cta.title },
     { where: "cta.description", text: cta.description },
+    ...cta.reassurances.map((text, i) => ({
+      where: `cta.reassurances[${i}]`,
+      text,
+    })),
     ...SERVICES_FAQ_ITEMS.flatMap((item) => [
       { where: `faq.${item.id}.question`, text: item.question },
       { where: `faq.${item.id}.answer`, text: item.answer },
@@ -106,6 +133,13 @@ function pagePassages(): Passage[] {
     { where: "reviewNotice.listing", text: REVIEW_NOTICE.listing.body },
     { where: "reviewNotice.detail", text: REVIEW_NOTICE.detail.body },
     { where: "generalPrecautionNote", text: GENERAL_PRECAUTION_NOTE },
+    // A patient's words are held to the same claim rules as the clinic's
+    // own: published beside the catalogue, a quote that promised an outcome
+    // would read as the clinic promising it.
+    ...TESTIMONIALS.map((testimonial) => ({
+      where: `testimonial.${testimonial.id}`,
+      text: testimonial.quote,
+    })),
   ];
 }
 

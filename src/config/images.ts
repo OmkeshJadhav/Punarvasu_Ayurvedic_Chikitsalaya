@@ -148,6 +148,70 @@ export const ABOUT_IMAGES = {
   },
 } as const satisfies Record<string, ImageAsset>;
 
+/**
+ * `/services` page photography - the atmosphere around the catalogue, not
+ * pictures of specific treatments. None of it is presented as the clinic,
+ * its rooms or its patients.
+ *
+ *   - `hero` is described, like the About hero: it is the page's opening
+ *     image. The hero renders it twice (a wide split and a mobile band) and
+ *     blanks the alt on the decorative duplicate.
+ *   - `testimonial` sits beside a patient's quote and must **not** read as a
+ *     portrait of that patient, so it is decorative and uncaptioned.
+ *   - `herbBowl` and `herbBowlWide` are still-life artwork beside text, and
+ *     `cta` is texture behind the closing invitation - all decorative.
+ *
+ * `herbBowl`, `herbBowlWide` and `cta` were supplied as alpha-free PNG
+ * (1.9-2.3 MB each) and are encoded here as JPEG at twice their largest
+ * rendered width, for the same reason as the Phase 20 re-encode. The herb
+ * files are shot on a flat linen ground, which the page blends into its own
+ * with `mix-blend-multiply` rather than needing a cut-out.
+ */
+export const SERVICES_PAGE_IMAGES = {
+  hero: {
+    src: "/images/hero.jpg",
+    width: 1024,
+    height: 1024,
+    alt: "A therapist guiding a slow stream of warm oil from a brass vessel onto the forehead of a reclining patient.",
+    objectPosition: "object-center",
+    placeholder: true,
+  },
+  testimonial: {
+    src: "/images/stress.jpg",
+    width: 1024,
+    height: 1024,
+    alt: "",
+    objectPosition: "object-center",
+    placeholder: true,
+  },
+  herbBowl: {
+    src: "/images/herb-bowl-1.jpg",
+    width: 840,
+    height: 648,
+    alt: "",
+    objectPosition: "object-center",
+    placeholder: true,
+  },
+  herbBowlWide: {
+    src: "/images/herb-bowl-2.jpg",
+    width: 1100,
+    height: 377,
+    alt: "",
+    objectPosition: "object-center",
+    placeholder: true,
+  },
+  cta: {
+    // Dark water on the left, a brass bowl of herbs on the right: the copy
+    // sits over the dark half and the still life stays visible.
+    src: "/images/services-cta-water.jpg",
+    width: 1600,
+    height: 607,
+    alt: "",
+    objectPosition: "object-right",
+    placeholder: true,
+  },
+} as const satisfies Record<string, ImageAsset>;
+
 export const SERVICE_IMAGES = {
   joints: {
     src: "/images/arthritis.jpg",

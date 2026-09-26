@@ -143,12 +143,6 @@ export function LocationSection({ contact }: LocationSectionProps) {
             </Button>
           ) : null}
         </div>
-
-        {contact.mapEmbedUrl ? (
-          <p className="text-caption text-brand-surface-muted mt-7">
-            {CONTACT_PAGE.location.mapPrivacyNote}
-          </p>
-        ) : null}
       </div>
     </section>
   );

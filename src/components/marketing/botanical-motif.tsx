@@ -3,9 +3,11 @@ import { cn } from "@/lib/utils/cn";
 /**
  * Botanical line art - the site's one decorative motif.
  *
- * A single drawn sprig in two forms: `sprig` is a tall stem with paired
+ * A single drawn sprig in three forms: `sprig` is a tall stem with paired
  * leaves, used large and faint behind a composition; `ornament` is a small
- * three-leaf mark that sits above a centred heading.
+ * three-leaf mark that sits above a centred heading; `frond` is a branch of
+ * broad, softly filled leaves, used at the edges of a light section where a
+ * hairline sprig would be too slight to register.
  *
  * ## Restraint
  *
@@ -18,7 +20,7 @@ import { cn } from "@/lib/utils/cn";
  * nothing a screen reader user would miss.
  */
 export interface BotanicalMotifProps {
-  readonly variant?: "sprig" | "ornament";
+  readonly variant?: "sprig" | "ornament" | "frond";
   readonly className?: string;
 }
 
@@ -26,6 +28,10 @@ export function BotanicalMotif({
   variant = "sprig",
   className,
 }: BotanicalMotifProps) {
+  if (variant === "frond") {
+    return <Frond className={className} />;
+  }
+
   if (variant === "ornament") {
     return (
       <svg
@@ -75,6 +81,60 @@ export function BotanicalMotif({
       <path d="M63 86c11-4 21-13 24-26-12 1-22 10-24 26Z" />
       <path d="M64 52c-9-3-17-10-20-20 10 0 17 7 20 20Z" />
       <path d="M64 6c-4 6-4 12 0 18 4-6 4-12 0-18Z" />
+    </svg>
+  );
+}
+
+/**
+ * Where each leaf of the frond sits: a point on the stem, an angle away from
+ * vertical, and a scale. Paired leaves shrink towards the tip, like the sprig.
+ */
+const FROND_LEAVES: readonly (readonly [number, number, number, number])[] = [
+  [97, 300, -58, 1.1],
+  [97, 296, 52, 1],
+  [95, 238, -62, 1.02],
+  [96, 232, 56, 0.94],
+  [98, 178, -52, 0.88],
+  [99, 172, 58, 0.86],
+  [102, 120, -46, 0.72],
+  [104, 115, 50, 0.72],
+  [107, 66, -36, 0.54],
+  [107, 62, 40, 0.52],
+  [108, 14, 0, 0.4],
+];
+
+/**
+ * A broad leaf drawn pointing up from its base at the origin, 90 units long:
+ * the blade, the midrib, and two pairs of veins.
+ */
+const LEAF_BLADE = "M0 0C-24-20-26-62 0-90C26-62 24-20 0 0Z";
+const LEAF_VEINS = "M0-2V-86M0-24l-12-13M0-44l-14-14M0-24l12-13M0-44l14-14";
+
+function Frond({ className }: { readonly className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 200 360"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("h-90 w-50", className)}
+    >
+      <path d="M100 356C96 290 92 230 98 170C104 110 112 60 108 10" />
+      {FROND_LEAVES.map(([x, y, angle, scale]) => (
+        <g
+          key={`${x}-${y}`}
+          transform={`translate(${x} ${y}) rotate(${angle}) scale(${scale})`}
+        >
+          {/* A soft wash inside a crisp outline: the leaf reads as a shape at
+              a distance and as line art up close. */}
+          <path d={LEAF_BLADE} fill="currentColor" fillOpacity="0.35" />
+          <path d={LEAF_VEINS} strokeOpacity="0.7" />
+        </g>
+      ))}
     </svg>
   );
 }

@@ -127,6 +127,21 @@ describe("text contrast meets WCAG AA (4.5:1)", () => {
       PALETTE.brandSurfaceAccent,
       PALETTE.brandSurface,
     ],
+    [
+      "brand-surface-foreground on the footer",
+      PALETTE.brandSurfaceForeground,
+      PALETTE.brandSurfaceDeep,
+    ],
+    [
+      "brand-surface-muted on the footer",
+      PALETTE.brandSurfaceMuted,
+      PALETTE.brandSurfaceDeep,
+    ],
+    [
+      "brand-surface-accent on the footer",
+      PALETTE.brandSurfaceAccent,
+      PALETTE.brandSurfaceDeep,
+    ],
     // The editorial trio has to hold on every surface a section can sit on,
     // because a section chooses its band independently of its copy.
     ...(
@@ -260,6 +275,20 @@ describe("the media scrim carries text over any photograph", () => {
     expect(
       contrastRatio(PALETTE.scrimForeground, composited),
     ).toBeGreaterThanOrEqual(AA.largeText);
+  });
+
+  // `components/services/services-cta.tsx` washes its photograph in the
+  // brand green, never lighter than 75% under the copy. The class names and
+  // this number must move together.
+  it("clears AA for normal text under the services CTA's 75% green wash", () => {
+    const composited = compositeOver(
+      PALETTE.brandSurface,
+      WHITEST_POSSIBLE_PHOTOGRAPH,
+      0.75,
+    );
+    expect(
+      contrastRatio(PALETTE.brandSurfaceForeground, composited),
+    ).toBeGreaterThanOrEqual(AA.normalText);
   });
 
   it("composites in gamma-encoded sRGB, as a compositor does", () => {

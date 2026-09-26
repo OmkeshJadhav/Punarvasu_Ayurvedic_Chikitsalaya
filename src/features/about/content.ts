@@ -31,6 +31,9 @@
  */
 
 import { CLINIC_IDENTITY } from "@/config/clinic";
+import type { Testimonial } from "@/features/testimonials/content";
+
+export type { Testimonial };
 
 /** Anchor ids for the about page's sections. */
 export const ABOUT_SECTIONS = {
@@ -289,23 +292,11 @@ export const ABOUT_PAGE = {
 } as const;
 
 /**
- * Patient testimonials.
+ * Patient testimonials shown on the About page.
  *
- * **Empty, and it must stay empty until each entry is real.** A testimonial
- * on a clinic's website is read as evidence, so every entry needs the
- * patient's written consent to publish, the words exactly as they gave them,
- * and a clinician's check that the quote makes no claim the clinic could not
- * make itself. The type requires the consent record so an entry cannot be
- * added without one. `TestimonialsSection` renders nothing while the list is
- * empty (`docs/HEALTHCARE_AND_AI_SAFETY.md`).
+ * **Empty until the clinic chooses which consented quotes belong here.** The
+ * type, and the rules every entry must meet, live in
+ * `features/testimonials/content.ts`. `TestimonialsSection` renders nothing
+ * while the list is empty (`docs/HEALTHCARE_AND_AI_SAFETY.md`).
  */
-export interface Testimonial {
-  readonly id: string;
-  readonly quote: string;
-  /** As the patient agreed to be named - often a first name and a town. */
-  readonly attribution: string;
-  /** Where the signed consent is kept, e.g. a document reference. */
-  readonly consentRecord: string;
-}
-
 export const ABOUT_TESTIMONIALS: readonly Testimonial[] = [];

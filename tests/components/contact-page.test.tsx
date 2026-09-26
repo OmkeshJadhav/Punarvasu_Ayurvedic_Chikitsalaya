@@ -29,8 +29,8 @@ vi.mock("next/navigation", () => ({
  *   1. The clinic's real phone number and address reach the page, and reach
  *      it from `config/clinic.ts` rather than from a second copy in a
  *      component. A wrong address sends a patient to the wrong building.
- *   2. Nothing unverified is invented. No opening hours, no email address -
- *      and the page says which are missing rather than leaving a gap.
+ *   2. Nothing unverified is invented. Only details the clinic supplied
+ *      appear, and the page says which are missing rather than leaving a gap.
  *   3. The map costs nothing until it is asked for, and the location is
  *      obtainable without it.
  *
@@ -100,13 +100,13 @@ describe("contact page", () => {
     expect(screen.queryByText(CONTACT_PAGE.unavailable.hours)).toBeNull();
   });
 
-  it("says no email address has been published rather than inventing one", () => {
+  it("publishes the clinic's supplied email address as a mailto link", () => {
     const { container } = render(<ContactPage />);
 
-    expect(
-      screen.getByText(CONTACT_PAGE.unavailable.email),
-    ).toBeInTheDocument();
-    expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
+    const email = CLINIC_CONTACT.email ?? "";
+    expect(email).not.toBe("");
+    expect(container.querySelector(`a[href="mailto:${email}"]`)).not.toBeNull();
+    expect(screen.queryByText(CONTACT_PAGE.unavailable.email)).toBeNull();
   });
 
   it("offers directions that open a maps application", () => {

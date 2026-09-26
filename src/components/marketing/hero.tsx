@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Flower2, Leaf, Sprout } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
 import { BotanicalMotif } from "@/components/marketing/botanical-motif";
 import { Emphasis } from "@/components/marketing/emphasis";
 import { MediaFrame } from "@/components/marketing/media-frame";
 import { TextLink } from "@/components/marketing/text-link";
+import { TrustPoints } from "@/components/marketing/trust-points";
 import { Button } from "@/components/ui/button";
 import { CLINIC_IDENTITY } from "@/config/clinic";
 import { HOME_IMAGES } from "@/config/images";
@@ -104,7 +105,7 @@ export function Hero() {
             </TextLink>
           </div>
 
-          <TrustPoints />
+          <TrustPoints points={TRUST_POINTS} />
         </div>
 
         <HeroPortrait />
@@ -156,48 +157,5 @@ function HeroPortrait() {
         </p>
       </figure>
     </div>
-  );
-}
-
-/**
- * Trust indicators.
- *
- * Three qualitative statements, directly under the actions. Deliberately not
- * a statistics bar: no patient count, rating or success figure has been
- * verified, and a fabricated one on a healthcare site is the worst thing this
- * page could contain (`docs/implementation-plan/phase_03.md` sections 13-14).
- *
- * The icons are botanical and decorative - the bold line beside each already
- * says what it is - so they are hidden from assistive technology. They are
- * matched by position because the three statements are a fixed set, and a
- * missing one falls back to the leaf rather than to nothing.
- */
-const TRUST_ICONS = [Sprout, Leaf, Flower2] as const;
-
-function TrustPoints() {
-  return (
-    <ul className="border-border mt-14 grid gap-6 border-t pt-8 sm:grid-cols-3 sm:gap-5">
-      {TRUST_POINTS.map((point, index) => {
-        const Icon = TRUST_ICONS[index] ?? Leaf;
-        return (
-          <li key={point.title} className="flex items-start gap-3 sm:flex-col">
-            <span
-              aria-hidden="true"
-              className="border-gold/30 bg-gold-surface text-gold flex size-10 shrink-0 items-center justify-center rounded-full border"
-            >
-              <Icon className="size-4.5" strokeWidth={1.5} />
-            </span>
-            <span className="flex flex-col gap-1">
-              <span className="text-label text-heading font-semibold">
-                {point.title}
-              </span>
-              <span className="text-body-sm text-muted-foreground">
-                {point.description}
-              </span>
-            </span>
-          </li>
-        );
-      })}
-    </ul>
   );
 }

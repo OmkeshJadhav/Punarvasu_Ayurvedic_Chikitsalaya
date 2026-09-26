@@ -211,6 +211,8 @@ describe("home page structure", () => {
     // search engine republishes this with the clinic's name attached, so a
     // second copy of the address living in a component is how the two drift.
     expect(data["telephone"]).toBe(CLINIC_CONTACT.phone);
+    // Supplied by the clinic later, and emitted from the same single source.
+    expect(data["email"]).toBe(CLINIC_CONTACT.email);
     expect(data["address"]).toMatchObject({
       "@type": "PostalAddress",
       streetAddress: CLINIC_CONTACT.address?.streetAddress,
@@ -231,7 +233,6 @@ describe("home page structure", () => {
     expect(data).not.toHaveProperty("aggregateRating");
     expect(data).not.toHaveProperty("review");
     expect(data).not.toHaveProperty("priceRange");
-    expect(data).not.toHaveProperty("email");
   });
 
   it("reaches the primary action from the keyboard past the skip link", async () => {

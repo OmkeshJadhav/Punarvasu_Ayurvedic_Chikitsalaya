@@ -1,3 +1,5 @@
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
+
 import { AccountNav } from "@/components/auth/account-nav";
 import {
   SiteFooter,
@@ -97,14 +99,16 @@ function buildFooterContact(): readonly ContactDetail[] | undefined {
   const address = formatAddress(CLINIC_CONTACT.address);
 
   if (address) {
-    details.push({ label: "Address", value: address });
-  }
-  if (CLINIC_CONTACT.openingHours) {
-    details.push({ label: "Hours", value: CLINIC_CONTACT.openingHours });
+    details.push({
+      label: "Address",
+      value: address,
+      icon: <MapPin strokeWidth={1.5} />,
+    });
   }
   if (CLINIC_CONTACT.phone) {
     details.push({
       label: "Phone",
+      icon: <Phone strokeWidth={1.5} />,
       // Grouped for reading, but the `tel:` target is always the stored
       // E.164 value so a dialler never has to parse the spacing.
       value: (
@@ -117,6 +121,7 @@ function buildFooterContact(): readonly ContactDetail[] | undefined {
   if (CLINIC_CONTACT.email) {
     details.push({
       label: "Email",
+      icon: <Mail strokeWidth={1.5} />,
       value: (
         <a
           href={`mailto:${CLINIC_CONTACT.email}`}
@@ -125,6 +130,13 @@ function buildFooterContact(): readonly ContactDetail[] | undefined {
           {CLINIC_CONTACT.email}
         </a>
       ),
+    });
+  }
+  if (CLINIC_CONTACT.openingHours) {
+    details.push({
+      label: "Hours",
+      value: CLINIC_CONTACT.openingHours,
+      icon: <Clock strokeWidth={1.5} />,
     });
   }
 

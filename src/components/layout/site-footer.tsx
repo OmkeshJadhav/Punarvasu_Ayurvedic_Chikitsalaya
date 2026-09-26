@@ -25,18 +25,24 @@ import { Container } from "./container";
  *
  * ## Surface
  *
- * The footer is the brand band (`--brand-surface`), not a tinted grey. A long
- * warm page needs a definite end, and a pale footer under a pale page simply
- * trails off - the reader cannot tell whether the content has finished. The
- * deep green also bookends the inverted section in the middle of the home
- * page, so the page reads as one composition rather than as a stack. Every
- * foreground used here is a `--brand-surface-*` token, each asserted against
- * AA on that background in `lib/design/contrast.test.ts`.
+ * The footer is the brand band's deepest step (`--brand-surface-deep`), not a
+ * tinted grey. A long warm page needs a definite end, and a pale footer under
+ * a pale page simply trails off - the reader cannot tell whether the content
+ * has finished. One step darker than the band itself so that a page ending
+ * on a green closing section, or using the band mid-page, still has a floor.
+ * Every foreground used here is a `--brand-surface-*` token, each asserted
+ * against AA on that background in `lib/design/contrast.test.ts`.
  */
 export interface ContactDetail {
+  /**
+   * What the detail is. Shown as a small title, or - when `icon` is given -
+   * kept for screen readers only, with the icon standing in for it visually.
+   */
   readonly label: string;
   /** Plain text, or a `tel:`/`mailto:`/maps link when it is actionable. */
   readonly value: ReactNode;
+  /** A decorative icon that replaces the visible label. */
+  readonly icon?: ReactNode;
 }
 
 export interface SiteFooterProps {
@@ -70,7 +76,7 @@ export function SiteFooter({
       // focus ring, which is the primary green and invisible here.
       data-surface="inverted"
       className={cn(
-        "bg-brand-surface text-brand-surface-foreground mt-auto",
+        "bg-brand-surface-deep text-brand-surface-foreground mt-auto",
         // A hairline where the footer meets a green closing band above it;
         // on a light page it is simply the edge of the footer.
         "border-brand-surface-border/50 border-t",
@@ -90,7 +96,7 @@ export function SiteFooter({
               className="text-brand-surface-foreground"
             />
             {tagline ? (
-              <p className="text-body-sm text-brand-surface-muted measure">
+              <p className="text-body text-brand-surface-muted mt-2 max-w-xs font-serif italic">
                 {tagline}
               </p>
             ) : null}
@@ -119,17 +125,40 @@ export function SiteFooter({
               >
                 Contact
               </h2>
-              <dl className="mt-3 flex flex-col gap-2">
-                {contact.map((detail) => (
-                  <div key={detail.label} className="flex flex-col">
-                    <dt className="text-caption text-brand-surface-muted">
-                      {detail.label}
-                    </dt>
-                    <dd className="text-body-sm text-brand-surface-foreground">
-                      {detail.value}
-                    </dd>
-                  </div>
-                ))}
+              <dl className="mt-3 flex flex-col gap-3">
+                {contact.map((detail) =>
+                  detail.icon ? (
+                    <div
+                      key={detail.label}
+                      className={cn(
+                        "flex gap-3",
+                        // A link carries a 44px touch target with its text
+                        // centred in it, so its icon centres too; plain text
+                        // (an address over three lines) hangs from the top.
+                        typeof detail.value === "string"
+                          ? "items-start"
+                          : "items-center",
+                      )}
+                    >
+                      <dt className="text-brand-surface-accent flex min-h-6 shrink-0 items-center [&_svg]:size-4">
+                        <span aria-hidden="true">{detail.icon}</span>
+                        <span className="sr-only">{detail.label}</span>
+                      </dt>
+                      <dd className="text-body-sm text-brand-surface-foreground">
+                        {detail.value}
+                      </dd>
+                    </div>
+                  ) : (
+                    <div key={detail.label} className="flex flex-col">
+                      <dt className="text-caption text-brand-surface-muted">
+                        {detail.label}
+                      </dt>
+                      <dd className="text-body-sm text-brand-surface-foreground">
+                        {detail.value}
+                      </dd>
+                    </div>
+                  ),
+                )}
               </dl>
             </section>
           ) : null}

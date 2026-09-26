@@ -8,6 +8,7 @@ import {
   HOME_IMAGES,
   PRACTITIONER_IMAGES,
   SERVICE_IMAGES,
+  SERVICES_PAGE_IMAGES,
   TREATMENT_IMAGES,
   type ImageAsset,
 } from "@/config/images";
@@ -52,6 +53,7 @@ const ALL_IMAGES: ReadonlyArray<readonly [string, ImageAsset]> = [
   ...Object.entries(HOME_IMAGES),
   ...Object.entries(ABOUT_IMAGES),
   ...Object.entries(SERVICE_IMAGES),
+  ...Object.entries(SERVICES_PAGE_IMAGES),
   ...Object.entries(PRACTITIONER_IMAGES),
   ...Object.entries(TREATMENT_IMAGES),
 ];

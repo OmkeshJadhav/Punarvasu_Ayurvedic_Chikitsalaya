@@ -197,6 +197,13 @@
   --brand-surface-border: var(--punarvasu-primary-500);
   --brand-surface-accent: var(--punarvasu-sand-100);
 
+  /* The brand band's deepest step, for the footer only. A page that uses the
+     brand band mid-page (the services page's starting points) and then ends on
+     the same green reads as one long band; one step darker gives the footer a
+     definite floor. It carries the same foregrounds, each re-asserted against
+     it in the contrast test. */
+  --brand-surface-deep: var(--punarvasu-primary-900);
+
   /* Status. Each has a text-weight tone and a tinted surface. Status is never
      communicated by colour alone - see `components/ui/badge.tsx`. */
   --success: #397a55;
@@ -308,6 +315,7 @@
   --color-brand-surface-muted: var(--brand-surface-muted);
   --color-brand-surface-border: var(--brand-surface-border);
   --color-brand-surface-accent: var(--brand-surface-accent);
+  --color-brand-surface-deep: var(--brand-surface-deep);
 
   --color-gold: var(--punarvasu-gold);
   --color-gold-surface: var(--punarvasu-gold-surface);

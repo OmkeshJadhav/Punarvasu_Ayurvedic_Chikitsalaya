@@ -19,6 +19,8 @@ import { Spinner } from "./spinner";
  *   secondary    A supporting action of comparable weight.
  *   outline      A quiet action that still needs a container.
  *   ghost        Toolbar and icon actions; no container until hovered.
+ *   inverse      The primary action on a dark band.
+ *   outline-inverse  The quiet action on a dark band or scrimmed photograph.
  *   link         An action that reads as inline text.
  *   destructive  Irreversible actions only. Always pair with a confirmation.
  *
@@ -79,6 +81,14 @@ const buttonVariants = cva(
          */
         inverse:
           "bg-brand-surface-accent text-heading shadow-sm hover:bg-card active:bg-brand-surface-accent",
+        /**
+         * The quiet action on a dark band or a scrimmed photograph: a hairline
+         * and white type, so it sits beside an `inverse` or `primary` button
+         * without competing with it. Only valid inside
+         * `data-surface="inverted"`, where white is the verified foreground.
+         */
+        "outline-inverse":
+          "border border-brand-surface-foreground/55 bg-transparent text-brand-surface-foreground hover:border-brand-surface-foreground hover:bg-brand-surface-foreground/10",
         link: "min-h-0 bg-transparent p-0 text-primary underline-offset-4 hover:text-primary-hover hover:underline",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:brightness-95 active:brightness-90",

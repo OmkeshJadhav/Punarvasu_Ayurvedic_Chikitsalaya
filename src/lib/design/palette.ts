@@ -83,6 +83,8 @@ export const PALETTE = {
   brandSurfaceMuted: "#d3e0d6",
   brandSurfaceBorder: "#467058",
   brandSurfaceAccent: "#ede3d0",
+  /** The footer's floor. See `--brand-surface-deep` in `globals.css`. */
+  brandSurfaceDeep: "#16281f",
 
   gold: "#8a6519",
   goldSurface: "#f6eeda",
