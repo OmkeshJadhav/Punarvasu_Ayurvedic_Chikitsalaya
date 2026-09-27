@@ -320,8 +320,6 @@ describe("the dashboard panels", () => {
         counts={ready(COUNTS)}
         trend={ready(TREND)}
         granularity="day"
-        comparison={null}
-        comparisonBasis="vs. previous 30 days"
         retryHref={HREF}
       />,
     );
@@ -346,8 +344,6 @@ describe("the dashboard panels", () => {
         counts={ready(COUNTS)}
         trend={{ status: "unavailable" }}
         granularity="day"
-        comparison={null}
-        comparisonBasis="vs. previous 30 days"
         retryHref={HREF}
       />,
     );

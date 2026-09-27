@@ -1336,3 +1336,52 @@ secret scan pass. **Tests: 4,677 of 4,677.**
 * **Comparisons cost two extra aggregate reads per page load.**
 * **Section 73's timezone note is intentionally absent** (A1.5). Dates are
   still interpreted in the clinic's timezone.
+
+## Addendum B — Clinic analytics redesign ("Calm Clinical Luxury")
+
+The administrator's dashboard was redesigned to a supplied mockup. No query,
+permission, RPC or data contract changed; every panel still renders through
+`AnalyticsPanel` and reads the same aggregates.
+
+### B1. Administration has its own route group
+
+`src/app/(app)/admin` moved to `src/app/(admin)/admin`. URLs are unchanged.
+The mockup's shell — a full-height sidebar carrying the brand, grouped
+navigation and a help card, with a slim top bar beside it — cannot sit under
+the `(app)` layout's header, and a layout cannot remove chrome its parent
+drew. The `(admin)` layout therefore restates what it no longer inherits:
+authentication (through `requireAreaAccess` → `requireUser`),
+`force-dynamic`, `noindex`, the toast region, the skip link and `<main>`.
+`tests/security/adversarial.test.ts` and `privacy.test.ts` now cover both
+shells, including a new assertion that each is `force-dynamic`.
+
+### B2. Navigation
+
+Three groups: **Analytics** (the dashboard, plus jumps to its Appointments,
+Practitioners, Patients and Clinical activity sections), **Administration**
+(access management) and **Workspace** (notifications, account settings).
+Section links are fragments on the dashboard, so the reporting period in the
+query string survives them. The mockup's global search was not built: the
+product has no administrator search, and a patient search would put a name
+in the URL (the front desk's is a POST for that reason). The help card links
+to the metric definitions rather than to a support centre that does not
+exist.
+
+### B3. Layout
+
+Header with a decorative photograph (`herb-bowl-2`, via `MediaFrame`), the
+reporting period, four tinted headline cards (appointments, new patients,
+cancellation rate, completed), then performance, appointments, patients,
+notifications and recent activity, export and definitions. Below `2xl` the
+panels pair in halves, and the appointment register and workload table are
+always full width. At 1440px, beside the sidebar, the mockup's 7/5 and
+three-across splits clipped table columns (measured). Charts, stat rows and
+the patient register follow their own card width through container queries.
+
+### B4. Known issues
+
+* **`src/types/database.ts` is committed empty (0 bytes)** as of `2130bd8`,
+  so `tsc` fails repo-wide. Regenerate it with `npm run db:types`. Checks for
+  this redesign were run against the previous commit's copy, restored
+  temporarily; the three register RPC names are missing from that copy
+  (see A8).

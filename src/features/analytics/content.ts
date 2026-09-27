@@ -224,9 +224,11 @@ export const DEFINITIONS_COPY = {
  * the section framing. The figures' definitions stay with the panels above.
  */
 export const DASHBOARD_COPY = {
-  breadcrumbAdmin: "Administration",
-  breadcrumbCurrent: "Analytics",
+  breadcrumbAdmin: "Analytics",
+  breadcrumbCurrent: "Clinic analytics",
   exportLink: "Export",
+  /** Laid over the header photograph. Decorative, and hidden from assistive technology. */
+  heroQuote: "Better care through better insights.",
   kpiHeading: "Headline figures",
   kpi: {
     appointments: "Appointments",

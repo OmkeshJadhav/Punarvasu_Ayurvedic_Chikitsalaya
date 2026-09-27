@@ -55,12 +55,25 @@ describe("anonymous -> protected route = DENIED", () => {
       "src/app/(app)/patient/layout.tsx",
       "src/app/(app)/doctor/layout.tsx",
       "src/app/(app)/receptionist/layout.tsx",
-      "src/app/(app)/admin/layout.tsx",
+      "src/app/(admin)/admin/layout.tsx",
       "src/app/(app)/notifications/layout.tsx",
     ]) {
       const source = readFileSync(layout, "utf8");
       expect(source, layout).toMatch(
         /requireUser\(|requireAreaAccess\(|requirePermission\(/,
+      );
+    }
+  });
+
+  it("renders every authenticated shell per request, never from a cache", () => {
+    // `(admin)` is a sibling of `(app)`, not a child, so it does not inherit
+    // `force-dynamic` — it has to say so itself.
+    for (const layout of [
+      "src/app/(app)/layout.tsx",
+      "src/app/(admin)/admin/layout.tsx",
+    ]) {
+      expect(readFileSync(layout, "utf8"), layout).toMatch(
+        /export const dynamic = "force-dynamic"/,
       );
     }
   });

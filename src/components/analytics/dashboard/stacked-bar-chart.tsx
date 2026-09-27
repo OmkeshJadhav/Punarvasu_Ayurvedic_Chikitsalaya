@@ -77,14 +77,18 @@ export function niceScale(max: number, intervals = 4): number {
 const GRID_INTERVALS = 4;
 
 function gapClass(count: number): string {
-  if (count <= 8) return "gap-3 sm:gap-6";
-  if (count <= 16) return "gap-1.5 sm:gap-3";
-  return "gap-0.5 sm:gap-1.5";
+  if (count <= 8) return "gap-3 @xl:gap-6";
+  if (count <= 16) return "gap-1.5 @xl:gap-3";
+  return "gap-0.5 @xl:gap-1.5";
 }
 
 /**
- * Which buckets get an axis label. Fewer on a phone, where thirty-one dates
- * would be an unreadable smear; the table has every one.
+ * Which buckets get an axis label. Fewer in a narrow chart, where thirty-one
+ * dates would be an unreadable smear; the table has every one.
+ *
+ * "Narrow" is the chart's own width (a container query on the `<figure>`),
+ * not the screen's: the same chart sits in a full-width card and in one a
+ * third of the dashboard wide, and only its box knows which.
  */
 function labelVisibility(index: number, count: number): string | null {
   const narrowStep = Math.max(Math.ceil(count / 4), 1);
@@ -94,8 +98,8 @@ function labelVisibility(index: number, count: number): string | null {
 
   // Each width shows only its own set, so the two never collide.
   if (narrow && wide) return "block";
-  if (narrow) return "block sm:hidden";
-  if (wide) return "hidden sm:block";
+  if (narrow) return "block @xl:hidden";
+  if (wide) return "hidden @xl:block";
   return null;
 }
 
@@ -151,7 +155,7 @@ export function StackedBarChart({
   }`;
 
   return (
-    <figure className="m-0 flex flex-col gap-5">
+    <figure className="@container m-0 flex flex-col gap-5">
       {multiSeries ? (
         <div className="flex flex-col gap-2">
           <ul
@@ -187,7 +191,7 @@ export function StackedBarChart({
 
       <div aria-hidden="true" className="flex gap-3">
         {/* The value axis: four quiet labels, no line. */}
-        <div className="relative h-52 w-8 shrink-0 sm:h-60">
+        <div className="relative h-52 w-8 shrink-0 @xl:h-60">
           {Array.from({ length: GRID_INTERVALS + 1 }, (_, step) => (
             <span
               key={step}
@@ -200,7 +204,7 @@ export function StackedBarChart({
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="relative h-52 sm:h-60">
+          <div className="relative h-52 @xl:h-60">
             {/* Recessive gridlines; the baseline alone is solid. */}
             {Array.from({ length: GRID_INTERVALS + 1 }, (_, step) => (
               <span
@@ -209,7 +213,7 @@ export function StackedBarChart({
                   "absolute inset-x-0 border-t",
                   step === 0
                     ? "border-border-strong"
-                    : "border-border border-dashed",
+                    : "border-border/60 border-dashed",
                 )}
                 style={{ bottom: `${(step / GRID_INTERVALS) * 100}%` }}
               />
@@ -251,7 +255,7 @@ export function StackedBarChart({
                             <span
                               key={series[seriesIndex]?.key ?? seriesIndex}
                               className={cn(
-                                "min-h-0.5 rounded-[3px]",
+                                "min-h-0.5 rounded-[4px]",
                                 series[seriesIndex]?.swatchClass,
                               )}
                               style={{ flexGrow: value, flexBasis: 0 }}

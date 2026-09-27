@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays, SlidersHorizontal } from "lucide-react";
+import { CalendarCheck2, CalendarDays, Check } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,7 @@ export function DateRangeFilter({
       <form
         method="get"
         action={basePath}
-        className="border-border bg-card rounded-lg border p-5 shadow-sm sm:p-6"
+        className="border-border/60 bg-card rounded-lg border p-5 shadow-sm sm:p-6"
       >
         <fieldset className="flex flex-col gap-5">
           <legend className="sr-only">{RANGE_FILTER_COPY.legend}</legend>
@@ -102,8 +102,11 @@ export function DateRangeFilter({
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
             <p
               aria-hidden="true"
-              className="text-caption text-muted-foreground font-sans font-semibold tracking-wide uppercase"
+              className="text-h5 text-heading flex items-center gap-3 font-serif"
             >
+              <span className="bg-accent text-primary flex size-10 shrink-0 items-center justify-center rounded-md">
+                <CalendarCheck2 className="size-5" />
+              </span>
               {RANGE_FILTER_COPY.legend}
             </p>
             <p className="text-body-sm text-heading inline-flex items-center gap-2 font-sans font-medium">
@@ -118,8 +121,8 @@ export function DateRangeFilter({
           <div
             className={
               hasPractitioners
-                ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:items-end"
-                : "grid gap-4 sm:grid-cols-3 xl:grid-cols-[repeat(3,minmax(0,1fr))_auto] xl:items-end"
+                ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                : "grid gap-4 sm:grid-cols-3"
             }
           >
             <Field name="preset" label={RANGE_FILTER_COPY.presetLabel}>
@@ -178,12 +181,12 @@ export function DateRangeFilter({
               </Field>
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-2 sm:col-span-full xl:col-span-1">
-              <Button type="submit">
-                <SlidersHorizontal aria-hidden="true" />
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-full">
+              <Button type="submit" className="min-w-28">
+                <Check aria-hidden="true" />
                 {RANGE_FILTER_COPY.applyLabel}
               </Button>
-              <Button asChild variant="ghost">
+              <Button asChild variant="secondary">
                 <Link href={basePath}>{RANGE_FILTER_COPY.resetLabel}</Link>
               </Button>
             </div>

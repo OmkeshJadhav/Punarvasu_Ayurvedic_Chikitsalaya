@@ -11,10 +11,7 @@ import {
   PatientsCard,
   WorkloadTableCard,
 } from "@/components/analytics/dashboard/clinic-dashboard";
-import {
-  ClinicHeadlineFigures,
-  comparisonBasis,
-} from "@/components/analytics/dashboard/headline-figures";
+import { ClinicHeadlineFigures } from "@/components/analytics/dashboard/headline-figures";
 import {
   AppointmentRegisterCard,
   PatientRegisterCard,
@@ -24,9 +21,14 @@ import { DateRangeFilter } from "@/components/analytics/date-range-filter";
 import { MetricDefinitions } from "@/components/analytics/metric-definitions";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Container } from "@/components/layout/container";
+import { MediaFrame } from "@/components/marketing/media-frame";
 import { Button } from "@/components/ui/button";
-import { compareCounts, readyPair } from "@/features/analytics/comparison";
+import { SERVICES_PAGE_IMAGES } from "@/config/images";
 import { ANALYTICS_AREA, DASHBOARD_COPY } from "@/features/analytics/content";
+import {
+  CLINIC_DASHBOARD_IDS as IDS,
+  CLINIC_DASHBOARD_PATH as BASE_PATH,
+} from "@/features/analytics/dashboard-sections";
 import {
   getClinicAnalytics,
   getClinicComparison,
@@ -53,22 +55,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const BASE_PATH = "/admin/analytics";
-
-const IDS = {
-  heading: "admin-analytics-heading",
-  headline: "admin-analytics-headline",
-  overview: "admin-analytics-overview",
-  busiest: "admin-analytics-busiest",
-  workload: "admin-analytics-workload",
-  appointmentRegister: "admin-analytics-appointment-register",
-  patients: "admin-analytics-patients",
-  patientRegister: "admin-analytics-patient-register",
-  activity: "admin-analytics-activity",
-  notifications: "admin-analytics-notifications",
-  clinical: "admin-analytics-clinical",
-  export: "admin-analytics-export",
-} as const;
+/** The header photograph: a light still life that leaves room for the quote. */
+const HERO_IMAGE = SERVICES_PAGE_IMAGES.herbBowlWide;
 
 /**
  * The clinic dashboard.
@@ -76,12 +64,24 @@ const IDS = {
  * ## Progressive density
  *
  * The page reads top to bottom from the broadest question to the narrowest:
- * the four headline figures, then the operational charts (appointments and
- * the busiest practitioners), then the exact tables (workload, patients),
- * then the system panels an administrator consults least (notifications,
- * clinical activity), and finally the export and the definitions. `phase_16.md`
- * section 124's questions are all still answered; they are arranged so the
- * state of the clinic is clear before the detail is.
+ * overview (the four headline figures), performance (the appointments chart
+ * beside the busiest practitioners), appointments (the register beside the
+ * workload and recent activity), patients (growth, the patient register and
+ * clinical activity side by side), and finally notifications, the export and
+ * the definitions. `phase_16.md` section 124's questions are all still
+ * answered; they are arranged so the state of the clinic is clear before the
+ * detail is.
+ *
+ * ## The grid
+ *
+ * Twelve columns from `lg`. The overview and the busiest practitioners pair
+ * up from `xl`; below `2xl` the rest pair in halves, and the register and the
+ * workload table take the full width, because beside a 288px sidebar a
+ * five-column table in seven twelfths of the page clips its last column —
+ * so both tables always take the full width. From `2xl` there is room for
+ * patients, the patient register and clinical activity three across. Charts
+ * and stat rows inside the cards follow their own width (container queries),
+ * so a panel reads correctly at whichever span it lands on.
  *
  * ## Three permissions' worth of reads
  *
@@ -184,20 +184,14 @@ export default async function AdminAnalyticsPage({
       }
       return `${BASE_PATH}?${params.toString()}#${anchor}`;
     };
-  const basis = comparisonBasis(range.spanDays);
-  const appointmentPair = readyPair(
-    analytics.appointments,
-    comparison?.appointments ?? null,
-  );
 
   return (
     <div className="py-8 lg:py-10">
-      <Container width="wide" className="flex flex-col gap-8">
-        <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex min-w-0 flex-col gap-3">
+      <Container width="wide" className="flex flex-col gap-6 lg:gap-8">
+        <header className="grid items-center gap-6 lg:grid-cols-12">
+          <div className="flex min-w-0 flex-col gap-3 lg:col-span-7">
             <Breadcrumbs
               items={[
-                // No link: `/admin` redirects back to this page.
                 { label: DASHBOARD_COPY.breadcrumbAdmin },
                 { label: DASHBOARD_COPY.breadcrumbCurrent },
               ]}
@@ -205,27 +199,48 @@ export default async function AdminAnalyticsPage({
             <h1 id={IDS.heading} className="text-h1 text-heading font-serif">
               {ANALYTICS_AREA.clinic.heading}
             </h1>
-            <p className="text-body text-muted-foreground measure font-sans">
+            <p className="text-body-lg text-muted-foreground measure font-sans">
               {ANALYTICS_AREA.clinic.description}
             </p>
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-3">
+              <AnalyticsFreshness
+                generatedAt={analytics.generatedAt}
+                refreshHref={selfHref}
+              />
+              {/*
+                A link to the export card rather than the download itself:
+                `phase_16.md` section 92 wants the file's columns stated before
+                it is created, and the card is where they are.
+              */}
+              <Button asChild size="sm">
+                <a href={`#${IDS.export}`}>
+                  <Download aria-hidden="true" />
+                  {DASHBOARD_COPY.exportLink}
+                </a>
+              </Button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-3 lg:justify-end">
-            <AnalyticsFreshness
-              generatedAt={analytics.generatedAt}
-              refreshHref={selfHref}
+          {/*
+            Atmosphere, not information: the photograph and the line over it
+            are hidden from assistive technology and dropped on a phone,
+            where the figures should start as high on the screen as they can.
+          */}
+          <div
+            aria-hidden="true"
+            className="relative hidden h-48 overflow-hidden rounded-lg shadow-sm md:block lg:col-span-5 lg:h-52"
+          >
+            <MediaFrame
+              image={HERO_IMAGE}
+              aspect="fill"
+              radius="none"
+              sizes="(min-width: 1024px) 40vw, 100vw"
+              imageClassName="object-right"
             />
-            {/*
-              A link to the export card rather than the download itself:
-              `phase_16.md` section 92 wants the file's columns stated before
-              it is created, and the card is where they are.
-            */}
-            <Button asChild>
-              <a href={`#${IDS.export}`}>
-                <Download aria-hidden="true" />
-                {DASHBOARD_COPY.exportLink}
-              </a>
-            </Button>
+            <div className="from-background/70 absolute inset-0 bg-linear-to-r to-transparent to-60%" />
+            <p className="border-border/60 bg-card/75 text-heading absolute top-1/2 left-5 max-w-44 -translate-y-1/2 rounded-lg border p-4 font-serif text-lg leading-snug italic shadow-sm backdrop-blur-sm">
+              &ldquo;{DASHBOARD_COPY.heroQuote}&rdquo;
+            </p>
           </div>
         </header>
 
@@ -248,32 +263,25 @@ export default async function AdminAnalyticsPage({
         />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          {/* Performance */}
           <AppointmentsOverviewCard
-            className="lg:col-span-8"
+            className="lg:col-span-12 xl:col-span-8"
             titleId={IDS.overview}
             counts={analytics.appointments}
             trend={analytics.trend}
             granularity={range.granularity}
-            comparison={
-              appointmentPair
-                ? compareCounts(
-                    appointmentPair[0].total,
-                    appointmentPair[1].total,
-                  )
-                : null
-            }
-            comparisonBasis={basis}
             retryHref={selfHref}
           />
 
           <BusiestPractitionersCard
-            className="lg:col-span-4"
+            className="lg:col-span-12 xl:col-span-4"
             titleId={IDS.busiest}
             workload={analytics.workload}
             tableAnchor={IDS.workload}
             retryHref={selfHref}
           />
 
+          {/* Appointments and practitioner workload */}
           {registers ? (
             <AppointmentRegisterCard
               className="lg:col-span-12"
@@ -285,14 +293,15 @@ export default async function AdminAnalyticsPage({
           ) : null}
 
           <WorkloadTableCard
-            className="scroll-mt-6 lg:col-span-12"
+            className="lg:col-span-12"
             titleId={IDS.workload}
             workload={analytics.workload}
             retryHref={selfHref}
           />
 
+          {/* Patients and clinical records */}
           <PatientsCard
-            className={registers ? "lg:col-span-5" : "lg:col-span-12"}
+            className="lg:col-span-6 2xl:col-span-4"
             titleId={IDS.patients}
             summary={analytics.patients}
             growth={analytics.growth}
@@ -302,7 +311,7 @@ export default async function AdminAnalyticsPage({
 
           {registers ? (
             <PatientRegisterCard
-              className="lg:col-span-7"
+              className="lg:col-span-6 2xl:col-span-4"
               titleId={IDS.patientRegister}
               register={registers.patients}
               hrefFor={registerHref("patients", IDS.patientRegister)}
@@ -310,8 +319,21 @@ export default async function AdminAnalyticsPage({
             />
           ) : null}
 
+          <ClinicalActivityCard
+            className={
+              registers
+                ? "lg:col-span-6 2xl:col-span-4"
+                : "lg:col-span-6 2xl:col-span-8"
+            }
+            titleId={IDS.clinical}
+            activity={system.clinicalActivity}
+            documentTypes={system.documentTypes}
+            retryHref={selfHref}
+          />
+
+          {/* Notifications and recent activity */}
           <NotificationsCard
-            className="lg:col-span-7"
+            className="lg:col-span-6 2xl:col-span-7"
             titleId={IDS.notifications}
             deliveries={system.deliveries}
             volume={system.notifications}
@@ -320,30 +342,29 @@ export default async function AdminAnalyticsPage({
 
           {registers ? (
             <RecentActivityCard
-              className="lg:col-span-5"
+              className="lg:col-span-6 2xl:col-span-5"
               titleId={IDS.activity}
               activity={registers.activity}
               retryHref={selfHref}
             />
           ) : null}
 
-          <ClinicalActivityCard
-            className={registers ? "lg:col-span-7" : "lg:col-span-5"}
-            titleId={IDS.clinical}
-            activity={system.clinicalActivity}
-            documentTypes={system.documentTypes}
-            retryHref={selfHref}
-          />
-
+          {/* Export */}
           <ExportCard
-            className="lg:col-span-5 lg:self-start"
+            className={
+              registers
+                ? "lg:col-span-6 2xl:col-span-12"
+                : "lg:col-span-6 2xl:col-span-5"
+            }
             titleId={IDS.export}
             range={range}
             practitionerId={practitionerId}
           />
         </div>
 
-        <MetricDefinitions />
+        <div id={IDS.definitions} className="scroll-mt-6">
+          <MetricDefinitions />
+        </div>
       </Container>
     </div>
   );

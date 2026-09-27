@@ -40,13 +40,20 @@ const STATUS_PRESENTATION: Readonly<
 
 export function AppointmentStatusBadge({
   status,
+  className,
 }: {
   readonly status: AppointmentStatus;
+  /** Shape only — the tone, icon and label stay bound to the status. */
+  readonly className?: string;
 }) {
   const presentation = STATUS_PRESENTATION[status];
 
   return (
-    <StatusBadge status={presentation.status} label={presentation.label} />
+    <StatusBadge
+      status={presentation.status}
+      label={presentation.label}
+      className={className}
+    />
   );
 }
 

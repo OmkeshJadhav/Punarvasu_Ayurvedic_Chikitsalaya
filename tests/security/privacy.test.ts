@@ -323,6 +323,7 @@ describe("authenticated pages are not indexable", () => {
   it("declares noindex on every authenticated area", () => {
     for (const layout of [
       "src/app/(app)/layout.tsx",
+      "src/app/(admin)/admin/layout.tsx",
       "src/app/auth/layout.tsx",
     ]) {
       expect(readFileSync(layout, "utf8"), layout).toMatch(/index:\s*false/);
@@ -356,8 +357,8 @@ describe("authenticated pages are not indexable", () => {
     // that is published content, and being indexed is its whole purpose. An
     // authenticated page's subject is a person, so its title is a constant —
     // "Your profile", never "<name>'s profile".
-    const authenticated = sources("src/app/**/page.tsx").filter(({ path }) =>
-      path.includes("/(app)/"),
+    const authenticated = sources("src/app/**/page.tsx").filter(
+      ({ path }) => path.includes("/(app)/") || path.includes("/(admin)/"),
     );
 
     expect(authenticated.length).toBeGreaterThan(15);

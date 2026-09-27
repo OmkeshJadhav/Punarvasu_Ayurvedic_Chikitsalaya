@@ -1,3 +1,4 @@
+import { Sprout } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { ErrorState } from "@/components/shared/error-state";
@@ -76,12 +77,20 @@ export function AnalyticsPanel<T>({
   }
 
   if (isEmpty?.(result.data)) {
+    // A quiet period is not a problem, so it is drawn as a calm surface with
+    // a leaf rather than as a dashed hole where content should have been.
     return (
-      <p className="text-muted-foreground border-border rounded-lg border border-dashed px-4 py-8 text-center font-sans">
+      <p className="bg-muted/50 text-muted-foreground flex flex-col items-center rounded-lg px-5 py-8 text-center font-sans">
+        <span
+          aria-hidden="true"
+          className="bg-card text-primary mb-3 flex size-10 items-center justify-center rounded-full shadow-sm"
+        >
+          <Sprout className="size-5" />
+        </span>
         <span className="text-foreground block font-medium">
           {emptyTitle ?? ANALYTICS_STATE_COPY.emptyTitle}
         </span>
-        <span className="text-body-sm mt-1 block">
+        <span className="text-body-sm measure mt-1 block">
           {emptyDescription ?? ANALYTICS_STATE_COPY.emptyDescription}
         </span>
       </p>

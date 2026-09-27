@@ -1,11 +1,16 @@
 import {
+  Activity,
   Bell,
+  CalendarDays,
   ClipboardList,
+  Download,
   FileText,
   FileUp,
   Mail,
   ShieldCheck,
   Sprout,
+  Trophy,
+  UsersRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -15,11 +20,10 @@ import {
   ProportionCell,
 } from "@/components/analytics/analytics-table";
 import {
+  CardIcon,
   DashboardCard,
   DashboardCardLink,
-  InitialsAvatar,
 } from "@/components/analytics/dashboard/dashboard-card";
-import { ComparisonLine } from "@/components/analytics/dashboard/kpi-card";
 import {
   StackedBarChart,
   type ChartSeries,
@@ -27,7 +31,6 @@ import {
 import { AppointmentReportExport } from "@/components/analytics/export-form";
 import { Badge } from "@/components/ui/badge";
 import type { TrendGranularity } from "@/config/analytics";
-import type { PeriodComparison } from "@/features/analytics/comparison";
 import {
   ANALYTICS_STATE_COPY,
   APPOINTMENT_PANEL_COPY,
@@ -106,33 +109,32 @@ export function StatRow({
   readonly className?: string;
 }) {
   return (
-    <dl
-      className={cn(
-        "border-border grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-5 sm:grid-cols-4",
-        className,
-      )}
-    >
-      {figures.map((figure) => (
-        <div
-          key={figure.label}
-          className="border-border min-w-0 sm:[&:not(:first-child)]:border-l sm:[&:not(:first-child)]:pl-5"
-        >
-          <dt className="text-caption text-muted-foreground font-sans">
-            {figure.label}
-          </dt>
-          <dd className="mt-1">
-            <span className="text-h5 text-heading block font-sans font-semibold tabular-nums">
-              {figure.value}
-            </span>
-            {figure.note ? (
-              <span className="text-caption text-muted-foreground mt-0.5 block font-sans">
-                {figure.note}
+    // Four across only when the card itself is wide enough — a panel a
+    // third of the dashboard wide gets two rows of two, whatever the screen.
+    <div className={cn("@container", className)}>
+      <dl className="bg-muted/60 grid grid-cols-2 gap-x-6 gap-y-5 rounded-lg px-5 py-4 @lg:grid-cols-4">
+        {figures.map((figure) => (
+          <div
+            key={figure.label}
+            className="border-border-strong/60 min-w-0 @lg:[&:not(:first-child)]:border-l @lg:[&:not(:first-child)]:pl-5"
+          >
+            <dt className="text-body-sm text-muted-foreground font-sans">
+              {figure.label}
+            </dt>
+            <dd className="mt-1">
+              <span className="text-h4 text-heading block font-serif font-medium tabular-nums">
+                {figure.value}
               </span>
-            ) : null}
-          </dd>
-        </div>
-      ))}
-    </dl>
+              {figure.note ? (
+                <span className="text-caption text-muted-foreground mt-0.5 block font-sans">
+                  {figure.note}
+                </span>
+              ) : null}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 
@@ -188,12 +190,12 @@ const OUTCOME_SERIES: readonly ChartSeries[] = [
   {
     key: "cancelled",
     label: DASHBOARD_COPY.series.cancelled,
-    swatchClass: "bg-chart-3",
+    swatchClass: "bg-chart-4",
   },
   {
     key: "noShow",
     label: DASHBOARD_COPY.series.noShow,
-    swatchClass: "bg-chart-4",
+    swatchClass: "bg-chart-3",
   },
 ];
 
@@ -216,8 +218,6 @@ export function AppointmentsOverviewCard({
   counts,
   trend,
   granularity,
-  comparison,
-  comparisonBasis,
   retryHref,
   className,
 }: {
@@ -225,8 +225,6 @@ export function AppointmentsOverviewCard({
   readonly counts: AnalyticsResult<AppointmentCounts>;
   readonly trend: AnalyticsResult<readonly TrendPoint[]>;
   readonly granularity: TrendGranularity;
-  readonly comparison: PeriodComparison | null;
-  readonly comparisonBasis: string;
   readonly retryHref: string;
   readonly className?: string;
 }) {
@@ -235,20 +233,8 @@ export function AppointmentsOverviewCard({
       titleId={titleId}
       title={DASHBOARD_COPY.overviewHeading}
       description={DASHBOARD_COPY.overviewDescription}
+      icon={<CalendarDays />}
       className={className}
-      action={
-        counts.status === "ready" ? (
-          <div className="bg-muted/60 border-border rounded-md border px-4 py-2.5 sm:text-right">
-            <p className="text-caption text-muted-foreground font-sans">
-              {DASHBOARD_COPY.overviewTotal}
-            </p>
-            <p className="text-h4 text-heading font-serif leading-tight tabular-nums">
-              {formatCount(counts.data.total)}
-            </p>
-            <ComparisonLine comparison={comparison} basis={comparisonBasis} />
-          </div>
-        ) : null
-      }
     >
       <AnalyticsPanel
         result={trend}
@@ -276,7 +262,7 @@ export function AppointmentsOverviewCard({
         )}
       </AnalyticsPanel>
 
-      <div className="mt-6">
+      <div className="mt-2">
         <AnalyticsPanel
           result={counts}
           retryHref={retryHref}
@@ -356,6 +342,7 @@ export function BusiestPractitionersCard({
       titleId={titleId}
       title={DASHBOARD_COPY.workloadTopHeading}
       description={DASHBOARD_COPY.workloadTopDescription}
+      icon={<Trophy />}
       className={className}
     >
       <AnalyticsPanel
@@ -374,13 +361,19 @@ export function BusiestPractitionersCard({
 
           return (
             <div className="flex flex-1 flex-col justify-between gap-5">
-              <ol className="flex flex-col gap-4">
-                {ranked.map((row) => (
+              <ol className="flex flex-col gap-5">
+                {ranked.map((row, index) => (
                   <li
                     key={row.practitionerId}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-3.5"
                   >
-                    <InitialsAvatar name={row.displayName} />
+                    {/* The rank. The list is ordered, so it is also announced. */}
+                    <span
+                      aria-hidden="true"
+                      className="border-primary/15 bg-accent text-primary inline-flex size-9 shrink-0 items-center justify-center rounded-full border font-sans text-sm font-semibold tabular-nums"
+                    >
+                      {index + 1}
+                    </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-3">
                         <span className="text-body-sm text-foreground truncate font-sans font-medium">
@@ -392,7 +385,7 @@ export function BusiestPractitionersCard({
                       </div>
                       <span
                         aria-hidden="true"
-                        className="bg-chart-track mt-2 block h-1.5 overflow-hidden rounded-full"
+                        className="bg-chart-track mt-2 block h-2 overflow-hidden rounded-full"
                       >
                         <span
                           className="bg-chart-1 block h-full rounded-full"
@@ -403,11 +396,9 @@ export function BusiestPractitionersCard({
                   </li>
                 ))}
               </ol>
-              <div className="border-border -mb-2 border-t pt-2">
-                <DashboardCardLink href={`#${tableAnchor}`}>
-                  {DASHBOARD_COPY.seeAllWorkload}
-                </DashboardCardLink>
-              </div>
+              <DashboardCardLink block href={`#${tableAnchor}`}>
+                {DASHBOARD_COPY.seeAllWorkload}
+              </DashboardCardLink>
             </div>
           );
         }}
@@ -436,6 +427,7 @@ export function WorkloadTableCard({
       titleId={titleId}
       title={DASHBOARD_COPY.workloadTableHeading}
       description={WORKLOAD_PANEL_COPY.description}
+      icon={<ClipboardList />}
       className={className}
     >
       <AnalyticsPanel
@@ -460,8 +452,7 @@ export function WorkloadTableCard({
               {
                 header: WORKLOAD_PANEL_COPY.practitionerHeader,
                 cell: (row) => (
-                  <span className="flex items-center gap-3">
-                    <InitialsAvatar name={row.displayName} />
+                  <span className="flex items-center gap-2">
                     <span className="text-foreground font-medium whitespace-nowrap">
                       {row.displayName}
                     </span>
@@ -546,6 +537,7 @@ export function PatientsCard({
       titleId={titleId}
       title={PATIENT_PANEL_COPY.heading}
       description={DASHBOARD_COPY.patientTrendHeading}
+      icon={<UsersRound />}
       className={className}
     >
       <AnalyticsPanel
@@ -567,7 +559,7 @@ export function PatientsCard({
         )}
       </AnalyticsPanel>
 
-      <div className="mt-6">
+      <div className="mt-2">
         <AnalyticsPanel result={summary} retryHref={retryHref}>
           {(patients) => (
             <div>
@@ -675,7 +667,12 @@ export function NotificationsCard({
   const copy = NOTIFICATION_PANEL_COPY;
 
   return (
-    <DashboardCard titleId={titleId} title={copy.heading} className={className}>
+    <DashboardCard
+      titleId={titleId}
+      title={copy.heading}
+      icon={<Bell />}
+      className={className}
+    >
       <div className="flex flex-col gap-7">
         <section aria-labelledby={`${titleId}-sending`}>
           <PanelSubheading id={`${titleId}-sending`}>
@@ -808,6 +805,7 @@ export function ClinicalActivityCard({
       titleId={titleId}
       title={copy.heading}
       description={copy.description}
+      icon={<Activity />}
       className={className}
     >
       <AnalyticsPanel result={activity} retryHref={retryHref}>
@@ -837,18 +835,15 @@ export function ClinicalActivityCard({
             ].map((tile) => (
               <div
                 key={tile.label}
-                className="border-border bg-muted/40 flex min-w-0 flex-col gap-2 rounded-md border p-4"
+                className="bg-muted/60 flex min-w-0 flex-col gap-3 rounded-lg p-4"
               >
-                <dt className="text-caption text-muted-foreground flex flex-col gap-3 font-sans">
-                  <span
-                    aria-hidden="true"
-                    className="text-primary [&_svg]:size-5"
-                  >
+                <dt className="text-body-sm text-muted-foreground flex flex-col items-start gap-3 font-sans leading-snug">
+                  <CardIcon className="bg-card size-9 [&_svg]:size-4">
                     {tile.icon}
-                  </span>
+                  </CardIcon>
                   {tile.label}
                 </dt>
-                <dd className="text-h4 text-heading font-serif leading-none tabular-nums">
+                <dd className="text-h3 text-heading font-serif leading-none tabular-nums">
                   {formatCount(tile.value)}
                 </dd>
               </div>
@@ -925,7 +920,8 @@ export function ExportCard({
     <DashboardCard
       titleId={titleId}
       title={EXPORT_COPY.heading}
-      className={cn("scroll-mt-24", className)}
+      icon={<Download />}
+      className={className}
     >
       <AppointmentReportExport
         embedded

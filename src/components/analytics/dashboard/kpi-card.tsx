@@ -48,8 +48,45 @@ export function KpiGrid({
   );
 }
 
+/**
+ * A card's tint. Each is a brand surface paired with the mark drawn on it, so
+ * the four cards are told apart at a glance without a new colour entering the
+ * palette. `clay` is reserved for the exception figure — cancellations — in
+ * line with red and orange being kept for what needs attention.
+ */
+export type KpiTone = "forest" | "sky" | "clay" | "gold";
+
+const TONE_STYLES: Readonly<
+  Record<
+    KpiTone,
+    { readonly surface: string; readonly icon: string; readonly mark: string }
+  >
+> = {
+  forest: {
+    surface: "from-accent/70",
+    icon: "bg-accent text-primary",
+    mark: "text-chart-1",
+  },
+  sky: {
+    surface: "from-info-surface/80",
+    icon: "bg-info-surface text-info",
+    mark: "text-info",
+  },
+  clay: {
+    surface: "from-destructive-surface/60",
+    icon: "bg-destructive-surface text-terracotta",
+    mark: "text-terracotta",
+  },
+  gold: {
+    surface: "from-gold-surface/80",
+    icon: "bg-gold-surface text-gold",
+    mark: "text-gold",
+  },
+};
+
 export interface KpiCardProps {
   readonly label: string;
+  readonly tone?: KpiTone;
   /** Already formatted. `"—"` when the read failed or there is no basis. */
   readonly value: string;
   readonly icon: ReactNode;
@@ -65,6 +102,7 @@ export interface KpiCardProps {
 
 export function KpiCard({
   label,
+  tone = "forest",
   value,
   icon,
   comparison,
@@ -72,30 +110,38 @@ export function KpiCard({
   note,
   trend,
 }: KpiCardProps) {
+  const styles = TONE_STYLES[tone];
+
   return (
     <div
       className={cn(
-        "border-border bg-card flex min-w-0 flex-col rounded-lg border p-5 shadow-sm",
+        "border-border/60 bg-card flex min-w-0 flex-col rounded-lg border bg-linear-to-br to-transparent to-70% p-5 shadow-sm sm:p-6",
+        styles.surface,
         MOTION_MICRO,
-        "hover:border-primary/20 hover:shadow-md",
+        "hover:shadow-md",
       )}
     >
-      <dt className="text-label text-muted-foreground flex items-center gap-3 font-sans font-medium">
+      <dt className="text-label text-foreground flex items-center gap-3 font-sans font-medium">
         <span
           aria-hidden="true"
-          className="bg-accent text-primary flex size-10 shrink-0 items-center justify-center rounded-md [&_svg]:size-5"
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-md [&_svg]:size-5",
+            styles.icon,
+          )}
         >
           {icon}
         </span>
         {label}
       </dt>
 
-      <dd className="mt-4 flex min-w-0 flex-col gap-3">
+      <dd className="mt-5 flex min-w-0 flex-col gap-3">
         <span className="flex min-w-0 items-end justify-between gap-3">
-          <span className="text-heading block font-serif text-[2.25rem] leading-none font-medium tracking-tight tabular-nums">
+          <span className="text-heading block font-serif text-[2.5rem] leading-none font-medium tracking-tight tabular-nums">
             {value}
           </span>
-          {trend ? <Sparkline values={trend} className="shrink-0" /> : null}
+          {trend ? (
+            <Sparkline values={trend} className={cn("shrink-0", styles.mark)} />
+          ) : null}
         </span>
         <span className="block">
           {note ? (

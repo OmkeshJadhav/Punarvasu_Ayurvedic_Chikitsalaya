@@ -46,9 +46,9 @@ export function Sparkline({
       focusable="false"
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       preserveAspectRatio="none"
-      className={cn("text-chart-1 h-10 w-28 overflow-visible", className)}
+      className={cn("text-chart-1 h-11 w-28 overflow-visible", className)}
     >
-      <path d={area} fill="currentColor" opacity={0.08} />
+      <path d={area} fill="currentColor" opacity={0.1} />
       <path
         d={line}
         fill="none"

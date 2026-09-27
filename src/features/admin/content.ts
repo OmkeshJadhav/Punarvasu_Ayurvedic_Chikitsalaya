@@ -29,6 +29,39 @@ export const ADMIN_AREA = {
   title: "Administration",
 } as const;
 
+/**
+ * The administration shell: the sidebar's groups, the top bar and the help
+ * card. The groups separate *where the clinic's figures are* from *what an
+ * administrator manages* from *the administrator's own account*, so the
+ * sidebar reads as three short lists rather than one long one.
+ */
+export const ADMIN_SHELL = {
+  groups: {
+    analytics: "Analytics",
+    administration: "Administration",
+    workspace: "Workspace",
+  },
+  clinicAnalytics: "Clinic analytics",
+  /** Jumps to a section of the clinic dashboard, not separate pages. */
+  sections: {
+    appointments: "Appointments",
+    practitioners: "Practitioners",
+    patients: "Patients",
+    clinical: "Clinical activity",
+  },
+  notifications: "Notifications",
+  settings: "Account settings",
+  openMenu: "Open navigation",
+  menuTitle: "Administration menu",
+  accountMenu: "Account",
+  help: {
+    title: "Need help?",
+    body: "Every figure on the dashboard is defined, with exactly how it is counted.",
+    action: "Read the definitions",
+  },
+  websiteLink: "Punarvasu website",
+} as const;
+
 export const ADMIN_USERS_PAGE = {
   title: "Access management",
   heading: "People and access",

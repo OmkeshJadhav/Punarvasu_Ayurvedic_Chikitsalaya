@@ -50,7 +50,7 @@ import { AUTH_FOOTNOTE } from "@/features/auth/content";
  * more: every authenticated user may reach `/account` and `/forbidden`
  * whatever role they hold. Authorization belongs to the area that needs it,
  * where the requirement can be stated next to the thing it protects —
- * `(app)/patient/layout.tsx` and `(app)/admin/layout.tsx` each call
+ * `(app)/patient/layout.tsx` and `(admin)/admin/layout.tsx` each call
  * `requireAreaAccess` for their own area (`phase_08.md` section 11).
  *
  * Putting a role gate here instead would mean one place deciding access for
@@ -59,8 +59,12 @@ import { AUTH_FOOTNOTE } from "@/features/auth/content";
  *
  * This shell is a foundation, not a dashboard. The doctor workspace and the
  * receptionist workspace get their own navigation in the phases that build
- * them; the patient area has its own under `(app)/patient`, and administration
- * under `(app)/admin`.
+ * them; the patient area has its own under `(app)/patient`.
+ *
+ * Administration is the exception: it lives in the sibling `(admin)` group,
+ * because its full-height sidebar cannot sit under this header. Its layout
+ * restates this one's authentication, `force-dynamic`, `noindex` and toast
+ * region — see `(admin)/admin/layout.tsx`.
  *
  * ## The navigation is not a security control
  *

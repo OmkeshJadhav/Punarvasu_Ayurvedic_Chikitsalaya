@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
+import {
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  History,
+  ShieldCheck,
+  UserRoundSearch,
+} from "lucide-react";
 
 import { AnalyticsPanel } from "@/components/analytics/analytics-panel";
 import { AnalyticsTable } from "@/components/analytics/analytics-table";
@@ -71,17 +78,36 @@ function AuditNote() {
 function PersonCell({
   name,
   badge,
+  detail,
+  avatarClassName,
 }: {
   readonly name: string;
   readonly badge?: string | undefined;
+  /** A quiet second line under the name, e.g. when they registered. */
+  readonly detail?: string | undefined;
+  /** Lets a narrow register drop the decorative avatar to keep its columns. */
+  readonly avatarClassName?: string;
 }) {
   return (
     <span className="flex items-center gap-3">
-      <InitialsAvatar name={name} />
-      <span className="text-foreground font-medium whitespace-nowrap">
-        {name}
+      <InitialsAvatar name={name} className={avatarClassName} />
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-foreground font-medium whitespace-nowrap">
+          {name}
+        </span>
+        {badge || detail ? (
+          <span className="text-caption text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1">
+            {badge ? (
+              <Badge tone="primary" className="rounded-full px-2 py-0">
+                {badge}
+              </Badge>
+            ) : null}
+            {detail ? (
+              <span className="whitespace-nowrap">{detail}</span>
+            ) : null}
+          </span>
+        ) : null}
       </span>
-      {badge ? <Badge tone="primary">{badge}</Badge> : null}
     </span>
   );
 }
@@ -91,7 +117,7 @@ function PersonCell({
 /* ------------------------------------------------------------------ */
 
 const pageLinkClass = cn(
-  "text-body-sm inline-flex size-11 items-center justify-center rounded-md border font-sans font-medium tabular-nums",
+  "text-body-sm inline-flex size-11 items-center justify-center rounded-full border font-sans font-medium tabular-nums",
   MOTION_MICRO,
   "focus-visible:outline-ring focus-visible:outline-2 focus-visible:outline-offset-2",
 );
@@ -122,7 +148,7 @@ export function RegisterPagination({
   const to = Math.min(page * pageSize, total);
 
   return (
-    <div className="border-border mt-1 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mt-1 flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-caption text-muted-foreground font-sans">
         {REGISTER_COPY.pagination.showing(from, to, total)}
       </p>
@@ -238,7 +264,8 @@ export function AppointmentRegisterCard({
       titleId={titleId}
       title={copy.heading}
       description={copy.description}
-      className={cn("scroll-mt-6", className)}
+      icon={<CalendarRange />}
+      className={className}
     >
       <AnalyticsPanel
         result={register}
@@ -295,7 +322,10 @@ export function AppointmentRegisterCard({
                   {
                     header: copy.statusHeader,
                     cell: (row) => (
-                      <AppointmentStatusBadge status={row.status} />
+                      <AppointmentStatusBadge
+                        status={row.status}
+                        className="rounded-full px-2.5"
+                      />
                     ),
                   },
                 ]}
@@ -340,7 +370,8 @@ export function PatientRegisterCard({
       titleId={titleId}
       title={copy.heading}
       description={copy.description}
-      className={cn("scroll-mt-6", className)}
+      icon={<UserRoundSearch />}
+      className={className}
     >
       <AnalyticsPanel
         result={register}
@@ -354,51 +385,62 @@ export function PatientRegisterCard({
             <BeyondEnd href={hrefFor(1)} />
           ) : (
             <>
-              <AnalyticsTable<PatientRegisterRow>
-                embedded
-                caption={copy.caption}
-                rows={page.rows}
-                rowKey={(row) => row.patientId}
-                columns={[
-                  {
-                    header: copy.patientHeader,
-                    cell: (row) => (
-                      <PersonCell
-                        name={row.patientName}
-                        badge={row.isNew ? copy.newBadge : undefined}
-                      />
-                    ),
-                  },
-                  {
-                    header: copy.visitsHeader,
-                    numeric: true,
-                    cell: (row) => row.appointmentsInPeriod,
-                  },
-                  {
-                    header: copy.lastVisitHeader,
-                    cell: (row) => {
-                      const moment = row.lastVisitAt
-                        ? clinicMoment(row.lastVisitAt)
-                        : null;
-                      return moment ? (
-                        <span className="whitespace-nowrap">{moment.day}</span>
-                      ) : (
-                        <span className="text-muted-foreground whitespace-nowrap">
-                          {copy.noVisit}
-                        </span>
-                      );
+              <div className="@container">
+                <AnalyticsTable<PatientRegisterRow>
+                  embedded
+                  caption={copy.caption}
+                  rows={page.rows}
+                  rowKey={(row) => row.patientId}
+                  columns={[
+                    {
+                      header: copy.patientHeader,
+                      // The registration date rides under the name rather than
+                      // taking a fourth column, which would scroll in a card
+                      // a third of the dashboard wide.
+                      cell: (row) => {
+                        const registered = clinicMoment(row.registeredAt);
+                        return (
+                          <PersonCell
+                            name={row.patientName}
+                            badge={row.isNew ? copy.newBadge : undefined}
+                            // The avatar is decorative; in a card a third of
+                            // the dashboard wide it is what pushes "Last
+                            // visit" out of view, so it goes first.
+                            avatarClassName="hidden @md:inline-flex"
+                            detail={
+                              registered
+                                ? `${copy.registeredHeader} ${registered.day}`
+                                : undefined
+                            }
+                          />
+                        );
+                      },
                     },
-                  },
-                  {
-                    header: copy.registeredHeader,
-                    cell: (row) => (
-                      <span className="whitespace-nowrap">
-                        {clinicMoment(row.registeredAt)?.day ?? "—"}
-                      </span>
-                    ),
-                  },
-                ]}
-              />
+                    {
+                      header: copy.visitsHeader,
+                      numeric: true,
+                      cell: (row) => row.appointmentsInPeriod,
+                    },
+                    {
+                      header: copy.lastVisitHeader,
+                      cell: (row) => {
+                        const moment = row.lastVisitAt
+                          ? clinicMoment(row.lastVisitAt)
+                          : null;
+                        return moment ? (
+                          <span className="whitespace-nowrap">
+                            {moment.day}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            {copy.noVisit}
+                          </span>
+                        );
+                      },
+                    },
+                  ]}
+                />
+              </div>
               <RegisterPagination
                 page={page.page}
                 pageSize={page.pageSize}
@@ -452,6 +494,7 @@ export function RecentActivityCard({
       titleId={titleId}
       title={copy.heading}
       description={copy.description}
+      icon={<History />}
       className={className}
     >
       <AnalyticsPanel
@@ -494,7 +537,10 @@ export function RecentActivityCard({
                         {ACTIVITY_TITLE[entry.kind]}
                       </p>
                       {entry.status && entry.kind !== "booked" ? (
-                        <AppointmentStatusBadge status={entry.status} />
+                        <AppointmentStatusBadge
+                          status={entry.status}
+                          className="rounded-full px-2.5"
+                        />
                       ) : null}
                     </div>
                     <p className="text-body-sm text-muted-foreground mt-0.5 font-sans">

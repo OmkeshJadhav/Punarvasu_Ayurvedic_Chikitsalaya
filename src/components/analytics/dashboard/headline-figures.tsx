@@ -68,6 +68,7 @@ export function ClinicHeadlineFigures({
       </h2>
       <KpiGrid labelledBy={headingId}>
         <KpiCard
+          tone="forest"
           label={DASHBOARD_COPY.kpi.appointments}
           icon={<CalendarCheck2 />}
           value={counts ? formatCount(counts.total) : "—"}
@@ -85,23 +86,7 @@ export function ClinicHeadlineFigures({
         />
 
         <KpiCard
-          label={DASHBOARD_COPY.kpi.completed}
-          icon={<CircleCheckBig />}
-          value={counts ? formatCount(counts.completed) : "—"}
-          {...(counts ? {} : { note: unavailable })}
-          comparison={
-            appointmentPair
-              ? compareCounts(
-                  appointmentPair[0].completed,
-                  appointmentPair[1].completed,
-                )
-              : null
-          }
-          comparisonBasis={basis}
-          {...(points ? { trend: points.map((point) => point.completed) } : {})}
-        />
-
-        <KpiCard
+          tone="sky"
           label={DASHBOARD_COPY.kpi.newPatients}
           icon={<UserPlus />}
           value={
@@ -125,6 +110,7 @@ export function ClinicHeadlineFigures({
         />
 
         <KpiCard
+          tone="clay"
           label={DASHBOARD_COPY.kpi.cancellationRate}
           icon={<Percent />}
           value={formatRate(cancellationRate)}
@@ -156,6 +142,24 @@ export function ClinicHeadlineFigures({
                 }),
               }
             : {})}
+        />
+
+        <KpiCard
+          tone="gold"
+          label={DASHBOARD_COPY.kpi.completed}
+          icon={<CircleCheckBig />}
+          value={counts ? formatCount(counts.completed) : "—"}
+          {...(counts ? {} : { note: unavailable })}
+          comparison={
+            appointmentPair
+              ? compareCounts(
+                  appointmentPair[0].completed,
+                  appointmentPair[1].completed,
+                )
+              : null
+          }
+          comparisonBasis={basis}
+          {...(points ? { trend: points.map((point) => point.completed) } : {})}
         />
       </KpiGrid>
     </section>
