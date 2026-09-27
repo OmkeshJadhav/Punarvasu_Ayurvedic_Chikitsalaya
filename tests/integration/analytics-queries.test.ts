@@ -278,7 +278,7 @@ describe("what is sent to the database", () => {
     expect(summary?.args).toEqual({
       p_from: "2026-09-01",
       p_to: "2026-09-30",
-      p_practitioner_id: null,
+      p_practitioner_id: undefined,
     });
 
     const patients = rpcCalls.find(

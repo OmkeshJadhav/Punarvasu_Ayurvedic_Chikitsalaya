@@ -12,7 +12,7 @@ import {
   type RoleAssignmentFormState,
 } from "@/features/admin/types";
 import { APP_ROLES, ROLE_LABELS } from "@/config/permissions";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 /**
  * The role control on one row of the access table.

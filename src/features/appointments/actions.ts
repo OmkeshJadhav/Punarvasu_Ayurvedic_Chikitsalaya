@@ -198,7 +198,7 @@ export async function bookAppointmentAction(
       p_practitioner_id: parsed.data.practitionerId,
       p_appointment_type_id: parsed.data.appointmentTypeId,
       p_starts_at: new Date(parsed.data.startsAt).toISOString(),
-      p_patient_note: parsed.data.patientNote ?? null,
+      p_patient_note: parsed.data.patientNote ?? undefined,
     });
 
     if (error) {
@@ -266,7 +266,7 @@ export async function cancelAppointmentAction(
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.rpc("cancel_appointment", {
       p_appointment_id: parsed.data.appointmentId,
-      p_reason: parsed.data.reason ?? null,
+      p_reason: parsed.data.reason ?? undefined,
     });
 
     if (error) {

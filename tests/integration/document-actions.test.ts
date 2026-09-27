@@ -714,7 +714,7 @@ describe("archiveDocumentAction", () => {
     ]);
   });
 
-  it("sends a null reason rather than an empty string", async () => {
+  it("sends no reason rather than an empty string", async () => {
     const { archiveDocumentAction } =
       await import("@/features/documents/actions");
     asPatient();
@@ -724,7 +724,7 @@ describe("archiveDocumentAction", () => {
       archiveForm({ reason: "" }),
     );
 
-    expect(rpcCalls[0]?.args.p_reason).toBeNull();
+    expect(rpcCalls[0]?.args.p_reason).toBeUndefined();
   });
 
   it("lets no planted field reach the database", async () => {

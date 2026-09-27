@@ -221,7 +221,7 @@ export async function getClinicAnalytics(
 ): Promise<ClinicAnalytics> {
   const user = await assertPermission("analytics.read.operational");
   const supabase = await createSupabaseServerClient();
-  const filter = practitionerId ?? null;
+  const filter = practitionerId ?? undefined;
 
   const [appointments, trend, workload, patients, growth] = await Promise.all([
     read(
@@ -312,7 +312,7 @@ export async function getClinicComparison(
         supabase.rpc("analytics_clinic_appointment_summary", {
           p_from: range.from,
           p_to: range.to,
-          p_practitioner_id: practitionerId ?? null,
+          p_practitioner_id: practitionerId ?? undefined,
         }),
       mapCounts,
     ),
@@ -629,7 +629,7 @@ export async function getAppointmentReport(
       supabase.rpc("analytics_appointment_report", {
         p_from: range.from,
         p_to: range.to,
-        p_practitioner_id: practitionerId ?? null,
+        p_practitioner_id: practitionerId ?? undefined,
       }),
     (data) =>
       rows(data).map((row) => ({

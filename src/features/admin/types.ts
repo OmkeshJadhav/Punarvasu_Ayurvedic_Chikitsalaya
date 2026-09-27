@@ -18,7 +18,7 @@
  * section 42's data minimisation).
  */
 
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 export interface ManagedUser {
   /** The Supabase auth user id. The only identifier the clinic acts on. */

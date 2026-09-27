@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { APP_ROLES, PERMISSIONS, type Permission } from "@/config/permissions";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 import {
   can,

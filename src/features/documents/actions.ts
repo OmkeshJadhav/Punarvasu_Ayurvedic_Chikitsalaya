@@ -151,7 +151,7 @@ export async function archiveDocumentAction(
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.rpc("archive_patient_document", {
       p_document_id: parsed.data.documentId,
-      p_reason: parsed.data.reason === "" ? null : parsed.data.reason,
+      p_reason: parsed.data.reason === "" ? undefined : parsed.data.reason,
     });
 
     if (error) {

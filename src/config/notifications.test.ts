@@ -18,7 +18,7 @@ import type {
   NotificationAudience,
   NotificationCategory,
 } from "@/features/notifications/types";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 /**
  * The notification configuration mirror.

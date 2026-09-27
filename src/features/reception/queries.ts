@@ -370,8 +370,8 @@ export async function findPossibleDuplicates(input: {
       "find_possible_duplicate_patients",
       {
         p_full_name: input.fullName,
-        p_phone: input.phone ?? null,
-        p_date_of_birth: input.dateOfBirth ?? null,
+        p_phone: input.phone ?? undefined,
+        p_date_of_birth: input.dateOfBirth ?? undefined,
       },
     );
 

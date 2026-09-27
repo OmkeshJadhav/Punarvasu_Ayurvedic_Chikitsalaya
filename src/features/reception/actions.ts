@@ -331,20 +331,20 @@ export async function createPatientAction(
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.rpc("create_patient_record", {
       p_full_name: parsed.data.fullName,
-      p_preferred_name: parsed.data.preferredName ?? null,
-      p_phone: parsed.data.phone ?? null,
-      p_date_of_birth: parsed.data.dateOfBirth ?? null,
-      p_gender: parsed.data.gender ?? null,
-      p_address_line1: parsed.data.addressLine1 ?? null,
-      p_address_line2: parsed.data.addressLine2 ?? null,
-      p_city: parsed.data.city ?? null,
-      p_state: parsed.data.state ?? null,
-      p_postal_code: parsed.data.postalCode ?? null,
-      p_emergency_contact_name: parsed.data.emergencyContactName ?? null,
+      p_preferred_name: parsed.data.preferredName ?? undefined,
+      p_phone: parsed.data.phone ?? undefined,
+      p_date_of_birth: parsed.data.dateOfBirth ?? undefined,
+      p_gender: parsed.data.gender ?? undefined,
+      p_address_line1: parsed.data.addressLine1 ?? undefined,
+      p_address_line2: parsed.data.addressLine2 ?? undefined,
+      p_city: parsed.data.city ?? undefined,
+      p_state: parsed.data.state ?? undefined,
+      p_postal_code: parsed.data.postalCode ?? undefined,
+      p_emergency_contact_name: parsed.data.emergencyContactName ?? undefined,
       p_emergency_contact_relationship:
-        parsed.data.emergencyContactRelationship ?? null,
-      p_emergency_contact_phone: parsed.data.emergencyContactPhone ?? null,
-      p_preferred_language: parsed.data.preferredLanguage ?? null,
+        parsed.data.emergencyContactRelationship ?? undefined,
+      p_emergency_contact_phone: parsed.data.emergencyContactPhone ?? undefined,
+      p_preferred_language: parsed.data.preferredLanguage ?? undefined,
     });
 
     if (error) {
@@ -439,7 +439,7 @@ export async function createAppointmentForPatientAction(
         p_practitioner_id: parsed.data.practitionerId,
         p_appointment_type_id: parsed.data.appointmentTypeId,
         p_starts_at: new Date(parsed.data.startsAt).toISOString(),
-        p_patient_note: parsed.data.patientNote ?? null,
+        p_patient_note: parsed.data.patientNote ?? undefined,
       },
     );
 
@@ -520,7 +520,7 @@ export async function updateAppointmentStatusAction(
     const { error } = await supabase.rpc("update_appointment_status_as_staff", {
       p_appointment_id: parsed.data.appointmentId,
       p_status: parsed.data.status,
-      p_reason: parsed.data.reason ?? null,
+      p_reason: parsed.data.reason ?? undefined,
     });
 
     if (error) {

@@ -1329,6 +1329,7 @@ secret scan pass. **Tests: 4,677 of 4,677.**
   functions and the new enum value; regeneration (`npm run db:types`) was
   blocked by the session's permission policy. The edits typecheck and match
   the migration. Regenerate when convenient.
+  **Resolved** — the file is now generated; see Addendum C.
 * **The receptionist and doctor dashboards still use the original panels.**
   Only the shared filter was restyled there.
 * **"Busiest practitioners" shows empty space** with one or two practitioners,
@@ -1385,3 +1386,80 @@ the patient register follow their own card width through container queries.
   this redesign were run against the previous commit's copy, restored
   temporarily; the three register RPC names are missing from that copy
   (see A8).
+  **Resolved** — see Addendum C.
+
+## Addendum C — Generated database types
+
+`src/types/database.ts` was committed empty in `2130bd8`, which broke the
+production build: every module importing `Database` failed, and each failure
+cascaded into `possibly 'undefined'` and implicit-`any` errors elsewhere. The
+cause was `npm run db:types` running against an unlinked project — the shell
+redirect truncates the file before the CLI fails.
+
+### C1. The file is now generated
+
+The project was linked (`supabase link`) and `npm run db:types` regenerated
+the file from the live schema. It is **no longer hand-written**, and nothing
+may be added to it by hand: the next regeneration replaces it wholesale.
+
+### C2. `AppRole` moved to `src/types/roles.ts`
+
+The hand-written file exported `AppRole`; the generator does not. It now lives
+in `src/types/roles.ts`, derived from the generated `app_role` enum, and all
+fourteen importers point there.
+
+### C3. Optional RPC arguments are omitted, not sent as `null`
+
+Generated `Args` type a parameter with a default as `p_x?: string` — omitted
+or a value, never `null`. Each call site was checked against the latest SQL
+signature of its function:
+
+* **34 arguments** whose parameter is `default null` now pass `undefined`
+  (`?? undefined`). The client drops the key, the database applies the
+  default, and the function receives the same `null` as before.
+* **4 arguments** whose parameter is required but nullable — `p_description`
+  (both document RPCs), and `p_start_date` / `p_follow_up_on`
+  (`save_treatment_plan_draft`) — still send `null`, cast with a comment. The
+  generator types every parameter without a default as non-null; omitting one
+  would make PostgREST fail to resolve the function.
+
+Nine tests that asserted an explicit `null` now assert the argument is absent.
+
+### C4. Files
+
+```text
+src/types/database.ts                    regenerated
+src/types/roles.ts                       new — AppRole
+14 files                                 AppRole import path
+src/lib/security/audit.ts, src/features/{analytics,clinic-registers,
+  appointments,clinical-ai,documents,notifications,reception}/…
+                                         ?? null → ?? undefined
+src/features/documents/upload.ts,
+src/features/treatment-plans/actions.ts  nullable required args, cast
+tests: audit-and-limits, analytics-queries, appointment-actions,
+       document-actions, notification-processor
+```
+
+### C5. Verification
+
+Typecheck, lint (0 errors; the pre-existing `location-section.tsx` warning),
+Prettier and production build pass. **Tests: 4,678 of 4,678.**
+
+### C6. Known issues
+
+* **The compile-time guard against client table writes is gone.** The
+  hand-written file typed `Insert` and `Update` as `never` on twenty tables,
+  so a direct table write from application code did not type-check; the
+  generated shapes are permissive. The database grants and RLS remain the
+  enforcement and are unchanged — this lost a second, earlier signal, not the
+  control itself. Restoring it needs an override layer over the generated
+  types rather than edits to the generated file.
+* **Internal functions are now typed.** The hand-written file declared only
+  the public RPCs (77); the generated one declares all 95, so calling an
+  internal function from the application type-checks. Their `execute` grants
+  still refuse it at runtime.
+* **`npm run db:types` still truncates on failure.** A failed run empties the
+  file again. Check it is non-empty before committing, or change the script
+  to write to a temporary file and move it into place on success.
+* **Earlier progress notes** (phases 06–19) describe the file as hand-written.
+  They are left as the record of their time; this addendum supersedes them.

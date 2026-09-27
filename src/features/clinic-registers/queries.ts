@@ -201,7 +201,7 @@ export async function getClinicRegisters(
 ): Promise<ClinicRegisters> {
   const user = await assertPermission("registers.read.patients");
   const supabase = await createSupabaseServerClient();
-  const filter = practitionerId ?? null;
+  const filter = practitionerId ?? undefined;
 
   const [appointments, patients, activity] = await Promise.all([
     read(

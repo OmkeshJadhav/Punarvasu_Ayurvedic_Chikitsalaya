@@ -417,10 +417,10 @@ async function recordOutcome(input: {
     await supabase.rpc("complete_ai_assistance_session", {
       p_session_id: input.sessionId,
       p_status: input.status,
-      p_failure_code: input.failureCode,
+      p_failure_code: input.failureCode ?? undefined,
       p_latency_ms: input.latencyMs,
-      p_input_tokens: input.inputTokens,
-      p_output_tokens: input.outputTokens,
+      p_input_tokens: input.inputTokens ?? undefined,
+      p_output_tokens: input.outputTokens ?? undefined,
     });
   } catch (error) {
     logger.error("clinical_ai.session_record_failed", error);

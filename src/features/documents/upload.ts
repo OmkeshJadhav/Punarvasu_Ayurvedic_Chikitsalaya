@@ -357,7 +357,8 @@ export async function uploadPatientDocument(
             p_document_id: documentId,
             p_document_type: documentType,
             p_title: title,
-            p_description: description,
+            // Required but nullable in SQL; the generated types say non-null.
+            p_description: description as string,
             p_storage_path: storagePath,
             p_file_name: fileName,
             p_mime_type: mimeType,
@@ -369,7 +370,8 @@ export async function uploadPatientDocument(
             p_document_id: documentId,
             p_document_type: documentType,
             p_title: title,
-            p_description: description,
+            // Required but nullable in SQL; the generated types say non-null.
+            p_description: description as string,
             p_storage_path: storagePath,
             p_file_name: fileName,
             p_mime_type: mimeType,

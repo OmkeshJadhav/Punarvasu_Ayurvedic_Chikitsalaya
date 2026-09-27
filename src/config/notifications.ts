@@ -36,7 +36,7 @@ import type {
   NotificationCategory,
   NotificationChannel,
 } from "@/features/notifications/types";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 /**
  * Minutes before an appointment at which a reminder is due.

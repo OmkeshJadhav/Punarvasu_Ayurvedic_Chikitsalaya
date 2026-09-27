@@ -174,10 +174,15 @@ export async function saveTreatmentPlanDraftAction(
       p_expected_version: parsed.data.expectedVersion,
       p_title: parsed.data.title,
       p_summary: parsed.data.summary,
-      // An empty date field is an absent date, not the epoch.
-      p_start_date: parsed.data.startDate === "" ? null : parsed.data.startDate,
-      p_follow_up_on:
-        parsed.data.followUpOn === "" ? null : parsed.data.followUpOn,
+      // An empty date field is an absent date, not the epoch. Both
+      // parameters are required but nullable in SQL; the generated types
+      // mark every parameter without a default as non-null, hence the casts.
+      p_start_date: (parsed.data.startDate === ""
+        ? null
+        : parsed.data.startDate) as string,
+      p_follow_up_on: (parsed.data.followUpOn === ""
+        ? null
+        : parsed.data.followUpOn) as string,
       p_items: parsed.data.items,
     });
 

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { APP_ROLES } from "@/config/permissions";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 /**
  * Server-side authorization guards, driven against each of the five actors

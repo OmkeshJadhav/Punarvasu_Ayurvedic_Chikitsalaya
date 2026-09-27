@@ -49,7 +49,7 @@ import "server-only";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { logger } from "@/lib/logging/logger";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 import { loginPathWithNext } from "./redirect";
 

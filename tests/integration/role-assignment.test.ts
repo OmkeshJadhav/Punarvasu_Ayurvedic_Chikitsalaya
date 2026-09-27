@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 /**
  * Role assignment — the privilege-escalation surface.

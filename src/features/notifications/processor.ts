@@ -266,7 +266,7 @@ async function processOutbox(
         p_id: event.id,
         p_status: "failed",
         p_error_code: "processing_failed",
-        p_retry_at: retryAt ? retryAt.toISOString() : null,
+        p_retry_at: retryAt ? retryAt.toISOString() : undefined,
       });
     }
   }
@@ -738,7 +738,7 @@ async function processDeliveries(
       await supabase.rpc("record_notification_delivery_result", {
         p_delivery_id: delivery.delivery_id,
         p_status: "sent",
-        p_provider_message_id: outcome.providerMessageId ?? null,
+        p_provider_message_id: outcome.providerMessageId ?? undefined,
       });
       continue;
     }
@@ -767,7 +767,7 @@ async function processDeliveries(
       p_delivery_id: delivery.delivery_id,
       p_status: "failed",
       p_error_code: outcome.errorCode,
-      p_retry_at: retryAt ? retryAt.toISOString() : null,
+      p_retry_at: retryAt ? retryAt.toISOString() : undefined,
     });
   }
 
@@ -825,8 +825,8 @@ async function createNotification(
     p_body: input.rendered.body,
     p_template_version: input.rendered.templateVersion,
     p_status: input.status ?? "active",
-    p_scheduled_for: input.scheduledFor ?? null,
-    p_reminder_offset_minutes: input.reminderOffsetMinutes ?? null,
+    p_scheduled_for: input.scheduledFor ?? undefined,
+    p_reminder_offset_minutes: input.reminderOffsetMinutes ?? undefined,
   });
 
   if (error) {

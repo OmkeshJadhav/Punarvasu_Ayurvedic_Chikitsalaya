@@ -62,7 +62,7 @@ describe("what the audit trail is told", () => {
       p_outcome: "allowed",
       p_resource_id: "record-1",
       p_subject_patient_id: "patient-1",
-      p_request_id: null,
+      p_request_id: undefined,
     });
   });
 
@@ -116,9 +116,9 @@ describe("what the audit trail is told", () => {
       p_action: "authorization.denied",
       p_resource_type: "route",
       p_outcome: "denied",
-      p_resource_id: null,
-      p_subject_patient_id: null,
-      p_request_id: null,
+      p_resource_id: undefined,
+      p_subject_patient_id: undefined,
+      p_request_id: undefined,
     });
   });
 
@@ -127,7 +127,7 @@ describe("what the audit trail is told", () => {
     await recordAuthorizationDenied({ resourceId: "should-not-survive" });
 
     const [, args] = rpc.mock.calls[0]!;
-    expect((args as { p_resource_id: unknown }).p_resource_id).toBeNull();
+    expect((args as { p_resource_id: unknown }).p_resource_id).toBeUndefined();
   });
 });
 

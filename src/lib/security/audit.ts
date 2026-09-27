@@ -95,9 +95,9 @@ export async function recordSecurityAuditEvent(
       p_action: entry.action,
       p_resource_type: entry.resourceType,
       p_outcome: entry.outcome,
-      p_resource_id: entry.resourceId ?? null,
-      p_subject_patient_id: entry.subjectPatientId ?? null,
-      p_request_id: entry.requestId ?? null,
+      p_resource_id: entry.resourceId ?? undefined,
+      p_subject_patient_id: entry.subjectPatientId ?? undefined,
+      p_request_id: entry.requestId ?? undefined,
     });
 
     if (error) {

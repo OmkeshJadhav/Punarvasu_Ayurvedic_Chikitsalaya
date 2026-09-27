@@ -30,7 +30,7 @@
  */
 
 import { PERMISSIONS_BY_ROLE, type Permission } from "@/config/permissions";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 /**
  * The permissions a role holds. Empty for an unresolvable role.

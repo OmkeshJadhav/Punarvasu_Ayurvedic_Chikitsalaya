@@ -992,9 +992,9 @@ describe("failure handling", () => {
     const summary = await runNotificationWorker();
 
     expect(summary.outboxFailed).toBe(1);
-    expect(callsTo("complete_notification_outbox")[0]?.args.p_retry_at).toBe(
-      null,
-    );
+    expect(
+      callsTo("complete_notification_outbox")[0]?.args.p_retry_at,
+    ).toBeUndefined();
   });
 
   it("carries on when one event fails", async () => {
@@ -1144,7 +1144,7 @@ describe("external delivery", () => {
     expect(summary.deliveriesRetried).toBe(0);
     expect(
       callsTo("record_notification_delivery_result")[0]?.args.p_retry_at,
-    ).toBe(null);
+    ).toBeUndefined();
   });
 
   it("stops retrying a transient failure at the cap", async () => {
@@ -1163,7 +1163,7 @@ describe("external delivery", () => {
     expect(summary.deliveriesFailed).toBe(1);
     expect(
       callsTo("record_notification_delivery_result")[0]?.args.p_retry_at,
-    ).toBe(null);
+    ).toBeUndefined();
   });
 
   it("skips a delivery whose channel is no longer configured", async () => {

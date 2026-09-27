@@ -43,7 +43,7 @@
  * row-level security in the database.
  */
 
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 /**
  * Every capability the application currently authorizes.

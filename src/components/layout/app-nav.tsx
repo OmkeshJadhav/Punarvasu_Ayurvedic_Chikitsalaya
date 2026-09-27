@@ -2,7 +2,7 @@ import { NavLink } from "@/components/layout/nav-link";
 import type { NavItem } from "@/config/navigation";
 import { areasForRole } from "@/lib/authorization/routes";
 import { cn } from "@/lib/utils/cn";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 /**
  * Navigation inside the authenticated shell, built from the signed-in user's

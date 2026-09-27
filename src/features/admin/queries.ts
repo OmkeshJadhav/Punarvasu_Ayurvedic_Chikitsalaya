@@ -30,7 +30,7 @@ import { assertPermission } from "@/lib/authorization/guards";
 import { logger } from "@/lib/logging/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { APP_ROLES } from "@/config/permissions";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 import type { ManagedUser, ManagedUserListResult } from "./types";
 

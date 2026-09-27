@@ -29,7 +29,7 @@
 
 import type { Permission } from "@/config/permissions";
 import { AUTHENTICATED_LANDING_PATH } from "@/lib/auth/paths";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 import { can } from "./policy";
 

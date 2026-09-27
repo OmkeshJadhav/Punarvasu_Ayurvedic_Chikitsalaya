@@ -52,7 +52,7 @@ import { getCurrentUser, requireUser } from "@/lib/auth/current-user";
 import type { CurrentUser } from "@/lib/auth/current-user";
 import { forbiddenError } from "@/lib/errors/app-error";
 import { logger } from "@/lib/logging/logger";
-import type { AppRole } from "@/types/database";
+import type { AppRole } from "@/types/roles";
 
 import { recordAuthorizationDenied } from "@/lib/security/audit";
 

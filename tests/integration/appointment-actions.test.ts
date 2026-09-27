@@ -376,7 +376,7 @@ describe("cancelAppointmentAction", () => {
     expect(rpcCalls[0]?.name).toBe("cancel_appointment");
     expect(rpcCalls[0]?.args).toEqual({
       p_appointment_id: APPOINTMENT_ID,
-      p_reason: null,
+      p_reason: undefined,
     });
   });
 
