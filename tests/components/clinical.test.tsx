@@ -689,6 +689,27 @@ describe("the patient's identity", () => {
     expect(text).not.toMatch(/postal/i);
   });
 
+  it("can leave the appointment out where the page already shows it", () => {
+    // The doctor's appointment workspace lays out the appointment itself, so
+    // the header shows only the identity card there.
+    render(
+      <PatientClinicalHeader
+        patient={PATIENT}
+        appointment={APPOINTMENT}
+        showAppointment={false}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Test Patient" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: CONSULTATION_WORKSPACE_COPY.appointmentHeading,
+      }),
+    ).toBeNull();
+  });
+
   it("stays usable when the patient's record cannot be read", () => {
     // A sentence rather than an error screen: the notes are still correct and
     // still saveable, and taking the page away would be the worse failure.

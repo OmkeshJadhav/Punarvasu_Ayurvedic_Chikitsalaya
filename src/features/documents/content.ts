@@ -205,7 +205,6 @@ export const DOCTOR_DOCUMENT_COPY = {
 
   openLabel: "Open",
   patientLinkLabel: "All documents for this patient",
-  backToConsultationLabel: "Back to the consultation",
   backToPatientLabel: "Back to the patient",
 
   /**

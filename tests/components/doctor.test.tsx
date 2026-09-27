@@ -329,6 +329,35 @@ describe("the status actions", () => {
     }
   });
 
+  it("leaves out a transition the workspace offers elsewhere", () => {
+    // The appointment workspace's notes section has its own "Start
+    // consultation", which also opens the clinical record. Two buttons with
+    // one label and different effects would leave the practitioner guessing.
+    renderWithToaster(
+      <DoctorAppointmentActions
+        appointmentId={APPOINTMENT_ID}
+        status="checked_in"
+        omit={["in_consultation"]}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Start consultation" }),
+    ).toBeNull();
+  });
+
+  it("does not claim nothing is left when everything was only omitted", () => {
+    const { container } = renderWithToaster(
+      <DoctorAppointmentActions
+        appointmentId={APPOINTMENT_ID}
+        status="in_consultation"
+        omit={["completed", "no_show"]}
+      />,
+    );
+
+    expect(container.textContent ?? "").not.toMatch(/nothing left to change/i);
+  });
+
   it("says who does cancel and move an appointment", () => {
     renderWithToaster(
       <DoctorAppointmentActions
@@ -628,7 +657,7 @@ describe("the next-patient panel", () => {
       screen.getByRole("link", { name: /Open the consultation with/ }),
     ).toHaveAttribute(
       "href",
-      `/doctor/appointments/${APPOINTMENT_ID}/consultation`,
+      `/doctor/appointments/${APPOINTMENT_ID}#consultation`,
     );
   });
 

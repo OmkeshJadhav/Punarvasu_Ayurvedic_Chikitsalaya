@@ -444,12 +444,12 @@ export function PrescriptionBuilder({
         aria-labelledby="prescription-review"
         className="border-border mt-10 flex flex-col gap-5 border-t pt-8"
       >
-        <h2
+        <h3
           id="prescription-review"
-          className="text-h3 text-heading font-normal"
+          className="text-h4 text-heading font-sans font-medium"
         >
           {PRESCRIPTION_BUILDER_COPY.reviewHeading}
-        </h2>
+        </h3>
         <p className="text-body-sm text-muted-foreground measure">
           {PRESCRIPTION_BUILDER_COPY.reviewDescription}
         </p>

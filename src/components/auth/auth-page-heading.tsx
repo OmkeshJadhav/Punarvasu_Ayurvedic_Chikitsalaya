@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { Emphasis } from "@/components/marketing/emphasis";
+
 /**
  * The heading block that opens an authentication page.
  *
@@ -12,19 +14,26 @@ import type { ReactNode } from "react";
  * voice and the `--heading` colour. The supporting line uses the functional
  * muted tone rather than the editorial `--prose` green: this is a form, not a
  * marketing section (`docs/DESIGN_SYSTEM.md` section 4.5).
+ *
+ * `emphasis` sets one word of the title in terracotta italic - the editorial
+ * device the marketing pages use, and just as rare here.
  */
 export function AuthPageHeading({
   title,
+  emphasis,
   description,
 }: {
   readonly title: string;
+  readonly emphasis?: string;
   readonly description?: ReactNode;
 }) {
   return (
-    <div className="mb-8">
-      <h1 className="text-h3">{title}</h1>
+    <div className="mb-6 sm:mb-7">
+      <h1 className="text-h1 font-normal">
+        <Emphasis text={title} phrase={emphasis} className="text-eyebrow" />
+      </h1>
       {description ? (
-        <p className="text-body-sm text-muted-foreground mt-2">{description}</p>
+        <p className="text-body text-muted-foreground mt-3">{description}</p>
       ) : null}
     </div>
   );

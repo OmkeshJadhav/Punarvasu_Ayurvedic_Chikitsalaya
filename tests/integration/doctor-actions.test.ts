@@ -403,10 +403,9 @@ describe("the status write", () => {
     const paths = revalidatePath.mock.calls.map((call) => call[0]);
     expect(paths).toContain("/doctor");
     expect(paths).toContain("/doctor/appointments");
+    // The appointment page is the whole workspace, notes included, so the
+    // retired `/consultation` route has nothing left to refresh.
     expect(paths).toContain(`/doctor/appointments/${APPOINTMENT_ID}`);
-    expect(paths).toContain(
-      `/doctor/appointments/${APPOINTMENT_ID}/consultation`,
-    );
   });
 
   it("does not redirect, so a status change keeps the practitioner where they were", async () => {

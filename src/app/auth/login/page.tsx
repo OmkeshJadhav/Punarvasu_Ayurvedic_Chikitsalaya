@@ -47,7 +47,11 @@ export default async function LoginPage(props: PageProps<"/auth/login">) {
 
   return (
     <>
-      <AuthPageHeading title={copy.heading} description={copy.description} />
+      <AuthPageHeading
+        title={copy.heading}
+        emphasis={copy.headingEmphasis}
+        description={copy.description}
+      />
       <LoginForm {...(next === "" ? {} : { next })} />
     </>
   );

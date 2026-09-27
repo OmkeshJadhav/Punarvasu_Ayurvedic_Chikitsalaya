@@ -82,7 +82,6 @@ export const TREATMENT_PLAN_STATUS_LABELS: Readonly<
 
 export const TREATMENT_PLAN_BUILDER_COPY = {
   heading: "Treatment plan",
-  backLabel: "Back to the consultation",
   introDescription:
     "How you are asking this patient to eat, live and be treated between now and the next visit. Medicines belong on the prescription, not here. Nothing is visible to the patient until you give them the plan.",
 

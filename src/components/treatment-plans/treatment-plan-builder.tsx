@@ -409,12 +409,12 @@ export function TreatmentPlanBuilder({
         </div>
 
         <section aria-labelledby="plan-items" className="flex flex-col gap-6">
-          <h2
+          <h3
             id="plan-items"
             className="text-h4 text-heading font-sans font-medium"
           >
             {TREATMENT_PLAN_BUILDER_COPY.itemsHeading}
-          </h2>
+          </h3>
 
           <ol className="flex flex-col gap-6">
             {items.map((item, index) => (
@@ -490,9 +490,12 @@ export function TreatmentPlanBuilder({
         aria-labelledby="plan-review"
         className="border-border mt-10 flex flex-col gap-5 border-t pt-8"
       >
-        <h2 id="plan-review" className="text-h3 text-heading font-normal">
+        <h3
+          id="plan-review"
+          className="text-h4 text-heading font-sans font-medium"
+        >
           {TREATMENT_PLAN_BUILDER_COPY.reviewHeading}
-        </h2>
+        </h3>
         <p className="text-body-sm text-muted-foreground measure">
           {TREATMENT_PLAN_BUILDER_COPY.reviewDescription}
         </p>

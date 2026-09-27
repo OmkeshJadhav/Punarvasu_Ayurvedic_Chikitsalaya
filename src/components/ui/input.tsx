@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 
 import { MOTION_MICRO } from "@/lib/motion";
@@ -41,3 +42,30 @@ export function Input({
     <input type={type} className={cn(inputClassName, className)} {...props} />
   );
 }
+
+/**
+ * A leading icon inside an input - the envelope on an email field, the lock
+ * on a password field.
+ *
+ * Purely a visual cue: the `Field` label names the control, so the icon is
+ * hidden from assistive technology. Place it and the input inside a
+ * `group/input relative` wrapper, and give the input `inputWithIconClassName`
+ * so typed text never runs underneath the icon. The icon takes the focus
+ * colour with its input.
+ */
+export function InputIcon({ icon: Icon }: { readonly icon: LucideIcon }) {
+  return (
+    <Icon
+      aria-hidden="true"
+      strokeWidth={1.5}
+      className={cn(
+        "text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 size-4.5 -translate-y-1/2",
+        MOTION_MICRO,
+        "group-focus-within/input:text-primary",
+      )}
+    />
+  );
+}
+
+/** The padding an input needs to clear an `InputIcon`. */
+export const inputWithIconClassName = "pl-11";

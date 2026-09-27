@@ -23,7 +23,6 @@ export const CLINICAL_AI_COPY = {
   /** The panel's own heading. Not "AI Assistant", not a product name. */
   heading: "AI clinical support",
   navLabel: "AI support",
-  backLabel: "Back to consultation",
 
   intro:
     "Generates a structured summary or a set of points for you to consider, from the clinical information you select below. It is a documentation aid, not a second opinion.",
@@ -134,11 +133,6 @@ export const CLINICAL_AI_COPY = {
   unavailable: {
     title: "AI support is temporarily unavailable",
     body: "Your consultation is unaffected and can be continued normally.",
-  },
-
-  notFound: {
-    title: "We couldn't find that appointment",
-    body: "It may have been changed, or it may belong to another practitioner.",
   },
 
   emptyResult: {

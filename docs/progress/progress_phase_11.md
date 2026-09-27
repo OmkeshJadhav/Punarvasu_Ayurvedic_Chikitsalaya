@@ -788,11 +788,165 @@ Intentionally not built:
 
 ---
 
+### 15. The appointment as one workspace (2026-09-27)
+
+Phases 12, 13, 14 and 17 each hung a page off this phase's appointment route:
+`/consultation`, `/prescription`, `/treatment-plan`, `/documents` and `/ai`.
+A practitioner mid-consultation moved between five pages, each repeating the
+patient header, each with its own back link to the one before. That was
+confusing in use. **`/doctor/appointments/[id]` is now the one page for
+everything recorded against an appointment.**
+
+#### 15.1 What the practitioner sees
+
+```text
+Appointment          patient identity, details, status actions
+Consultation notes   the clinical record                  (Phase 12)
+Prescription         the live prescription                (Phase 13)
+Treatment plan       the live plan                        (Phase 13)
+Documents            the patient's documents, and upload  (Phase 14)
+AI support           an aid that saves nothing            (Phase 17)
+History              what has happened to the appointment
+```
+
+* **A sticky jump bar** under the site header links to each section (plain
+  fragment links in a labelled `<nav>`; scrolls sideways on a phone).
+* **Identity first.** The Phase 12 clinical identity card — date of birth,
+  age, gender, phone and the "check this is the patient in front of you"
+  hint — is shown once at the top, instead of a header per page. Without
+  `clinical_records.read` the page falls back to name and age.
+* **Sections waiting on an earlier step say so.** Before the consultation is
+  started, Prescription and Treatment plan show a notice with "Go to
+  consultation notes". Notes on an appointment not yet checked in, or ended
+  without a record, say which.
+* **One "Start consultation".** The notes section's button starts the record
+  *and* the consultation; the status-only transition of the same name is
+  omitted from the status actions whenever the notes section is shown
+  (`DoctorAppointmentActions` gained an `omit` prop). If omitting leaves no
+  action, nothing is rendered — not the "nothing left to change" sentence,
+  which would be untrue.
+* **Each section streams.** Every section is its own async server component
+  behind `<Suspense>`; its fallback carries the section's id and heading, so
+  a jump link followed early still lands.
+
+#### 15.2 Authorization
+
+The route still needs only `appointments.read.own_schedule`, and
+`getDoctorAppointment` still returns `not_found` for another practitioner's
+appointment before any section renders. Each section's query **asserts** its
+own permission and throws without it, so each is rendered only when
+`currentUserCan` grants that permission (`clinical_records.read`,
+`prescriptions.read`, `treatment_plans.read`, `documents.read.care`,
+`clinical_ai.use`; upload additionally `documents.write.care`). That is
+presentation; the queries, actions, row-level security and database functions
+each re-check exactly as before. No policy, permission or function changed.
+
+The documents section takes the patient id from the appointment already read
+under `appointments_select_own_practitioner`, so it no longer calls
+`getDocumentCareContext`.
+
+#### 15.3 Several forms on one page
+
+The notes, prescription and plan keep their own `<form>`, explicit save and
+unsaved-changes guard. The guards ignore fragment links, so the jump bar never
+prompts. Leaving with more than one form dirty prompts for the first (each
+guard returns early on `defaultPrevented`, so the first to intercept wins) and
+the browser's `beforeunload` covers the rest — nothing is discarded silently,
+but it is two prompts rather than one combined one.
+
+#### 15.4 The retired routes
+
+`/consultation`, `/prescription`, `/treatment-plan`, `/documents` and `/ai`
+are now server redirects to the matching fragment, via
+`appointmentWorkspaceHref()` in `src/features/doctor/workspace.ts` (which also
+`encodeURIComponent`s the id). Bookmarks and history still land. Links from
+the dashboard's next-patient panel and from the patient's record, prescription
+and plan pages now point at the section directly. The status and
+start-consultation actions no longer revalidate the retired `/consultation`
+path.
+
+#### 15.5 Files
+
+Added:
+
+* `src/features/doctor/workspace.ts` — section ids, `appointmentWorkspaceHref`.
+* `src/components/doctor/workspace/workspace-section.tsx` — `WorkspaceSection`,
+  `WorkspaceSectionFallback`, `WaitingNotice`.
+* `src/components/doctor/workspace/workspace-nav.tsx` — the jump bar.
+* `src/components/doctor/workspace/{consultation-notes,prescription,treatment-plan,documents,clinical-ai}-section.tsx`
+  — the five sections, lifted from the old pages.
+* `tests/components/doctor-workspace.test.tsx` — 9 tests: hrefs and id
+  encoding, the jump bar's links and axe sweep, sections as distinctly named
+  regions (`landmark-unique`), fallback keeps id and announces loading, the
+  waiting notice.
+
+Modified:
+
+* `src/app/(app)/doctor/appointments/[id]/page.tsx` — the workspace.
+* `src/app/(app)/doctor/appointments/[id]/{consultation,prescription,treatment-plan,documents,ai}/page.tsx`
+  — now redirects.
+* `src/components/doctor/appointment-status-actions.tsx` — `omit` prop.
+* `src/components/clinical/patient-clinical-header.tsx` — `showAppointment`
+  prop, so the identity card can render without a second appointment block.
+* `src/components/prescriptions/prescription-builder.tsx`,
+  `src/components/treatment-plans/treatment-plan-builder.tsx` — inner headings
+  `h2` → `h3`, so they sit under the section's `h2`.
+* `src/components/doctor/next-patient.tsx`, and the doctor patient
+  record / prescription / treatment-plan detail pages — links to sections.
+* `src/features/doctor/actions.ts`, `src/features/clinical/actions.ts` — the
+  retired `/consultation` revalidation removed.
+* `src/features/doctor/content.ts` — `DOCTOR_WORKSPACE_COPY`. Navigation-only
+  copy for the retired pages removed from the doctor, clinical, prescription,
+  treatment-plan, document and clinical-AI content files.
+* Tests: `doctor.test.tsx` (+2, `omit`; next-patient href),
+  `clinical.test.tsx` (+1, `showAppointment={false}`),
+  `doctor-actions.test.ts` (revalidation list).
+* Docs: `PUNARVASU_MASTER_SPEC.md` (routes, a workspace row, the Phase 12/13/14
+  rows), `ARCHITECTURE.md` (clinical AI entry point), `DESIGN_SYSTEM.md`
+  (`WorkspaceSection` / `WorkspaceNav`).
+
+No migration, no new permission, no new dependency.
+
+#### 15.6 Verification
+
+```text
+npm run typecheck                 passed
+npm run lint                      passed (1 pre-existing warning, location-section.tsx)
+prettier --check                  changed files clean
+npm test                          4590 passed, 1 failed
+npm run build                     passed
+npm run security:scan-bundle      passed (178 files, no server-only configuration)
+```
+
+The one failure, `keeps the whole public image set well under 2 MB`, comes
+from uncommitted image work elsewhere in the tree and is unrelated.
+
+**Not verified in a browser.** The sticky bar's offset under the site header,
+jump-link landing, streaming, and axe on the assembled page (as opposed to the
+components) are unchecked. Phase 11's browser pass found `landmark-unique`
+defects that jsdom could not see, so this is the check to run first.
+
+#### 15.7 Known limitations
+
+1. **Two prompts on leaving with two dirty forms** (section 15.3).
+2. **The page is long** for a completed appointment with a full record. The
+   jump bar is the mitigation; collapsing finished sections is a possible
+   follow-up.
+3. **Section queries overlap.** Each section re-reads the appointment inside
+   its own workspace query — a handful of small, parallel, RLS-scoped reads
+   rather than one shared read, kept so each section's authorization story is
+   unchanged.
+
+---
+
 ### 14. Phase status
 
 ```text
 Phase 11: COMPLETE
 Ready for Phase 12: YES
+
+Appointment workspace (section 15):  COMPLETE
+Verified in a browser:               NO
 ```
 
 Phase 12 has not been started.

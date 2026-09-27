@@ -281,6 +281,25 @@ export const LEAF_SPRIG_IMAGE: ImageAsset = {
   placeholder: true,
 };
 
+/**
+ * The photograph beside the sign-in, registration and recovery forms.
+ *
+ * The contact hero's still life, reused as an editorial motif (it depicts no
+ * treatment and no person). Decorative: the words laid over it are real text,
+ * and the photograph adds atmosphere rather than information. The crop is
+ * anchored on the mortar, which sits right of centre in the source.
+ */
+export const AUTH_IMAGES = {
+  panel: {
+    src: "/images/contact-hero.jpg",
+    width: 1536,
+    height: 1024,
+    alt: "",
+    objectPosition: "object-[72%_center]",
+    placeholder: true,
+  },
+} as const satisfies Record<string, ImageAsset>;
+
 export const SERVICE_IMAGES = {
   joints: {
     src: "/images/arthritis.jpg",

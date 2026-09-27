@@ -954,6 +954,8 @@ Phase 12: COMPLETE
 Ready for Phase 13: YES
 ```
 
+> **Later change (2026-09-27):** `/doctor/appointments/[id]/consultation` no longer renders its own page — the consultation notes are now the "Consultation notes" section of `/doctor/appointments/[id]`, and this route redirects to `#consultation`. Behaviour, authorization and data are unchanged; only where it appears moved. See `progress_phase_11.md` section 15.
+
 Phase 13 has not been started.
 
 Prescriptions and treatment plans can be built directly on what exists. The

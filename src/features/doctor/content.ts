@@ -290,6 +290,48 @@ export const DOCTOR_APPOINTMENT_COPY = {
   loadErrorRetryLabel: "Try again",
 } as const;
 
+/**
+ * The appointment page as one workspace.
+ *
+ * Notes, prescription, treatment plan, documents and AI support used to be
+ * five separate pages reached from each other, and a practitioner mid-
+ * consultation lost their place moving between them. They are now sections
+ * of the appointment page, and these are the words that hold it together: the
+ * jump links, and what a section says while it waits on an earlier step.
+ */
+export const DOCTOR_WORKSPACE_COPY = {
+  jumpNavLabel: "Sections of this appointment",
+
+  sections: {
+    overview: "Appointment",
+    consultation: "Consultation notes",
+    prescription: "Prescription",
+    treatmentPlan: "Treatment plan",
+    documents: "Documents",
+    ai: "AI support",
+    history: "History",
+  },
+
+  /** Consultation notes, when the patient has not been checked in yet. */
+  notesNotReady:
+    "The consultation can start once the patient has been checked in at the desk.",
+  /** Consultation notes, when the appointment ended without any. */
+  notesNoneRecorded: "No consultation notes were written for this appointment.",
+
+  /**
+   * A prescription and a plan hang off the clinical record, so both wait for
+   * the consultation to be started. Said, with a way to the step that is
+   * missing, rather than shown as an empty section.
+   */
+  prescriptionWaiting:
+    "A prescription is written against the consultation notes, so start the consultation first.",
+  treatmentPlanWaiting:
+    "A treatment plan is written against the consultation notes, so start the consultation first.",
+  goToNotesLabel: "Go to consultation notes",
+
+  sectionLoadingLabel: (section: string) => `Loading ${section.toLowerCase()}`,
+} as const;
+
 export const DOCTOR_ACTIONS_COPY = {
   heading: "What would you like to do?",
   noneAvailable:
@@ -311,7 +353,6 @@ export const DOCTOR_ACTIONS_COPY = {
 
 export const CONSULTATION_COPY = {
   heading: "Consultation",
-  backLabel: "Back to the appointment",
 
   inProgressLabel: "In progress",
   startedHeading: "Consultation in progress",
@@ -325,14 +366,6 @@ export const CONSULTATION_COPY = {
 
   completeLabel: "Complete consultation",
   completingLabel: "Completing…",
-
-  notStartedTitle: "This consultation has not been started",
-  notStartedDescription:
-    "Open the consultation workspace to start it when the patient is with you.",
-  notStartedAction: "Open the appointment",
-
-  /** The way into the workspace, from the appointment. */
-  openWorkspaceLabel: "Open the consultation",
 } as const;
 
 /**

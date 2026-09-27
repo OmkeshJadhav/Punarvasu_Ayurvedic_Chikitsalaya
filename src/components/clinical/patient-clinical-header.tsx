@@ -59,9 +59,15 @@ import type { PatientGender } from "@/features/patients/types";
 export function PatientClinicalHeader({
   patient,
   appointment,
+  showAppointment = true,
 }: {
   readonly patient: ConsultationPatient | null;
   readonly appointment: ConsultationAppointment;
+  /**
+   * False where the page already lays out the appointment itself — the
+   * doctor's appointment workspace — so the same facts are not listed twice.
+   */
+  readonly showAppointment?: boolean;
 }) {
   const age = patient?.dateOfBirth ? calculateAge(patient.dateOfBirth) : null;
 
@@ -131,29 +137,31 @@ export function PatientClinicalHeader({
         )}
       </div>
 
-      <ProfileSection
-        id="consultation-appointment"
-        title={CONSULTATION_WORKSPACE_COPY.appointmentHeading}
-        headingLevel="h3"
-      >
-        <ProfileFieldList>
-          <ProfileField
-            label={CONSULTATION_WORKSPACE_COPY.whenLabel}
-            value={`${formatClinicDate(appointment.startsAt)}, ${formatClinicTimeRange(
-              appointment.startsAt,
-              appointment.endsAt,
-            )}`}
-          />
-          <ProfileField
-            label={CONSULTATION_WORKSPACE_COPY.typeLabel}
-            value={appointment.typeName}
-          />
-        </ProfileFieldList>
+      {showAppointment ? (
+        <ProfileSection
+          id="consultation-appointment"
+          title={CONSULTATION_WORKSPACE_COPY.appointmentHeading}
+          headingLevel="h3"
+        >
+          <ProfileFieldList>
+            <ProfileField
+              label={CONSULTATION_WORKSPACE_COPY.whenLabel}
+              value={`${formatClinicDate(appointment.startsAt)}, ${formatClinicTimeRange(
+                appointment.startsAt,
+                appointment.endsAt,
+              )}`}
+            />
+            <ProfileField
+              label={CONSULTATION_WORKSPACE_COPY.typeLabel}
+              value={appointment.typeName}
+            />
+          </ProfileFieldList>
 
-        <div className="mt-4">
-          <AppointmentStatusBadge status={appointment.status} />
-        </div>
-      </ProfileSection>
+          <div className="mt-4">
+            <AppointmentStatusBadge status={appointment.status} />
+          </div>
+        </ProfileSection>
+      ) : null}
     </div>
   );
 }

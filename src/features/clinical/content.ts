@@ -150,7 +150,6 @@ export const CLINICAL_SECTIONS: readonly ClinicalSectionCopy[] = [
 
 export const CONSULTATION_WORKSPACE_COPY = {
   heading: "Consultation",
-  backLabel: "Back to the appointment",
 
   patientHeading: "Patient",
   appointmentHeading: "This appointment",
@@ -176,11 +175,6 @@ export const CONSULTATION_WORKSPACE_COPY = {
   startLabel: "Start consultation",
   startingLabel: "Starting…",
 
-  notStartedTitle: "This consultation has not been started",
-  notStartedDescription:
-    "Open the appointment and start the consultation when the patient is with you.",
-  notStartedAction: "Open the appointment",
-
   notFoundTitle: "We couldn't find that consultation",
   notFoundDescription:
     "It may not be one of yours, or the link may be wrong. Go back to your appointments to find it.",
@@ -192,46 +186,6 @@ export const CONSULTATION_WORKSPACE_COPY = {
   loadErrorRetryLabel: "Try again",
 
   loadingLabel: "Loading the consultation",
-
-  /**
-   * The Phase 13 and 14 boundary, said where a practitioner will look for the
-   * missing thing.
-   *
-   * The same convention every phase of this project has followed: name what
-   * is not built, in the product, rather than only in a source comment.
-   */
-  /**
-   * The two things a practitioner does next (Phase 13).
-   *
-   * Links rather than forms, because a prescription and a treatment plan are
-   * their own documents with their own lifecycles — but reached from here,
-   * because this is where the practitioner already is when they decide
-   * (`phase_13.md` section 64: do not open unrelated pages during a
-   * consultation).
-   */
-  nextStepsHeading: "Prescription and treatment plan",
-  nextStepsDescription:
-    "What you are asking this patient to take, and how you are asking them to eat, live and be treated. Each is kept separately from these notes, and neither is visible to the patient until you issue it.",
-  prescriptionLinkLabel: "Open the prescription",
-  treatmentPlanLinkLabel: "Open the treatment plan",
-  /**
-   * Phase 14. Reached from here for the same reason the other two are: this
-   * is where the practitioner already is when a patient hands them a report,
-   * and the patient, the appointment and the consultation come with them
-   * rather than being typed (section 47).
-   */
-  documentsLinkLabel: "Documents for this patient",
-
-  /**
-   * Phase 17. Deliberately phrased as an aid rather than as a step.
-   *
-   * The other three links open documents this consultation produces. This one
-   * opens a tool that produces nothing, and the label says so — "help me read
-   * this record", not "generate the notes". `phase_17.md` section 135: the
-   * primary workflow stays patient -> clinical record -> doctor decision, and
-   * AI is secondary.
-   */
-  aiSupportLinkLabel: "AI clinical support",
 
   /**
    * What the patient is and is not told when this consultation is written up.

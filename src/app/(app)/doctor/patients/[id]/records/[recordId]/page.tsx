@@ -21,6 +21,7 @@ import {
 } from "@/features/clinical/content";
 import { getClinicalRecord } from "@/features/clinical/queries";
 import { isClinicalRecordEditable } from "@/features/clinical/status";
+import { appointmentWorkspaceHref } from "@/features/doctor/workspace";
 import { requirePermission } from "@/lib/authorization/guards";
 
 export const metadata: Metadata = {
@@ -134,7 +135,10 @@ export default async function ClinicalRecordPage({
             <div>
               <Button asChild>
                 <Link
-                  href={`/doctor/appointments/${record.appointmentId}/consultation`}
+                  href={appointmentWorkspaceHref(
+                    record.appointmentId,
+                    "consultation",
+                  )}
                 >
                   {CLINICAL_RECORD_VIEW_COPY.continueDraftLabel}
                 </Link>

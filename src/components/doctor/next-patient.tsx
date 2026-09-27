@@ -10,6 +10,7 @@ import {
 import type { DoctorAppointment } from "@/features/doctor/types";
 import { isConsultationInProgress } from "@/features/doctor/status";
 import { calculateAge } from "@/features/patients/format";
+import { appointmentWorkspaceHref } from "@/features/doctor/workspace";
 
 /**
  * Who is with the practitioner now, and who is next.
@@ -70,7 +71,7 @@ export function NextPatientPanel({
 
             {isConsultationInProgress(appointment.status) ? (
               <WorkspaceLink
-                href={`/doctor/appointments/${appointment.id}/consultation`}
+                href={appointmentWorkspaceHref(appointment.id, "consultation")}
                 label={DOCTOR_TODAY_COPY.nowHeading}
                 accessibleName={`Open the consultation with ${appointment.patientName}`}
               />

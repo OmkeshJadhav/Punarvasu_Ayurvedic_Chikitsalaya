@@ -1,10 +1,15 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, type LucideIcon } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { Field } from "@/components/ui/field";
-import { Input, inputClassName } from "@/components/ui/input";
+import {
+  Input,
+  InputIcon,
+  inputClassName,
+  inputWithIconClassName,
+} from "@/components/ui/input";
 import { PASSWORD_VISIBILITY } from "@/features/auth/content";
 import { MOTION_MICRO } from "@/lib/motion";
 import { cn } from "@/lib/utils/cn";
@@ -52,6 +57,9 @@ export interface PasswordFieldProps {
   readonly disabled?: boolean;
   readonly maxLength?: number;
   readonly autoFocus?: boolean;
+  readonly placeholder?: string;
+  /** An optional leading icon; see `InputIcon`. */
+  readonly icon?: LucideIcon;
 }
 
 export function PasswordField({
@@ -64,6 +72,8 @@ export function PasswordField({
   disabled = false,
   maxLength,
   autoFocus,
+  placeholder,
+  icon,
 }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const ToggleIcon = visible ? EyeOff : Eye;
@@ -78,15 +88,17 @@ export function PasswordField({
       disabled={disabled}
     >
       {(control) => (
-        <div className="relative">
+        <div className="group/input relative">
+          {icon ? <InputIcon icon={icon} /> : null}
           <Input
             {...control}
             type={visible ? "text" : "password"}
             autoComplete={autoComplete}
             maxLength={maxLength}
             autoFocus={autoFocus}
+            placeholder={placeholder}
             // Room for the toggle, so a long password never runs underneath it.
-            className="pr-12"
+            className={cn("pr-12", icon && inputWithIconClassName)}
           />
           <button
             type="button"
@@ -105,7 +117,13 @@ export function PasswordField({
               "disabled:cursor-not-allowed disabled:opacity-55",
             )}
           >
-            <ToggleIcon aria-hidden="true" className="size-4.5" />
+            {/* Keyed on the state so the swap fades rather than snaps. */}
+            <ToggleIcon
+              key={visible ? "hide" : "show"}
+              aria-hidden="true"
+              strokeWidth={1.5}
+              className="motion-safe:animate-fade-in size-4.5"
+            />
           </button>
         </div>
       )}

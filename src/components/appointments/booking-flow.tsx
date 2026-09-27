@@ -1,6 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import {
+  useActionState,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 
 import { DatePickerStrip } from "@/components/appointments/date-picker-strip";
 import { TimeSlotPicker } from "@/components/appointments/time-slot-picker";
@@ -11,15 +16,11 @@ import {
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Field } from "@/components/ui/field";
+import { Field, FieldError } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { PATIENT_NOTE_MAX_LENGTH } from "@/config/appointments";
 import { bookAppointmentAction } from "@/features/appointments/actions";
-import {
-  BOOKING_COPY,
-  BOOKING_STEPS,
-  type BookingStepId,
-} from "@/features/appointments/content";
+import { BOOKING_COPY } from "@/features/appointments/content";
 import {
   clinicWallClockToInstant,
   formatClinicDate,
@@ -34,13 +35,19 @@ import {
 import { cn } from "@/lib/utils/cn";
 
 /**
- * The patient booking flow.
+ * The patient booking form.
  *
  * ```text
- * Consultation type -> Practitioner -> Date -> Time -> Review -> Request
+ * Consultation type -> Practitioner -> Date -> Time -> Note and request
  * ```
  *
- * which is `phase_09.md` section 43's recommended order.
+ * `phase_09.md` section 43's recommended order, laid out as one page rather
+ * than a wizard. Every section is visible from the start, so the patient can
+ * see the whole of what is being asked and change any answer in place; a
+ * section that depends on an earlier choice (days on the practitioner, times
+ * on the type and day) says what it is waiting for instead of hiding. Missing
+ * choices are marked only after an attempt to send, and focus moves to the
+ * first of them.
  *
  * ## One form, owned here
  *
@@ -72,7 +79,7 @@ import { cn } from "@/lib/utils/cn";
  *
  * If the slot is taken between the patient choosing it and submitting — the
  * race `phase_09.md` section 42 describes — the server says so, and this
- * component returns to the time step and **refetches**, because the list it is
+ * component clears the chosen time and **refetches**, because the list it is
  * showing is now known to be wrong. Leaving a stale grid on screen with an
  * error above it would invite the patient to pick the same time again.
  */
@@ -85,6 +92,21 @@ export interface BookingFlowProps {
   readonly locationLines: readonly string[];
 }
 
+/** The choices a request cannot be sent without, in the order they appear. */
+const BOOKING_CHOICES = ["type", "practitioner", "date", "time"] as const;
+type BookingChoice = (typeof BOOKING_CHOICES)[number];
+
+function sectionId(choice: BookingChoice): string {
+  return `booking-${choice}`;
+}
+
+const REQUIRED_MESSAGES: Readonly<Record<BookingChoice, string>> = {
+  type: BOOKING_COPY.typeRequired,
+  practitioner: BOOKING_COPY.practitionerRequired,
+  date: BOOKING_COPY.dateRequired,
+  time: BOOKING_COPY.timeRequired,
+};
+
 export function BookingFlow({
   appointmentTypes,
   practitioners,
@@ -96,7 +118,6 @@ export function BookingFlow({
     IDLE_APPOINTMENT_FORM_STATE,
   );
 
-  const [step, setStep] = useState<BookingStepId>("type");
   const [typeId, setTypeId] = useState<string | null>(
     appointmentTypes.length === 1 ? (appointmentTypes[0]?.id ?? null) : null,
   );
@@ -105,6 +126,12 @@ export function BookingFlow({
   );
   const [date, setDate] = useState<string | null>(null);
   const [slot, setSlot] = useState<AvailableSlot | null>(null);
+  /**
+   * Whether the patient has tried to send an incomplete request. Missing
+   * choices are only marked after that — flagging four empty sections on
+   * arrival would greet the patient with errors they have not made.
+   */
+  const [attempted, setAttempted] = useState(false);
 
   const {
     status: slotsStatus,
@@ -122,9 +149,9 @@ export function BookingFlow({
   );
 
   /**
-   * A failed booking sends the patient back to the time step with a fresh
-   * list, because the most common failure is that somebody took the slot
-   * first (`phase_09.md` section 42) and the grid on screen is now known to be
+   * A failed booking clears the chosen time and refetches the list, because
+   * the most common failure is that somebody took the slot first
+   * (`phase_09.md` section 42) and the times on screen are now known to be
    * wrong.
    *
    * ## Why this is adjusted during render rather than in an effect
@@ -148,35 +175,62 @@ export function BookingFlow({
     setHandledState(state);
     if (state.status === "error") {
       setSlot(null);
-      setStep("time");
       reload();
     }
   }
 
   function chooseType(nextTypeId: string) {
     setTypeId(nextTypeId);
-    // A different consultation length means different slots, so everything
-    // downstream is no longer a valid choice.
+    // A different consultation length means different slots, so the chosen
+    // time is no longer a valid choice. The day still is.
     setSlot(null);
-    setStep(practitionerId ? "date" : "practitioner");
   }
 
   function choosePractitioner(nextPractitionerId: string) {
     setPractitionerId(nextPractitionerId);
+    // Another practitioner works other days, so both the day and the time go.
     setDate(null);
     setSlot(null);
-    setStep("date");
   }
 
   function chooseDate(nextDate: string) {
     setDate(nextDate);
     setSlot(null);
-    setStep("time");
   }
 
-  function chooseSlot(nextSlot: AvailableSlot) {
-    setSlot(nextSlot);
-    setStep("review");
+  const chosen: Readonly<Record<BookingChoice, boolean>> = {
+    type: typeId !== null,
+    practitioner: practitionerId !== null,
+    date: date !== null,
+    time: slot !== null,
+  };
+  const missing = BOOKING_CHOICES.filter((choice) => !chosen[choice]);
+
+  function errorFor(choice: BookingChoice): string | undefined {
+    return attempted && missing.includes(choice)
+      ? REQUIRED_MESSAGES[choice]
+      : undefined;
+  }
+
+  /**
+   * Stops an incomplete request before it reaches the server, and takes the
+   * patient to the first thing still missing.
+   *
+   * The server validates regardless — this exists so a patient at the bottom
+   * of a long page is not left wondering why nothing happened.
+   * `preventDefault` on the submit event also stops React's form action.
+   */
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    const [firstMissing] = missing;
+    if (!firstMissing) return;
+
+    event.preventDefault();
+    setAttempted(true);
+    const section = event.currentTarget.querySelector<HTMLElement>(
+      `#${sectionId(firstMissing)}`,
+    );
+    section?.focus({ preventScroll: true });
+    section?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
   const availableDates = practitionerId
@@ -184,340 +238,328 @@ export function BookingFlow({
     : [];
 
   return (
-    <form action={formAction} className="flex flex-col gap-8">
-      <BookingProgress current={step} />
+    <form
+      action={formAction}
+      onSubmit={handleSubmit}
+      noValidate
+      className="flex flex-col gap-10"
+    >
+      {/* 1 — consultation type */}
+      <BookingFieldset
+        id={sectionId("type")}
+        number={1}
+        heading={BOOKING_COPY.typeHeading}
+        description={BOOKING_COPY.typeDescription}
+        error={errorFor("type")}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          {appointmentTypes.map((type) => (
+            <ChoiceOption
+              key={type.id}
+              name="appointmentTypeId"
+              value={type.id}
+              checked={typeId === type.id}
+              onChoose={() => chooseType(type.id)}
+              title={type.name}
+              description={type.description}
+              meta={formatDuration(type.durationMinutes)}
+            />
+          ))}
+        </div>
+      </BookingFieldset>
 
-      {state.status === "error" && state.message ? (
-        <Alert tone="danger" title="We couldn't request that appointment">
-          {state.message}
-        </Alert>
-      ) : null}
+      {/* 2 — practitioner */}
+      <BookingFieldset
+        id={sectionId("practitioner")}
+        number={2}
+        heading={BOOKING_COPY.practitionerHeading}
+        description={BOOKING_COPY.practitionerDescription}
+        error={errorFor("practitioner")}
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          {practitioners.map((practitioner) => (
+            <ChoiceOption
+              key={practitioner.id}
+              name="practitionerId"
+              value={practitioner.id}
+              checked={practitionerId === practitioner.id}
+              onChoose={() => choosePractitioner(practitioner.id)}
+              title={practitioner.displayName}
+              description={null}
+              meta={null}
+            />
+          ))}
+        </div>
+      </BookingFieldset>
 
-      {/* Step 1 — consultation type */}
-      {step === "type" ? (
-        <fieldset className="flex flex-col gap-4">
-          <legend className="text-h4 text-heading font-sans font-medium">
-            {BOOKING_COPY.typeHeading}
-          </legend>
-          <p className="text-body-sm text-muted-foreground measure">
-            {BOOKING_COPY.typeDescription}
-          </p>
-
-          <div className="flex flex-col gap-3">
-            {appointmentTypes.map((type) => (
-              <ChoiceOption
-                key={type.id}
-                name="appointmentTypeId"
-                value={type.id}
-                checked={typeId === type.id}
-                onChoose={() => chooseType(type.id)}
-                title={type.name}
-                description={type.description}
-                meta={formatDuration(type.durationMinutes)}
-              />
-            ))}
-          </div>
-        </fieldset>
-      ) : (
-        <>
-          <SummaryRow
-            label="Consultation"
-            value={
-              selectedType
-                ? `${selectedType.name} · ${formatDuration(selectedType.durationMinutes)}`
-                : "—"
-            }
-            onChange={() => setStep("type")}
-          />
-          {/*
-            The radio group is unmounted once the step is collapsed, so the
-            chosen value has to keep a field in the form or it would not be
-            submitted at all. One input is rendered at a time — the radio while
-            choosing, this while reviewing — so the form never carries two.
-          */}
-          <input type="hidden" name="appointmentTypeId" value={typeId ?? ""} />
-        </>
-      )}
-
-      {/* Step 2 — practitioner */}
-      {step === "practitioner" ? (
-        <fieldset className="flex flex-col gap-4">
-          <legend className="text-h4 text-heading font-sans font-medium">
-            {BOOKING_COPY.practitionerHeading}
-          </legend>
-          <p className="text-body-sm text-muted-foreground measure">
-            {BOOKING_COPY.practitionerDescription}
-          </p>
-
-          <div className="flex flex-col gap-3">
-            {practitioners.map((practitioner) => (
-              <ChoiceOption
-                key={practitioner.id}
-                name="practitionerId"
-                value={practitioner.id}
-                checked={practitionerId === practitioner.id}
-                onChoose={() => choosePractitioner(practitioner.id)}
-                title={practitioner.displayName}
-                description={null}
-                meta={null}
-              />
-            ))}
-          </div>
-        </fieldset>
-      ) : step === "type" ? null : (
-        <>
-          <SummaryRow
-            label="Practitioner"
-            value={selectedPractitioner?.displayName ?? "—"}
-            onChange={() => setStep("practitioner")}
-          />
-          <input
-            type="hidden"
-            name="practitionerId"
-            value={practitionerId ?? ""}
-          />
-        </>
-      )}
-
-      {/* Step 3 — date */}
-      {step === "date" ? (
-        <section
-          aria-labelledby="booking-date-heading"
-          className="flex flex-col gap-4"
-        >
-          <h2
-            id="booking-date-heading"
-            className="text-h4 text-heading font-sans font-medium"
-          >
-            {BOOKING_COPY.dateHeading}
-          </h2>
-          <p className="text-body-sm text-muted-foreground measure">
-            {BOOKING_COPY.dateDescription}
-          </p>
-
+      {/* 3 — date */}
+      <BookingSection
+        id={sectionId("date")}
+        number={3}
+        heading={BOOKING_COPY.dateHeading}
+        description={BOOKING_COPY.dateDescription}
+        error={errorFor("date")}
+      >
+        {practitionerId ? (
           <DatePickerStrip
             dates={availableDates}
             selected={date}
             onSelect={chooseDate}
             label={BOOKING_COPY.dateHeading}
           />
-        </section>
-      ) : step === "time" || step === "review" ? (
-        <SummaryRow
-          label="Date"
-          value={
-            date
-              ? formatClinicDate(
-                  clinicWallClockToInstant(date, 12 * 60) ?? new Date(),
-                )
-              : "—"
-          }
-          onChange={() => setStep("date")}
-        />
-      ) : null}
+        ) : (
+          <WaitingHint>{BOOKING_COPY.dateWaitingForPractitioner}</WaitingHint>
+        )}
+      </BookingSection>
 
-      {/* Step 4 — time */}
-      {step === "time" ? (
-        <section
-          aria-labelledby="booking-time-heading"
-          className="flex flex-col gap-4"
-        >
-          <h2
-            id="booking-time-heading"
-            className="text-h4 text-heading font-sans font-medium"
-          >
-            {BOOKING_COPY.timeHeading}
-          </h2>
-          <p className="text-body-sm text-muted-foreground measure">
-            {BOOKING_COPY.timeDescription}
-          </p>
-
+      {/* 4 — time */}
+      <BookingSection
+        id={sectionId("time")}
+        number={4}
+        heading={BOOKING_COPY.timeHeading}
+        description={BOOKING_COPY.timeDescription}
+        error={errorFor("time")}
+      >
+        {!typeId ? (
+          <WaitingHint>{BOOKING_COPY.timeWaitingForType}</WaitingHint>
+        ) : !date ? (
+          <WaitingHint>{BOOKING_COPY.timeWaitingForDate}</WaitingHint>
+        ) : (
           <TimeSlotPicker
             status={slotsStatus}
             slots={slots}
             selected={slot?.startsAt ?? null}
-            onSelect={chooseSlot}
+            onSelect={setSlot}
             onRetry={reload}
             label={BOOKING_COPY.timeHeading}
           />
-        </section>
-      ) : step === "review" ? (
-        <SummaryRow
-          label="Time"
-          value={
-            slot
-              ? formatClinicTimeRange(
-                  new Date(slot.startsAt),
-                  new Date(slot.endsAt),
-                )
-              : "—"
-          }
-          onChange={() => setStep("time")}
-        />
-      ) : null}
+        )}
+      </BookingSection>
 
-      {/* Step 5 — review and confirm */}
-      {step === "review" && slot ? (
-        <section
-          aria-labelledby="booking-review-heading"
-          className="flex flex-col gap-4"
+      {/* 5 — note, where, and send */}
+      <BookingSection
+        id="booking-review"
+        number={5}
+        heading={BOOKING_COPY.reviewHeading}
+        description={BOOKING_COPY.reviewDescription}
+      >
+        <Field
+          name="patientNote"
+          label={BOOKING_COPY.noteLabel}
+          description={BOOKING_COPY.noteDescription}
+          error={state.fieldErrors?.["patientNote"]}
         >
-          <h2
-            id="booking-review-heading"
-            className="text-h4 text-heading font-sans font-medium"
-          >
-            {BOOKING_COPY.reviewHeading}
-          </h2>
-          <p className="text-body-sm text-muted-foreground measure">
-            {BOOKING_COPY.reviewDescription}
-          </p>
+          {(control) => (
+            <Textarea
+              rows={3}
+              maxLength={PATIENT_NOTE_MAX_LENGTH}
+              {...control}
+            />
+          )}
+        </Field>
 
-          {locationLines.length > 0 ? (
-            <Card variant="muted">
-              <CardContent>
-                <h3 className="text-label text-foreground font-sans font-medium">
-                  Where
-                </h3>
-                <address className="text-body-sm text-muted-foreground mt-1 not-italic">
-                  {locationLines.map((line) => (
-                    <span key={line} className="block">
-                      {line}
-                    </span>
-                  ))}
-                </address>
-              </CardContent>
-            </Card>
-          ) : null}
+        {selectedType && selectedPractitioner && date && slot ? (
+          <Card variant="muted">
+            <CardContent>
+              <h3 className="text-label text-foreground font-sans font-medium">
+                {BOOKING_COPY.summaryLabel}
+              </h3>
+              <dl className="text-body-sm mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                <dt className="text-muted-foreground">Consultation</dt>
+                <dd className="text-foreground wrap-break-word">
+                  {selectedType.name} ·{" "}
+                  {formatDuration(selectedType.durationMinutes)}
+                </dd>
+                <dt className="text-muted-foreground">With</dt>
+                <dd className="text-foreground wrap-break-word">
+                  {selectedPractitioner.displayName}
+                </dd>
+                <dt className="text-muted-foreground">When</dt>
+                <dd className="text-foreground wrap-break-word">
+                  {formatClinicDate(
+                    clinicWallClockToInstant(date, 12 * 60) ?? new Date(),
+                  )}
+                  ,{" "}
+                  {formatClinicTimeRange(
+                    new Date(slot.startsAt),
+                    new Date(slot.endsAt),
+                  )}
+                </dd>
+                {locationLines.length > 0 ? (
+                  <>
+                    <dt className="text-muted-foreground">Where</dt>
+                    <dd className="text-foreground">
+                      <address className="not-italic">
+                        {locationLines.map((line) => (
+                          <span key={line} className="block">
+                            {line}
+                          </span>
+                        ))}
+                      </address>
+                    </dd>
+                  </>
+                ) : null}
+              </dl>
+            </CardContent>
+          </Card>
+        ) : null}
 
-          <Field
-            name="patientNote"
-            label={BOOKING_COPY.noteLabel}
-            description={BOOKING_COPY.noteDescription}
-            error={state.fieldErrors?.["patientNote"]}
-          >
-            {(control) => (
-              <Textarea
-                rows={3}
-                maxLength={PATIENT_NOTE_MAX_LENGTH}
-                {...control}
-              />
-            )}
-          </Field>
-
-          {/*
-            The only value assembled by JavaScript, and it is an absolute
-            instant chosen from the server's own list — not a local date and
-            time this component composed. The server re-validates it against
-            the clinic timezone regardless.
-          */}
+        {/*
+          The only value assembled by JavaScript, and it is an absolute instant
+          chosen from the server's own list — not a local date and time this
+          component composed. The server re-validates it against the clinic
+          timezone regardless.
+        */}
+        {slot ? (
           <input type="hidden" name="startsAt" value={slot.startsAt} />
+        ) : null}
 
-          <div className="flex flex-col gap-3 sm:flex-row-reverse sm:justify-start">
-            <Button
-              type="submit"
-              size="lg"
-              loading={pending}
-              loadingLabel={BOOKING_COPY.submittingLabel}
-            >
-              {BOOKING_COPY.submitLabel}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              onClick={() => setStep("time")}
-            >
-              {BOOKING_COPY.backLabel}
-            </Button>
-          </div>
-        </section>
-      ) : null}
+        {/*
+          The server's answer sits beside the button that asked for it. On a
+          single long page an alert at the top would be off-screen at the
+          moment it appears.
+        */}
+        {state.status === "error" && state.message ? (
+          <Alert tone="danger" title="We couldn't request that appointment">
+            {state.message}
+          </Alert>
+        ) : null}
+
+        {attempted && missing.length > 0 ? (
+          <FieldError>{BOOKING_COPY.incompleteSummary}</FieldError>
+        ) : null}
+
+        <div>
+          <Button
+            type="submit"
+            size="lg"
+            loading={pending}
+            loadingLabel={BOOKING_COPY.submittingLabel}
+            className="w-full sm:w-auto"
+          >
+            {BOOKING_COPY.submitLabel}
+          </Button>
+        </div>
+      </BookingSection>
     </form>
   );
 }
 
+interface BookingSectionProps {
+  /** Also where an incomplete submit moves focus. */
+  readonly id: string;
+  readonly number: number;
+  readonly heading: string;
+  readonly description: string;
+  /** Present only once the patient has tried to send without this choice. */
+  readonly error?: string | undefined;
+  readonly children: ReactNode;
+}
+
 /**
- * The step indicator.
+ * The numbered title every section shares.
  *
- * An ordered list, because the steps are ordered, with `aria-current="step"`
- * on the one in progress. Completed steps carry a check mark as well as a
- * colour change (`docs/DESIGN_SYSTEM.md` section 43).
+ * The number is decoration — the sections are already in document order — so
+ * it is hidden from assistive technology and the accessible name is the
+ * question alone.
  */
-function BookingProgress({ current }: { readonly current: BookingStepId }) {
-  const currentIndex = BOOKING_STEPS.findIndex((step) => step.id === current);
-
+function SectionTitle({
+  number,
+  heading,
+}: {
+  readonly number: number;
+  readonly heading: string;
+}) {
   return (
-    <nav aria-label="Booking progress">
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        {BOOKING_STEPS.map((step, index) => {
-          const isCurrent = step.id === current;
-          const isDone = index < currentIndex;
-
-          return (
-            <li key={step.id} className="flex items-center gap-2">
-              {/*
-                A step that is neither current nor done used to be
-                `text-muted-foreground/70`. Live axe measured that at 3.89:1 on
-                the cream page — below AA, and invisible to
-                `lib/design/contrast.test.ts`, which verifies the palette's
-                *tokens* and knows nothing about an opacity modifier applied to
-                one. An opacity derivative is a new colour that nothing checked.
-
-                So all three states use verified tokens, and they are told
-                apart by more than colour anyway: the current step by weight and
-                `aria-current`, a completed one by a check mark.
-              */}
-              <span
-                aria-current={isCurrent ? "step" : undefined}
-                className={cn(
-                  "text-caption font-sans",
-                  isCurrent
-                    ? "text-primary font-semibold"
-                    : "text-muted-foreground",
-                )}
-              >
-                {isDone ? (
-                  <span aria-hidden="true" className="mr-1">
-                    ✓
-                  </span>
-                ) : null}
-                {index + 1}. {step.label}
-                {isDone ? <span className="sr-only"> (completed)</span> : null}
-              </span>
-              {index < BOOKING_STEPS.length - 1 ? (
-                <span aria-hidden="true" className="text-border-strong">
-                  ·
-                </span>
-              ) : null}
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
+    <>
+      <span
+        aria-hidden="true"
+        className="border-border-strong text-caption text-muted-foreground flex size-7 shrink-0 items-center justify-center rounded-full border font-sans"
+      >
+        {number}
+      </span>
+      <span>{heading}</span>
+    </>
   );
 }
 
-/** A choice already made, with a way back to it. */
-function SummaryRow({
-  label,
-  value,
-  onChange,
-}: {
-  readonly label: string;
-  readonly value: string;
-  readonly onChange: () => void;
-}) {
+/**
+ * A radio-group section: a real `<fieldset>` with a `<legend>`, so the group
+ * is announced with its question and arrow keys move between options.
+ *
+ * `tabIndex={-1}` lets an incomplete submit move focus here without adding a
+ * tab stop.
+ */
+function BookingFieldset({
+  id,
+  number,
+  heading,
+  description,
+  error,
+  children,
+}: BookingSectionProps) {
+  const errorId = `${id}-error`;
+
   return (
-    <div className="border-border flex items-center justify-between gap-4 rounded-md border px-4 py-3">
-      <div className="min-w-0">
-        <p className="text-caption text-muted-foreground font-sans">{label}</p>
-        <p className="text-body text-foreground wrap-break-word">{value}</p>
-      </div>
-      <Button type="button" variant="ghost" onClick={onChange}>
-        {BOOKING_COPY.changeLabel}
-        <span className="sr-only"> {label.toLowerCase()}</span>
-      </Button>
-    </div>
+    <fieldset
+      id={id}
+      tabIndex={-1}
+      aria-describedby={error ? errorId : undefined}
+      className="flex min-w-0 scroll-mt-24 flex-col gap-4 focus:outline-none"
+    >
+      <legend className="text-h4 text-heading mb-4 flex items-center gap-3 font-sans font-medium">
+        <SectionTitle number={number} heading={heading} />
+      </legend>
+      <p className="text-body-sm text-muted-foreground measure">
+        {description}
+      </p>
+      {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+      {children}
+    </fieldset>
+  );
+}
+
+/** A section that is not a radio group, labelled by its heading. */
+function BookingSection({
+  id,
+  number,
+  heading,
+  description,
+  error,
+  children,
+}: BookingSectionProps) {
+  const headingId = `${id}-heading`;
+  const errorId = `${id}-error`;
+
+  return (
+    <section
+      id={id}
+      tabIndex={-1}
+      aria-labelledby={headingId}
+      aria-describedby={error ? errorId : undefined}
+      className="flex scroll-mt-24 flex-col gap-4 focus:outline-none"
+    >
+      <h2
+        id={headingId}
+        className="text-h4 text-heading flex items-center gap-3 font-sans font-medium"
+      >
+        <SectionTitle number={number} heading={heading} />
+      </h2>
+      <p className="text-body-sm text-muted-foreground measure">
+        {description}
+      </p>
+      {error ? <FieldError id={errorId}>{error}</FieldError> : null}
+      {children}
+    </section>
+  );
+}
+
+/** What a section will show once an earlier choice is made. */
+function WaitingHint({ children }: { readonly children: ReactNode }) {
+  return (
+    <p className="border-border text-body-sm text-muted-foreground rounded-md border border-dashed px-4 py-6 text-center">
+      {children}
+    </p>
   );
 }
 

@@ -27,6 +27,7 @@ import {
   isPrescriptionCancellable,
   isPrescriptionEditable,
 } from "@/features/prescriptions/status";
+import { appointmentWorkspaceHref } from "@/features/doctor/workspace";
 import { requirePermission } from "@/lib/authorization/guards";
 
 /**
@@ -116,7 +117,10 @@ export default async function DoctorPrescriptionPage({
             <div>
               <Button asChild>
                 <Link
-                  href={`/doctor/appointments/${prescription.appointmentId}/prescription`}
+                  href={appointmentWorkspaceHref(
+                    prescription.appointmentId,
+                    "prescription",
+                  )}
                 >
                   {PRESCRIPTION_DETAIL_COPY.continueDraftLabel}
                 </Link>
@@ -171,7 +175,10 @@ export default async function DoctorPrescriptionPage({
           <div className="mt-5 flex flex-wrap gap-3">
             <Button asChild variant="secondary">
               <Link
-                href={`/doctor/appointments/${prescription.appointmentId}/consultation`}
+                href={appointmentWorkspaceHref(
+                  prescription.appointmentId,
+                  "consultation",
+                )}
               >
                 {PRESCRIPTION_DETAIL_COPY.openConsultationLabel}
               </Link>

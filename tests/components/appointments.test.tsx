@@ -540,7 +540,7 @@ describe("BookingFlow", () => {
     expect(forms[0]?.getAttribute("method")).not.toBe("get");
   });
 
-  it("opens on the consultation type, as a labelled radio group", () => {
+  it("shows every section at once, with the type as a labelled radio group", () => {
     renderFlow();
 
     const group = screen.getByRole("group", {
@@ -549,41 +549,76 @@ describe("BookingFlow", () => {
     expect(
       within(group).getAllByRole("radio", { checked: false }),
     ).toHaveLength(2);
+    expect(
+      screen.getByRole("group", { name: /who would you like to see/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Which day?" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Which time?" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Check your request" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Request this appointment" }),
+    ).toBeInTheDocument();
   });
 
-  it("walks type, practitioner, date, time, review", async () => {
+  it("fills type, practitioner, date and time on one page", async () => {
     const user = userEvent.setup();
     renderFlow();
+
+    // Days wait for a practitioner, and say so rather than hiding.
+    expect(
+      screen.getByText(/choose who you would like to see, and the days/i),
+    ).toBeInTheDocument();
 
     await user.click(
       screen.getByRole("radio", { name: /Initial consultation/ }),
     );
-    expect(
-      screen.getByRole("group", { name: /who would you like to see/i }),
-    ).toBeInTheDocument();
-
     await user.click(screen.getByRole("radio", { name: /Test Practitioner/ }));
-    expect(
-      screen.getByRole("heading", { name: "Which day?" }),
-    ).toBeInTheDocument();
-
     await user.click(
       screen.getByRole("button", { name: "Tuesday, 22 September 2026" }),
     );
-    expect(
-      screen.getByRole("heading", { name: "Which time?" }),
-    ).toBeInTheDocument();
 
     await waitFor(() =>
       expect(
         screen.getByRole("button", { name: "10:30 am" }),
       ).toBeInTheDocument(),
     );
-
     await user.click(screen.getByRole("button", { name: "10:30 am" }));
+
+    // Earlier choices are still on screen and still changeable in place.
     expect(
-      screen.getByRole("heading", { name: "Check your request" }),
+      screen.getByRole("radio", { name: /Initial consultation/ }),
+    ).toBeChecked();
+    expect(screen.getByRole("button", { name: "10:30 am" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByText("You are requesting")).toBeInTheDocument();
+  });
+
+  it("marks what is missing instead of sending an incomplete request", async () => {
+    const user = userEvent.setup();
+    renderFlow();
+    bookAppointmentAction.mockClear();
+
+    await user.click(
+      screen.getByRole("button", { name: "Request this appointment" }),
+    );
+
+    expect(
+      screen.getByText("Please choose a consultation type."),
     ).toBeInTheDocument();
+    expect(screen.getByText("Please choose a time.")).toBeInTheDocument();
+    expect(bookAppointmentAction).not.toHaveBeenCalled();
+    // Focus goes to the first thing still missing.
+    expect(
+      screen.getByRole("group", { name: /what kind of consultation/i }),
+    ).toHaveFocus();
   });
 
   it("carries exactly the four fields the action reads", async () => {
@@ -687,19 +722,6 @@ describe("BookingFlow", () => {
     expect(
       screen.queryByText(/please don't describe symptoms/i),
     ).not.toBeUndefined();
-  });
-
-  it("shows the progress as an ordered list with the current step marked", () => {
-    renderFlow();
-
-    const progress = screen.getByRole("navigation", {
-      name: "Booking progress",
-    });
-    expect(within(progress).getAllByRole("listitem")).toHaveLength(5);
-    expect(within(progress).getByText(/1\. Consultation/)).toHaveAttribute(
-      "aria-current",
-      "step",
-    );
   });
 
   it("has no accessibility violations", async () => {

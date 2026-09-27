@@ -16,19 +16,35 @@ export const AUTH_PAGES = {
   login: {
     title: "Sign in",
     heading: "Welcome back",
+    headingEmphasis: "back",
     description: "Sign in to continue to your Punarvasu account.",
     submitLabel: "Sign in",
     submittingLabel: "Signing in…",
     forgotPasswordLabel: "Forgot your password?",
     registerPrompt: "New to Punarvasu?",
     registerLabel: "Create an account",
+    alternativeDivider: "or continue with",
+    googleLabel: "Continue with Google",
+    /**
+     * Google sign-in is shown but not yet wired to a provider. Rather than a
+     * button that silently does nothing, pressing it says so, politely, and
+     * points back to the form that does work.
+     */
+    googleUnavailable:
+      "Google sign-in isn't available yet. Please sign in with your email address for now.",
   },
 
   register: {
     title: "Create an account",
     heading: "Create your account",
+    /**
+     * Doubles as the health-information notice. It used to be a separate
+     * boxed alert; folding it into the page's opening line keeps the
+     * registration page inside one viewport and puts the instruction where
+     * it is read first, before any field.
+     */
     description:
-      "An account lets you keep your appointments and clinic communication in one place.",
+      "We only ask for contact details — please don't include health information.",
     submitLabel: "Create account",
     submittingLabel: "Creating your account…",
     loginPrompt: "Already have an account?",
@@ -47,9 +63,7 @@ export const AUTH_PAGES = {
      * checkbox arrives in the same change as the pages.
      */
     privacyNotice:
-      "We collect your name, email address and — if you give it — your phone number, so the clinic can identify you and contact you about your care. Our full privacy policy and terms are still being prepared and will be published before the clinic begins handling records through this website.",
-    healthNotice:
-      "Please don't include any health information here. Creating an account asks for contact details only; anything about your health is discussed with your practitioner.",
+      "We use your name, email and optional mobile number only to identify you and contact you about your care. Our privacy policy and terms will be published before the clinic handles records here.",
   },
 
   verify: {
@@ -126,16 +140,16 @@ export const AUTH_FIELDS = {
   fullName: {
     label: "Full name",
     autoComplete: "name",
-    description: "As you'd like the clinic to address you.",
   },
   email: {
     label: "Email address",
     autoComplete: "email",
+    placeholder: "you@example.com",
   },
   phone: {
-    label: "Mobile number",
+    /** Optional, and the label says so; what it is used for is in the privacy notice. */
+    label: "Mobile number (optional)",
     autoComplete: "tel",
-    description: "Optional. The clinic may use it for appointment reminders.",
   },
   password: {
     label: "Password",
@@ -146,6 +160,7 @@ export const AUTH_FIELDS = {
   currentPassword: {
     label: "Password",
     autoComplete: "current-password",
+    placeholder: "Enter your password",
   },
   confirmPassword: {
     label: "Confirm password",
@@ -168,5 +183,19 @@ export const PASSWORD_VISIBILITY = {
  */
 export const AUTH_FOOTNOTE =
   "Punarvasu is an Ayurvedic clinic. This website is not a substitute for professional diagnosis, treatment or emergency care.";
+
+/**
+ * The words laid over the photograph beside every auth page.
+ *
+ * Shared by sign-in, registration and recovery, so none of it may assume which
+ * of those the visitor is doing. It describes the account, not the action.
+ */
+export const AUTH_SHOWCASE = {
+  eyebrow: "Your wellness journey",
+  title: "Personalised Ayurvedic care often begins here.",
+  description:
+    "Your Punarvasu account is where you manage appointments, keep track of your consultations and continue your journey towards better health.",
+  aside: "Healing begins with understanding you.",
+} as const;
 
 export const BACK_TO_SITE_LABEL = "Back to the Punarvasu website";

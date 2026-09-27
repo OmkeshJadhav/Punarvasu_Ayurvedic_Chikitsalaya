@@ -72,17 +72,6 @@ export const APPOINTMENTS_AREA = {
   },
 } as const;
 
-/** The steps, named once, so the progress indicator and the headings agree. */
-export const BOOKING_STEPS = [
-  { id: "type", label: "Consultation" },
-  { id: "practitioner", label: "Practitioner" },
-  { id: "date", label: "Date" },
-  { id: "time", label: "Time" },
-  { id: "review", label: "Review" },
-] as const;
-
-export type BookingStepId = (typeof BOOKING_STEPS)[number]["id"];
-
 export const BOOKING_COPY = {
   typeHeading: "What kind of consultation?",
   typeDescription:
@@ -94,13 +83,27 @@ export const BOOKING_COPY = {
 
   dateHeading: "Which day?",
   dateDescription: "Days the practitioner is not working are not shown.",
+  dateWaitingForPractitioner:
+    "Choose who you would like to see, and the days they are working will appear here.",
 
   timeHeading: "Which time?",
   timeDescription: "Times are shown in clinic time.",
+  timeWaitingForType:
+    "Choose a consultation type first — it sets how long each time is.",
+  timeWaitingForDate: "Choose a day, and the free times will appear here.",
 
   reviewHeading: "Check your request",
   reviewDescription:
     "Nothing is sent until you choose to request it. The clinic will confirm the time with you.",
+  /** Read back to the patient once every choice is made, just above the button. */
+  summaryLabel: "You are requesting",
+
+  typeRequired: "Please choose a consultation type.",
+  practitionerRequired: "Please choose who you would like to see.",
+  dateRequired: "Please choose a day.",
+  timeRequired: "Please choose a time.",
+  incompleteSummary:
+    "A few choices are still missing. Each one is marked above.",
 
   noteLabel: "Anything the clinic should know when scheduling?",
   noteDescription:
@@ -109,8 +112,6 @@ export const BOOKING_COPY = {
 
   submitLabel: "Request this appointment",
   submittingLabel: "Sending your request…",
-  backLabel: "Back",
-  changeLabel: "Change",
 
   slotsLoadingLabel: "Loading available times",
   slotsEmptyTitle: "No times available on this day",

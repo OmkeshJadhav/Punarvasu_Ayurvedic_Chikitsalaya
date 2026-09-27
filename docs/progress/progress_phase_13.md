@@ -997,6 +997,8 @@ Phase 13: COMPLETE
 Ready for Phase 14: YES
 ```
 
+> **Later change (2026-09-27):** `/doctor/appointments/[id]/prescription` and `/treatment-plan` no longer renders its own page — the builders are now the "Prescription" and "Treatment plan" sections of `/doctor/appointments/[id]`, and both routes redirect to `#prescription` / `#treatment-plan`. Behaviour, authorization and data are unchanged; only where it appears moved. See `progress_phase_11.md` section 15.
+
 Phase 14 has not been started.
 
 Patient documents can be built directly on what exists. The pattern is

@@ -983,6 +983,8 @@ Phase 17: COMPLETE
 Ready for Phase 18: YES
 ```
 
+> **Later change (2026-09-27):** `/doctor/appointments/[id]/ai` no longer renders its own page — AI clinical support is now the last section of `/doctor/appointments/[id]`, and this route redirects to `#ai-support`. Behaviour, authorization and data are unchanged; only where it appears moved. See `progress_phase_11.md` section 15.
+
 Phase 18 has not been started.
 
 Advanced Patient Experience can be built without changing anything here.

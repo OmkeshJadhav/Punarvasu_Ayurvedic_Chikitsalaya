@@ -25,6 +25,7 @@ import {
   isTreatmentPlanCancellable,
   isTreatmentPlanEditable,
 } from "@/features/treatment-plans/status";
+import { appointmentWorkspaceHref } from "@/features/doctor/workspace";
 import { requirePermission } from "@/lib/authorization/guards";
 
 /**
@@ -106,7 +107,10 @@ export default async function DoctorTreatmentPlanPage({
             <div>
               <Button asChild>
                 <Link
-                  href={`/doctor/appointments/${plan.appointmentId}/treatment-plan`}
+                  href={appointmentWorkspaceHref(
+                    plan.appointmentId,
+                    "treatmentPlan",
+                  )}
                 >
                   {TREATMENT_PLAN_DETAIL_COPY.continueDraftLabel}
                 </Link>
@@ -186,7 +190,10 @@ export default async function DoctorTreatmentPlanPage({
           <div className="mt-5 flex flex-wrap gap-3">
             <Button asChild variant="secondary">
               <Link
-                href={`/doctor/appointments/${plan.appointmentId}/consultation`}
+                href={appointmentWorkspaceHref(
+                  plan.appointmentId,
+                  "consultation",
+                )}
               >
                 {TREATMENT_PLAN_DETAIL_COPY.openConsultationLabel}
               </Link>

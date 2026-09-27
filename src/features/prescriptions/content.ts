@@ -150,7 +150,6 @@ export const PRESCRIPTION_ITEM_FIELD_COPY: readonly PrescriptionFieldCopy[] = [
 
 export const PRESCRIPTION_BUILDER_COPY = {
   heading: "Prescription",
-  backLabel: "Back to the consultation",
   introDescription:
     "What you are asking this patient to take. Add a line for each medicine or remedy. Nothing here is visible to the patient until you issue it.",
 

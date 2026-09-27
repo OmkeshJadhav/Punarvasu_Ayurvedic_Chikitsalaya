@@ -1059,6 +1059,8 @@ Phase 14: COMPLETE
 Ready for Phase 15: YES
 ```
 
+> **Later change (2026-09-27):** `/doctor/appointments/[id]/documents` no longer renders its own page — the practitioner's consultation documents are now the "Documents" section of `/doctor/appointments/[id]`, and this route redirects to `#documents`. Behaviour, authorization and data are unchanged; only where it appears moved. See `progress_phase_11.md` section 15.
+
 Phase 15 has not been started.
 
 Notifications can be built directly on what exists. The events worth

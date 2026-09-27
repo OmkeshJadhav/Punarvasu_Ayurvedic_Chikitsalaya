@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight, Mail } from "lucide-react";
 import { useActionState } from "react";
 
 import { AuthFormMessage } from "@/components/auth/auth-form-message";
 import { PasswordField } from "@/components/auth/password-field";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import {
+  Input,
+  InputIcon,
+  inputWithIconClassName,
+} from "@/components/ui/input";
 import { signUpAction } from "@/features/auth/actions";
 import { AUTH_FIELDS, AUTH_PAGES } from "@/features/auth/content";
 import { IDLE_AUTH_FORM_STATE } from "@/features/auth/types";
@@ -27,8 +31,15 @@ import { LOGIN_PATH } from "@/lib/auth/paths";
  * (`phase_06.md` sections 7-8). There is no field for symptoms, medications,
  * history or date of birth, and the profile table has no column for any of it,
  * so this form cannot become the front door to a medical record by accident.
- * The notice above the fields says so in words, because a patient creating an
+ * The page's opening line says so in words, because a patient creating an
  * account for a clinic reasonably expects to be asked.
+ *
+ * ## Layout
+ *
+ * From `sm`, name and mobile number share a row, as do the two password
+ * fields, so the whole form fits one laptop viewport. Each pair is a pair in
+ * meaning as well as in position, so reading order is unaffected. On a phone
+ * everything stacks in the same order.
  *
  * ## No terms checkbox
  *
@@ -53,28 +64,42 @@ export function RegisterForm() {
     <form action={formAction} noValidate>
       <AuthFormMessage state={state} title="We couldn't create your account" />
 
-      <Alert tone="info" title="What we ask for" className="mb-6">
-        {copy.healthNotice}
-      </Alert>
+      <div className="flex flex-col gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            name="fullName"
+            label={AUTH_FIELDS.fullName.label}
+            error={state.fieldErrors?.["fullName"]}
+            required
+            disabled={pending}
+          >
+            {(control) => (
+              <Input
+                {...control}
+                autoComplete={AUTH_FIELDS.fullName.autoComplete}
+                maxLength={FULL_NAME_MAX_LENGTH}
+                defaultValue={state.values?.["fullName"] ?? ""}
+              />
+            )}
+          </Field>
 
-      <div className="flex flex-col gap-5">
-        <Field
-          name="fullName"
-          label={AUTH_FIELDS.fullName.label}
-          description={AUTH_FIELDS.fullName.description}
-          error={state.fieldErrors?.["fullName"]}
-          required
-          disabled={pending}
-        >
-          {(control) => (
-            <Input
-              {...control}
-              autoComplete={AUTH_FIELDS.fullName.autoComplete}
-              maxLength={FULL_NAME_MAX_LENGTH}
-              defaultValue={state.values?.["fullName"] ?? ""}
-            />
-          )}
-        </Field>
+          <Field
+            name="phone"
+            label={AUTH_FIELDS.phone.label}
+            error={state.fieldErrors?.["phone"]}
+            disabled={pending}
+          >
+            {(control) => (
+              <Input
+                {...control}
+                type="tel"
+                inputMode="tel"
+                autoComplete={AUTH_FIELDS.phone.autoComplete}
+                defaultValue={state.values?.["phone"] ?? ""}
+              />
+            )}
+          </Field>
+        </div>
 
         <Field
           name="email"
@@ -84,54 +109,45 @@ export function RegisterForm() {
           disabled={pending}
         >
           {(control) => (
-            <Input
-              {...control}
-              type="email"
-              inputMode="email"
-              autoComplete={AUTH_FIELDS.email.autoComplete}
-              defaultValue={state.values?.["email"] ?? ""}
-            />
+            <div className="group/input relative">
+              <InputIcon icon={Mail} />
+              <Input
+                {...control}
+                type="email"
+                inputMode="email"
+                autoComplete={AUTH_FIELDS.email.autoComplete}
+                placeholder={AUTH_FIELDS.email.placeholder}
+                defaultValue={state.values?.["email"] ?? ""}
+                className={inputWithIconClassName}
+              />
+            </div>
           )}
         </Field>
 
-        <Field
-          name="phone"
-          label={AUTH_FIELDS.phone.label}
-          description={AUTH_FIELDS.phone.description}
-          error={state.fieldErrors?.["phone"]}
-          disabled={pending}
-        >
-          {(control) => (
-            <Input
-              {...control}
-              type="tel"
-              inputMode="tel"
-              autoComplete={AUTH_FIELDS.phone.autoComplete}
-              defaultValue={state.values?.["phone"] ?? ""}
-            />
-          )}
-        </Field>
+        {/* `items-start`: the requirement text under the first password must
+            not stretch the second field's row. */}
+        <div className="grid items-start gap-4 sm:grid-cols-2">
+          <PasswordField
+            name="password"
+            label={AUTH_FIELDS.password.label}
+            description={AUTH_FIELDS.password.description}
+            autoComplete={AUTH_FIELDS.password.autoComplete}
+            error={state.fieldErrors?.["password"]}
+            maxLength={PASSWORD_MAX_LENGTH}
+            disabled={pending}
+          />
 
-        <PasswordField
-          name="password"
-          label={AUTH_FIELDS.password.label}
-          description={AUTH_FIELDS.password.description}
-          autoComplete={AUTH_FIELDS.password.autoComplete}
-          error={state.fieldErrors?.["password"]}
-          maxLength={PASSWORD_MAX_LENGTH}
-          disabled={pending}
-        />
+          <PasswordField
+            name="confirmPassword"
+            label={AUTH_FIELDS.confirmPassword.label}
+            autoComplete={AUTH_FIELDS.confirmPassword.autoComplete}
+            error={state.fieldErrors?.["confirmPassword"]}
+            maxLength={PASSWORD_MAX_LENGTH}
+            disabled={pending}
+          />
+        </div>
 
-        <PasswordField
-          name="confirmPassword"
-          label={AUTH_FIELDS.confirmPassword.label}
-          autoComplete={AUTH_FIELDS.confirmPassword.autoComplete}
-          error={state.fieldErrors?.["confirmPassword"]}
-          maxLength={PASSWORD_MAX_LENGTH}
-          disabled={pending}
-        />
-
-        <p className="text-body-sm text-muted-foreground">
+        <p className="text-caption text-muted-foreground">
           {copy.privacyNotice}
         </p>
 
@@ -141,13 +157,18 @@ export function RegisterForm() {
           block
           loading={pending}
           loadingLabel={copy.submittingLabel}
+          className="group"
         >
           {copy.submitLabel}
+          <ArrowRight
+            aria-hidden="true"
+            className="motion-safe:transition-transform motion-safe:duration-(--duration-fast) motion-safe:group-hover:translate-x-1"
+          />
         </Button>
       </div>
 
       {/* See the note in `login-form.tsx` on why this target is enlarged. */}
-      <p className="text-body-sm text-muted-foreground mt-8 flex flex-col items-center gap-1 text-center">
+      <p className="text-body-sm text-muted-foreground mt-4 flex flex-wrap items-center justify-center gap-x-1 text-center">
         <span>{copy.loginPrompt}</span>
         <Link
           href={LOGIN_PATH}

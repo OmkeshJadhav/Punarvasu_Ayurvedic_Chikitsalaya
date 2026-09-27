@@ -237,10 +237,9 @@ export async function updateDoctorAppointmentStatusAction(
 
   revalidatePath(DOCTOR_HOME);
   revalidatePath(DOCTOR_APPOINTMENTS);
+  // The appointment page is the whole workspace — notes, prescription and
+  // plan included — so it is the one path left to refresh.
   revalidatePath(`${DOCTOR_APPOINTMENTS}/${parsed.data.appointmentId}`);
-  revalidatePath(
-    `${DOCTOR_APPOINTMENTS}/${parsed.data.appointmentId}/consultation`,
-  );
 
   return doctorFormSuccess(
     DOCTOR_ACTIONS_COPY.statusSuccess[parsed.data.status],

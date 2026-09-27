@@ -841,11 +841,99 @@ client input, because the values that matter are not inputs.
 
 ---
 
+### 16. Booking on one page (2026-09-27)
+
+The patient booking flow at `/patient/appointments/book` was a five-step
+wizard: one question on screen at a time, earlier answers collapsed into
+"Change" rows, and a progress indicator. Patients found it a long job. It is
+now **one form with every section visible from the start**.
+
+#### 16.1 What the patient sees
+
+* **Five numbered sections, all at once:** consultation type, practitioner,
+  day, time, then note and request. Any answer can be changed in place — there
+  is no "Change" row and no "Back" button.
+* **Type and practitioner** are two-up card grids from `sm`, so the page is
+  shorter on a tablet or laptop. Still real radio groups in a `<fieldset>`
+  with a `<legend>`.
+* **Sections that depend on an earlier choice say what they are waiting for**
+  in a dashed hint, instead of hiding: days wait for a practitioner; times
+  wait for a type and a day.
+* **Changing a choice clears only what it invalidates.** A new practitioner
+  clears the day and time (they work other days); a new type or day clears
+  only the time.
+* **A summary above the button** ("You are requesting") once every choice is
+  made — consultation, practitioner, date and time, and the clinic address.
+  It replaces the old review step.
+* **Missing choices are marked only after an attempt to send.** The submit is
+  stopped client-side, each missing section shows its own error
+  (`FieldError`, `role="alert"`), a summary sits beside the button, and focus
+  moves to the first missing section. Nothing is flagged on arrival.
+* **The server's error appears beside the button**, not at the top of the form
+  — on a long page the top is off-screen when it arrives. A slot conflict
+  still clears the chosen time and refetches the list (section 42).
+
+#### 16.2 What did not change
+
+* One `<form>`, and exactly the four fields the action reads —
+  `appointmentTypeId`, `practitionerId`, `startsAt`, `patientNote`. The type
+  and practitioner radios now stay mounted, so the hidden mirror inputs the
+  wizard needed are gone; `startsAt` is rendered only once a slot is chosen.
+* The server action, validation, availability engine, `DatePickerStrip`,
+  `TimeSlotPicker` and `useAvailableSlots` are untouched. The client check is
+  a convenience; the server validates regardless (section 12 of `AGENTS.md`).
+* Section refs were rejected by `react-hooks/refs`, so an incomplete submit
+  finds the section to focus by its id from the submit event instead.
+
+#### 16.3 Files
+
+Modified:
+
+* `src/components/appointments/booking-flow.tsx` — rewritten as a single page;
+  `BookingProgress` and `SummaryRow` removed; `BookingFieldset`,
+  `BookingSection`, `SectionTitle` and `WaitingHint` added.
+* `src/features/appointments/content.ts` — `BOOKING_STEPS`, `BookingStepId`,
+  `backLabel` and `changeLabel` removed; waiting hints, per-choice required
+  messages, `incompleteSummary` and `summaryLabel` added.
+* `tests/components/appointments.test.tsx` — the step-walk and progress tests
+  replaced by "every section at once", "fills all four on one page" and
+  "marks what is missing instead of sending" (the action is asserted not to be
+  called, and focus lands on the first missing group).
+* `docs/DESIGN_SYSTEM.md` — the `BookingFlow` entry.
+
+No migration, no new permission, no new dependency.
+
+#### 16.4 Verification
+
+```text
+npm run typecheck                          passed
+npm run lint                               passed (1 pre-existing warning, location-section.tsx)
+tests/components/appointments.test.tsx     46 passed, including the axe sweep
+npm test                                   4578 passed, 1 failed
+```
+
+The one failure, `keeps the whole public image set well under 2 MB`, comes
+from uncommitted image work elsewhere in the tree and is unrelated.
+
+**Not verified in a browser.** Layout at phone width and the focus-and-scroll
+on an incomplete submit have been checked only in jsdom.
+
+#### 16.5 Known limitations
+
+1. `StaffBookingFlow` (Phase 10, `/receptionist/schedule/new`) is still a
+   step-by-step wizard. The two flows now look different; bringing the staff
+   flow to one page is the obvious follow-up.
+
+---
+
 ### 15. Phase status
 
 ```text
 Phase 09: COMPLETE
 Ready for Phase 10: YES
+
+Booking on one page (section 16):  COMPLETE
+Verified in a browser:             NO
 ```
 
 Phase 10 has not been started.

@@ -69,11 +69,26 @@ import { IDLE_DOCTOR_FORM_STATE } from "@/features/doctor/types";
 export function DoctorAppointmentActions({
   appointmentId,
   status,
+  omit = [],
 }: {
   readonly appointmentId: string;
   readonly status: AppointmentStatus;
+  /**
+   * Transitions another control on the page already offers. The appointment
+   * workspace passes `in_consultation`, because its consultation-notes
+   * section has a "Start consultation" of its own that also opens the
+   * clinical record — two buttons with one label and different effects would
+   * leave the practitioner guessing. Presentation only: the server decides
+   * what is allowed either way.
+   */
+  readonly omit?: readonly AppointmentStatus[];
 }) {
-  const actions = doctorActionsFor(status);
+  const available = doctorActionsFor(status);
+  const actions = available.filter((action) => !omit.includes(action.status));
+
+  // Everything left was omitted because it is offered elsewhere on the page,
+  // so "nothing left to change" would be untrue.
+  if (actions.length === 0 && available.length > 0) return null;
 
   if (actions.length === 0) {
     return (
