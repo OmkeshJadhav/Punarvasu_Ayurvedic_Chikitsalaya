@@ -52,9 +52,6 @@ export const RANGE_FILTER_COPY = {
   toLabel: "To",
   applyLabel: "Apply",
   resetLabel: "Reset",
-  customHint: "Choose any period up to one year.",
-  timezoneNote:
-    "Dates follow the clinic's own day, in the clinic's timezone. A period includes both the start and the end date.",
   fellBackNotice:
     "We couldn't use that period, so this shows the current month instead.",
   problems: {
@@ -220,6 +217,52 @@ export const DEFINITIONS_COPY = {
   metricHeader: "Figure",
   formulaHeader: "How it is calculated",
   datesHeader: "Which records it counts",
+} as const;
+
+/**
+ * The clinic dashboard's own words: the headline cards, the chart legend and
+ * the section framing. The figures' definitions stay with the panels above.
+ */
+export const DASHBOARD_COPY = {
+  breadcrumbAdmin: "Administration",
+  breadcrumbCurrent: "Analytics",
+  exportLink: "Export",
+  kpiHeading: "Headline figures",
+  kpi: {
+    appointments: "Appointments",
+    completed: "Completed",
+    newPatients: "New patients",
+    cancellationRate: "Cancellation rate",
+  },
+  /** "vs. previous 30 days" — the comparison is always the same length. */
+  comparisonPrefix: "vs. previous",
+  noComparison: "No comparison with the previous period",
+  increase: "Up",
+  decrease: "Down",
+  unchanged: "No change",
+  completionOfConcluded: "of concluded appointments",
+  overviewHeading: "Appointments overview",
+  overviewDescription:
+    "Every appointment in the period by the clinic day it is scheduled for, split by how it concluded.",
+  overviewTotal: "Total appointments",
+  legendLabel: "Outcomes shown in the chart",
+  series: {
+    completed: "Completed",
+    open: "Scheduled",
+    cancelled: "Cancelled",
+    noShow: "No-show",
+  },
+  openSeriesNote:
+    "Scheduled covers appointments not yet concluded — requested, confirmed, checked in or in consultation.",
+  outcomesHeading: "Outcome rates",
+  workloadTopHeading: "Busiest practitioners",
+  workloadTopDescription: "Appointments in the period",
+  workloadTableHeading: "Practitioner workload",
+  patientTrendHeading: "New patients over time",
+  notificationsSendingHeading: "Messages sent",
+  notificationsInAppHeading: "In-app notifications",
+  documentsHeading: "Documents by kind",
+  seeAllWorkload: "See full workload",
 } as const;
 
 /** The chart's accessible data alternative (section 66). */

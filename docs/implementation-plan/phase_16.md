@@ -634,21 +634,113 @@ or equivalent secure architecture.
 
 # 35. Patient-Level Reporting
 
-Avoid exposing identifiable patient lists in general analytics.
+General analytics — every aggregate, chart, trend and export in this phase —
+must not expose identifiable patient lists.
 
-If an operational report needs patient information, it must be explicitly authorized.
+Patient-level information is permitted **only** in the clinic registers defined
+in section 35A: a separately authorized, audited, administrator-only
+operational report shown on the clinic dashboard.
 
-Prefer:
+Prefer, in general analytics:
 
 ```text id="x7q4m8"
 32 appointments
 ```
 
-over:
+Never, anywhere:
 
 ```text id="m3x8q2"
 32 rows containing patient name + clinical data
 ```
+
+A register row may carry a patient's **name** beside operational appointment
+facts. It may never carry clinical data.
+
+---
+
+# 35A. Clinic Registers (Patient-Level Operational Reports)
+
+*Added with the clinic dashboard redesign. This section supersedes the earlier
+rule that the clinic dashboard shows no patient identifiers. It does not
+relax any rule about clinical data.*
+
+The administrator's clinic dashboard includes three patient-level panels:
+
+```text
+Appointment register
+Patient register
+Recent activity
+```
+
+They are **registers**, not analytics: they list people rather than count
+them, so they sit outside the analytics domain's no-identifier guarantee and
+behind their own controls.
+
+## Report definitions (section 92)
+
+### Appointment register
+
+| Field | Definition |
+| --- | --- |
+| Purpose | Let the administrator see who was booked with whom in the period and how each appointment concluded |
+| Audience | Administrator only |
+| Data source | `appointments`, joined to `patients.full_name`, `practitioners.display_name`, `appointment_types.name` |
+| Membership | Appointments whose **start** falls in the period — the same rule as every appointment figure, so the register total equals the "Appointments" headline figure |
+| Filters | Period; practitioner; page |
+| Fields | Date and time, patient name, practitioner, appointment type, status |
+| Order / size | Newest first; 8 rows per page, fixed in the database |
+| Permission | `registers.read.patients` |
+
+### Patient register
+
+| Field | Definition |
+| --- | --- |
+| Purpose | Show which patients the clinic saw, booked or registered in the period |
+| Audience | Administrator only |
+| Data source | `patients.full_name`, `patients.created_at`, `appointments` |
+| Membership | An *active* patient (at least one non-cancelled appointment in the period) or a *new* one (record created in the period) — section 21's definitions |
+| Fields | Patient name, "New" marker, appointments in the period, last visit (latest **completed** appointment up to the period's end), registration date |
+| Order / size | Most recent activity first; 6 rows per page, fixed in the database |
+| Filters | Period; page. Not narrowed by practitioner: a patient is the clinic's, not one practitioner's |
+| Permission | `registers.read.patients` |
+
+### Recent activity
+
+| Field | Definition |
+| --- | --- |
+| Purpose | The latest bookings, status changes, reschedules and patient registrations |
+| Audience | Administrator only |
+| Data source | `appointment_events` (Phase 09's append-only history) and `patients.created_at` |
+| Membership | Events **recorded** in the period (by event time, not appointment time); at most 10, newest first |
+| Filters | Period; practitioner (which excludes registrations, as they have no practitioner) |
+| Fields | Time, event kind, resulting status, patient name, practitioner |
+| Permission | `registers.read.patients` |
+
+## Required controls
+
+* **Separate permission.** `registers.read.patients`, administrator only, and
+  not part of any `analytics.read.*` permission.
+* **Gated in the database.** Every register function checks the caller is an
+  administrator in its own body, bounds the period with the analytics range
+  rules, and is `security definer` with a pinned `search_path`.
+* **Audited per patient, in the database.** Each read records one
+  `patient_register.read` entry in `security_audit_events` for every distinct
+  patient returned, with that patient as the subject. The application cannot
+  skip it.
+* **Minimal fields.** A patient's name and appointment facts only. Never phone,
+  email, date of birth, gender, address, emergency contact, `patient_note`,
+  `internal_note`, `cancellation_reason`, or any clinical field.
+* **No enumeration.** No patient parameter, no search term, no sort, limit or
+  offset parameter. Page size is a database constant and the page number is
+  clamped.
+* **Nothing identifying in URLs.** Only the period, the practitioner filter
+  and page numbers reach the URL.
+* **Not exported.** The CSV export (section 45) is unchanged and contains no
+  patient identifier.
+* **Stated on the page.** Each register tells the administrator that patients
+  listed are recorded in the audit trail.
+
+The receptionist and doctor dashboards do not show registers.
 
 ---
 
@@ -1221,6 +1313,11 @@ Provide:
 * loading feedback
 * validation
 
+*Product decision (clinic dashboard redesign):* the filter carries **no hint
+text** — no "up to one year" line and no timezone note. Dates are still
+interpreted in the clinic's timezone, the range is still bounded and
+validated, and a rejected period is still explained by an alert.
+
 ---
 
 # 74. Filter Persistence
@@ -1460,11 +1557,15 @@ SELECT date, count(*)
 
 # 90. Patient Identifiers
 
-Avoid exposing patient names in analytics.
+Do not expose patient names in analytics aggregates, charts, trends or
+exports.
 
 Use aggregate counts whenever possible.
 
-If a report genuinely needs patient identifiers, it must be a separately authorized operational report.
+Patient names may appear only in the clinic registers (section 35A), which are
+the separately authorized operational report this rule has always required:
+administrator-only, audited per patient, and limited to a name plus
+operational appointment facts.
 
 ---
 
@@ -1708,6 +1809,10 @@ Ensure analytics API responses do not accidentally contain:
 
 unless explicitly required.
 
+The clinic register functions (section 35A) are the one explicit, required
+exception, and only for patient **names**: they must still return no email,
+phone number, diagnosis, note, prescription detail, storage path or URL.
+
 ---
 
 # 105. SQL Security Tests
@@ -1909,6 +2014,13 @@ Patient Name | Diagnosis | Prescription
 ```text id="x7q3m8"
 Clinic dashboard:
 Appointments | Completion | Cancellation | No-show
+```
+
+### Also good — the clinic register (section 35A)
+
+```text
+Administrator only, audited per patient:
+Date & time | Patient name | Practitioner | Appointment type | Status
 ```
 
 ---
@@ -2186,7 +2298,8 @@ Phase 16 is complete only when:
 * [ ] Diagnoses are not unnecessarily queried.
 * [ ] Prescription details are not unnecessarily exposed.
 * [ ] Document contents are not exposed.
-* [ ] Patient identifiers are minimized.
+* [ ] Patient identifiers are minimized: none in analytics aggregates or exports; names only, in the audited administrator registers (section 35A).
+* [ ] Every register read writes a `patient_register.read` audit entry per patient shown.
 * [ ] Sensitive data is not logged.
 * [ ] Analytics responses contain only required fields.
 
@@ -2270,7 +2383,9 @@ signed URLs
 provider secrets
 ```
 
-unless explicitly required and authorized.
+unless explicitly required and authorized. The clinic registers (section 35A)
+are authorized to return patient names only; verify they return nothing else
+from this list, and that each read writes its audit entries.
 
 ---
 
@@ -2303,6 +2418,9 @@ How is appointment volume trending?
 How is practitioner workload trending?
 How many new patients joined?
 How are notifications being delivered?
+Which appointments were booked, and how did each conclude?   (administrator, audited)
+Which patients did we see or register this period?           (administrator, audited)
+What changed most recently?                                  (administrator, audited)
 ```
 
 without exposing unnecessary clinical information.

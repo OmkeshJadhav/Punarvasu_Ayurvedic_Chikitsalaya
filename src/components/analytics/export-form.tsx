@@ -44,15 +44,22 @@ export const APPOINTMENT_REPORT_ENDPOINT = "/api/reports/appointments";
 export function AppointmentReportExport({
   range,
   practitionerId,
+  embedded = false,
 }: {
   readonly range: AnalyticsRange;
   readonly practitionerId: string | undefined;
+  /** Inside a card that supplies its own frame and padding. */
+  readonly embedded?: boolean;
 }) {
   return (
     <form
       method="post"
       action={APPOINTMENT_REPORT_ENDPOINT}
-      className="border-border flex flex-col gap-4 rounded-lg border p-4"
+      className={
+        embedded
+          ? "flex flex-col gap-4"
+          : "border-border flex flex-col gap-4 rounded-lg border p-4"
+      }
     >
       <p className="text-body-sm text-prose measure font-sans">
         {EXPORT_COPY.description}

@@ -1080,3 +1080,34 @@ to it at all.
 state. Section 18's remaining items — the audit trail exercised through a real
 sign-in, and the CSP re-driven against the deployed site rather than a local
 production build — were not part of this run.
+
+---
+
+## Addendum — clinic registers audit and migration status (2026-09-27)
+
+Full record in `progress_phase_16.md`, addendum A3 and A6.
+
+**New audit action: `patient_register.read`.** Added by
+`20261001120000_clinic_registers.sql` (`alter type ... add value`). Written
+when a clinic register shows an administrator a patient's name — **one entry
+per distinct patient shown**, `resource_type = 'report'`, the patient as
+`subject_patient_id`, through `record_security_audit_event()`. The write is
+inside each register function, so the application cannot skip it, and it
+inherits the writer's swallow-on-failure rule so an audit problem never fails
+the page. This is the first administrator surface over patient data, and it
+was grantable only because this phase's audit trail exists — the reason
+Phases 10 and 13 withheld it.
+
+Verified live: one register read of 7 rows for 1 distinct patient wrote
+exactly one entry, attributed to role `admin`, with the subject set. The gate
+and the audit helper were refused (`42501`) to the administrator calling them
+directly; that they are revoked from every other client role is asserted
+structurally by `clinic-registers-security.test.ts` rather than exercised live.
+
+**Known issue 1 update.** Before applying the clinic registers migration, a
+`supabase db push --dry-run` against the development database listed only
+that migration as pending — so this phase's migration
+(`20260929120000_security_hardening.sql`) **is applied** to the development
+database. The live per-role verification this phase's section 18 asks for was
+performed for the new register functions (all non-admin roles `42501`); it has
+not been re-run for this phase's own functions.

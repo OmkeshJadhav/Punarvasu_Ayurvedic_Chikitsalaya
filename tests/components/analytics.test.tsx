@@ -865,8 +865,11 @@ describe("the date filter", () => {
     ).toBeInTheDocument();
   });
 
-  it("says whose day a date means", () => {
-    render(
+  it("carries no hint text, and describes no control by a missing element", () => {
+    // By product decision the filter bar has no hint or timezone note. What
+    // must not survive that is a dangling `aria-describedby`: a control that
+    // points a screen reader at an element that is not there.
+    const { container } = render(
       <DateRangeFilter
         range={RANGE}
         practitionerId={undefined}
@@ -876,7 +879,16 @@ describe("the date filter", () => {
       />,
     );
 
-    expect(screen.getByText(/clinic's own day/i)).toBeInTheDocument();
+    expect(screen.queryByText(/clinic's own day/i)).toBeNull();
+    expect(screen.queryByText(/up to one year/i)).toBeNull();
+
+    for (const control of container.querySelectorAll("[aria-describedby]")) {
+      for (const id of (control.getAttribute("aria-describedby") ?? "").split(
+        /\s+/,
+      )) {
+        if (id) expect(document.getElementById(id), id).not.toBeNull();
+      }
+    }
   });
 
   it("reports a rejected period instead of silently replacing it", () => {

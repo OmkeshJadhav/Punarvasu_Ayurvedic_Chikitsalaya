@@ -350,6 +350,19 @@ export const PERMISSIONS = [
    */
   "reports.export",
   /**
+   * Read the clinic's patient-level registers on the dashboard: the
+   * appointment register, the patient register and recent activity.
+   *
+   * The one analytics-adjacent permission that shows a patient's **name**,
+   * and deliberately not part of `analytics.read.*`: `phase_16.md` sections
+   * 35 and 90 require patient identifiers to sit behind a *separately
+   * authorized* operational report. Administrator only. Every read writes a
+   * `patient_register.read` audit entry per patient shown, in the database
+   * (`20261001120000_clinic_registers.sql`). Names and appointment facts only
+   * — no contact details, no notes, nothing clinical.
+   */
+  "registers.read.patients",
+  /**
    * Use doctor-facing clinical AI decision support.
    *
    * `phase_17.md` section 5: the doctor role, and nobody else. A receptionist
@@ -567,6 +580,7 @@ export const PERMISSIONS_BY_ROLE: Readonly<
     "analytics.read.operational",
     "analytics.read.clinic",
     "reports.export",
+    "registers.read.patients",
     "notifications.read.self",
     "notifications.write.self",
   ],

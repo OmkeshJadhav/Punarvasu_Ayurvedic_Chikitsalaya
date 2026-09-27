@@ -227,7 +227,7 @@ export async function requireUser(intendedPath?: string): Promise<CurrentUser> {
  * shape of this function is what changes then; the rest of the application is
  * already written against `AppRole | null`.
  */
-async function resolveRole(userId: string): Promise<AppRole | null> {
+export async function resolveRole(userId: string): Promise<AppRole | null> {
   try {
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase

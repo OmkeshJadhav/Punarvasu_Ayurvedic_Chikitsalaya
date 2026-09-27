@@ -198,6 +198,19 @@ export interface ClinicAnalytics {
   readonly growth: AnalyticsResult<readonly PatientGrowthPoint[]>;
 }
 
+/**
+ * The same headline figures for the period before, for "vs. previous period".
+ *
+ * Only the two summaries a comparison is drawn from — never a trend, a
+ * workload or anything per practitioner — so the extra read is two small
+ * aggregates rather than a second dashboard.
+ */
+export interface ClinicComparison {
+  readonly range: AnalyticsRange;
+  readonly appointments: AnalyticsResult<AppointmentCounts>;
+  readonly patients: AnalyticsResult<PatientGrowth>;
+}
+
 /** The administrator's additional panels. */
 export interface ClinicSystemAnalytics {
   readonly deliveries: AnalyticsResult<readonly NotificationDelivery[]>;

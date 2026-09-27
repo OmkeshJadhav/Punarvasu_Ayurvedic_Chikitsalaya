@@ -310,6 +310,45 @@ export function formatRate(value: Rate, fallback = "—"): string {
   return `${(value * 100).toFixed(RATE_DECIMAL_PLACES)}%`;
 }
 
+/**
+ * The relative change from one period's count to the next, or `null`.
+ *
+ * `null` when the earlier figure is zero: "up from nothing" has no
+ * percentage, and printing `+∞%` or `+100%` would both be inventions. The
+ * caller shows no comparison at all in that case rather than a made-up one.
+ */
+export function relativeChange(
+  current: number,
+  previous: number,
+): number | null {
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return null;
+  if (previous <= 0 || current < 0) return null;
+  return (current - previous) / previous;
+}
+
+/**
+ * The change between two rates, in percentage points, or `null` when either
+ * side has no basis.
+ *
+ * A rate's movement is reported in points, not as a percentage of itself:
+ * a cancellation rate going from 4% to 6% is "+2.0 pts", and "+50%" would
+ * make the same event sound like a crisis.
+ */
+export function pointChange(current: Rate, previous: Rate): number | null {
+  if (current === null || previous === null) return null;
+  return (current - previous) * 100;
+}
+
+/** "12.5%" or "2.0 pts", unsigned — the direction is carried separately. */
+export function formatChange(
+  value: number,
+  unit: "percent" | "points",
+): string {
+  const magnitude = Math.abs(unit === "percent" ? value * 100 : value);
+  const text = magnitude.toFixed(RATE_DECIMAL_PLACES);
+  return unit === "percent" ? `${text}%` : `${text} pts`;
+}
+
 /** "6 hours 30 minutes" from a minute count, for the utilization figures. */
 export function formatMinutes(minutes: number): string {
   const whole = Math.round(minutes);

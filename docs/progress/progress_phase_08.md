@@ -792,3 +792,49 @@ as the surface it protects, `assertPermission` in each server action,
 `assertResourceOwner` for a record addressed by its own id, and an RLS policy
 using `public.has_app_role()`. None of that requires the authorization
 architecture to change.
+
+---
+
+## Addendum — clinic registers permission and administrator landing (2026-09-27)
+
+Full record in `progress_phase_16.md`, addenda A3 and A4.
+
+**New permission: `registers.read.patients`**, held by the **administrator
+alone**. It unlocks the clinic registers on the dashboard (appointment
+register, patient register, recent activity) — the only place a patient's
+name appears outside the front-desk and clinical workspaces. Deliberately not
+part of any `analytics.read.*` permission, because `phase_16.md` §§35 and 90
+require identifiers to sit behind a *separately* authorized report. Enforced
+three times: the page shows the panels only when `can()` says so, the query
+module asserts it, and every database function refuses a non-administrator in
+its body. `policy.test.ts`'s full matrix and `clinic-registers-security.test.ts`
+assert the admin-only grant.
+
+**Administration area navigation.** The admin sub-navigation became a sidebar
+from `lg` up (a wrapping bar below it, only one displayed at a time so there is
+one navigation landmark). The **overview page was removed** at the product
+owner's request: `/admin` is now a server redirect to `/admin/analytics`,
+kept as a route so the area link, breadcrumbs and bookmarks still arrive
+somewhere. The layout's permission check runs first, so an unauthorized
+request is refused before the redirect. The overview's unused copy was deleted
+from `features/admin/content.ts`.
+
+**Role-aware landing.** `ProtectedArea` gained an optional `landingPath`
+(which must sit beneath the area's own path, so the area's guard covers it —
+asserted by test). The admin area's is `ADMIN_LANDING_PATH`
+(`/admin/analytics`), and `landingPathForRole()` honours it. `signInAction`
+now sends an administrator who did not request a destination straight there:
+the role is read once from `public.user_roles` with the fresh session
+(`resolveRole()`, now exported from `lib/auth/current-user.ts`), never from
+the form and never in `src/proxy.ts`. A failed lookup falls back to `/account`.
+An explicit `?next=` always wins; other roles are unchanged.
+
+Verified live in a clean browser profile:
+
+```text
+admin                     /auth/login                    -> /admin/analytics
+admin                     /auth/login?next=/admin/users  -> /admin/users
+patient                   /auth/login                    -> /account
+receptionist              /auth/login                    -> /account
+admin visits /admin                                      -> /admin/analytics
+```

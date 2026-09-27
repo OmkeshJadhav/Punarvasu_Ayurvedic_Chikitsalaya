@@ -1145,3 +1145,194 @@ Three things to carry forward:
 * **The browser pass this phase did not run should be run before Phase 17 adds
   more surface to it.** Phase 13 recorded the same thing, Phase 14 closed it,
   Phase 15 reopened it. It compounds.
+
+---
+
+## Addendum — clinic dashboard redesign, clinic registers and administrator landing (2026-09-27)
+
+Post-completion work on the administrator's clinic dashboard
+(`/admin/analytics`). Everything below was built after the phase was marked
+complete, at the product owner's request, and is recorded here because
+analytics is where it lives. Related entries: `progress_phase_02.md` (chart
+tokens, sidebar navigation), `progress_phase_08.md` (new permission, admin
+landing), `progress_phase_19.md` (new audit action) and `progress_phase_20.md`
+(image budget).
+
+### A1. What changed, in the order it was requested
+
+1. **Dashboard redesign** to a "premium Ayurvedic healthcare SaaS" direction,
+   combining two reference mockups: a left sidebar for the admin area, a serif
+   header with breadcrumbs, freshness and an Export button, a toolbar-style
+   filter card, four headline cards, and a 12-column grid of panels
+   (appointments overview, busiest practitioners, workload table, patients,
+   notifications, clinical activity, export, definitions).
+2. **Previous-period comparisons** on the headline cards ("↗ 12.5% vs.
+   previous 30 days"), from real data.
+3. **Clinic registers** — an appointment register, a patient register and a
+   recent-activity feed — the dashboard's first patient-level panels. This
+   required a specification change (`phase_16.md` §35A) and a migration.
+4. **Administrator landing.** The admin overview page was removed; `/admin`
+   redirects to the dashboard and an administrator signing in lands there.
+5. **Date filter hint removed** by product decision (no "up to one year" line,
+   no timezone note). Recorded in `phase_16.md` §73.
+
+### A2. The redesign
+
+| Element | How |
+| --- | --- |
+| Headline cards | Appointments, Completed, New patients, Cancellation rate. Icon, serif figure, sparkline from the existing trend, and a comparison line. A `<dl>`, so each label is announced with its value |
+| Comparison | `previousRange()` — the period immediately before, **of the same length** (a month-to-date on the 9th compares with the 9 days before, never with all of last month). `getClinicComparison()` reads the same two summaries under the same permission and the same consistency guard. `null` when the earlier period is before the reporting floor, when either read failed, when the earlier count was zero, or when a rate had no denominator — the card then says "No comparison with the previous period" rather than drawing a flat arrow. Rates move in **points**, not percent of themselves. Cancellation rate is `lowerIsBetter`. Direction is carried by arrow shape and a screen-reader word, not colour alone |
+| Appointments overview | `StackedBarChart`: completed / scheduled (not yet concluded) / cancelled / no-show per bucket, a text legend with totals, a CSS hover readout, a summary sentence, and the exact table in a `<details>`. Built from HTML boxes rather than a stretched SVG, so gaps, radii and axis text stay true at any width, with no JavaScript |
+| Axis scale | `niceScale()`: four gridlines on a step ladder of 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10 × 10ⁿ, integers only |
+| Workload | A "Busiest practitioners" ranked bar list (by volume only, §20) linking to the full table, which now has initials avatars and an inactive badge |
+| Notifications | List rows (channel/provider, counts in words, rate on the right) instead of two wide tables; the acceptance-rate caveat is kept beside them |
+| Clinical activity | Four tiles plus a documents-by-kind bar list; the privacy note is kept |
+| Shared components | `AnalyticsTable` gained `embedded` (full-bleed inside a card, caption kept for assistive technology); `AppointmentReportExport` gained `embedded`. Both default to their old behaviour, so the receptionist and doctor dashboards are unchanged |
+| Filter | Restyled as a toolbar card on all three dashboards. Same GET form, same four fields, same alert for a rejected period |
+| Loading | `DashboardLoading` mirrors the real grid |
+
+### A3. Clinic registers
+
+Defined in `phase_16.md` §35A; controls recorded in `docs/SECURITY.md`
+("Implemented (clinic dashboard redesign) — the clinic registers").
+
+| Register | Contents | Size |
+| --- | --- | --- |
+| Appointment register | Appointments **starting** in the period: date and time, patient name, practitioner, type, status. Follows the practitioner filter. Its total equals the Appointments headline figure | 8 per page |
+| Patient register | Patients *active* (a non-cancelled appointment in the period) or *new* (registered in the period): name, "New" badge, visits, last **completed** visit, registration date | 6 per page |
+| Recent activity | The latest `appointment_events` (booked, status changed, rescheduled) and patient registrations **recorded** in the period | 10 |
+
+Why a separate module: the analytics domain promises — and
+`analytics-security.test.ts` asserts — that no analytics function or type
+carries a patient identifier. That promise stays true. The registers live in
+their own migration, their own module (`features/clinic-registers`) and
+behind their own permission, and the dashboard composes both.
+
+**Database** (`20261001120000_clinic_registers.sql`): one enum value
+(`security_audit_action` += `patient_register.read`), a gate
+(`assert_patient_register_reader()`, admin only), an audit helper
+(`clinic_register_audit(uuid[])`, one entry per distinct patient through
+Phase 19's writer), and three `security definer` functions with pinned
+`search_path`. No table, policy or trigger. No patient, search, sort, limit
+or offset parameter; page size is a constant in each body; the page is clamped
+to 1–1000; the period goes through `analytics_assert_range()`. The audit is
+written **inside** each function, so it cannot be skipped by a caller that
+bypasses the application. Returned columns: a name and appointment facts only.
+
+**Application:** `getClinicRegisters()` asserts `registers.read.patients`;
+the page only calls it when the role holds that permission. Paging is plain
+links carrying page numbers only. Each register card states that the
+administrator's view is recorded in the audit trail.
+
+### A4. Administrator landing
+
+`/admin` is now a redirect to `ADMIN_LANDING_PATH` (`/admin/analytics`); the
+sidebar lists Analytics and Access management. Sign-in resolves the role once,
+in `signInAction`, after the password check — never in the proxy — and sends an
+administrator with no requested destination to the dashboard. An explicit
+`?next=` still wins; other roles still land on `/account`. The dashboard's
+"Administration" breadcrumb is no longer a link, as it would redirect back to
+the same page. Detail in `progress_phase_08.md`.
+
+### A5. Files
+
+```text
+supabase/migrations/20261001120000_clinic_registers.sql      new
+src/features/clinic-registers/{types,content,pagination,queries}.ts   new
+src/features/analytics/comparison.ts                         new
+src/components/analytics/dashboard/                          new
+  dashboard-card, kpi-card, sparkline, stacked-bar-chart,
+  headline-figures, clinic-dashboard, registers, dashboard-loading
+src/app/(app)/admin/analytics/{page,loading}.tsx             rewritten
+src/app/(app)/admin/{layout,page}.tsx                        sidebar; redirect
+src/features/analytics/{ranges,metrics,queries,types,content}.ts
+                                                             previousRange, change
+                                                             helpers, getClinicComparison,
+                                                             ClinicComparison, copy
+src/components/analytics/{analytics-table,export-form,date-range-filter}.tsx
+src/config/permissions.ts, src/lib/authorization/routes.ts,
+src/features/auth/actions.ts, src/lib/auth/current-user.ts,
+src/features/admin/content.ts, src/components/layout/nav-link.tsx
+src/app/globals.css, src/lib/design/palette.ts                chart ramp
+src/types/database.ts                                        hand-edited, see A8
+docs/implementation-plan/phase_16.md                         §35, §35A, §73, §90,
+                                                             §104, §120, §122, §124
+docs/SECURITY.md                                             actor table, registers
+                                                             section, audit table
+tests: comparison.test.ts, pagination.test.ts, clinic-dashboard.test.tsx,
+       clinic-registers.test.tsx, clinic-registers-security.test.ts;
+       updated policy.test.ts, routes.test.ts, contrast.test.ts, analytics.test.tsx
+```
+
+### A6. Verification
+
+Migration applied to the **development** database with
+`supabase db push --db-url` (the CLI is not linked; a dry run first confirmed
+it was the only pending migration and `APP_ENV=development`).
+
+Live, with real per-role sessions:
+
+```text
+anon          -> clinic_appointment_register / clinic_patient_register / clinic_recent_activity   DENIED 42501
+patient       -> all three                                                                        DENIED 42501
+receptionist  -> all three                                                                        DENIED 42501
+doctor        -> all three                                                                        DENIED 42501
+admin         -> all three                                                                        ALLOWED
+admin         -> clinic_register_audit, assert_patient_register_reader (internal)                 REFUSED 42501
+admin         -> page 0 (clamped to 1) / page 999999 (empty) / 2-year range / injected date       ok / ok / PV061 / 22007
+returned columns: names and appointment facts only; no contact, note or clinical column
+audit: one register read of 7 rows for 1 distinct patient wrote exactly 1 patient_register.read entry
+       (actor role admin, resource 'report', subject set)
+register total (7) equals the Appointments headline figure for the same period
+```
+
+Sign-in landing, live in a clean browser profile:
+
+```text
+admin                     /auth/login                    -> /admin/analytics
+admin                     /auth/login?next=/admin/users  -> /admin/users
+patient                   /auth/login                    -> /account
+receptionist              /auth/login                    -> /account
+admin visits /admin                                      -> /admin/analytics   sidebar: Analytics* | Access management
+```
+
+Browser: `/admin/analytics` at 1440px and 390px — no console errors, no
+horizontal overflow.
+
+Checks: typecheck, lint (0 errors; one pre-existing warning in
+`location-section.tsx`), Prettier, production build and the client-bundle
+secret scan pass. **Tests: 4,677 of 4,677.**
+
+### A7. Defects found and fixed during the work
+
+* **`<dl>` structure.** A `dt` wrapped in a `div` and a `dd` placed before its
+  `dt` in the clinical tiles. Restructured so each group is `dt` then `dd`.
+* **Axis too coarse.** `niceScale(83)` returned 200, leaving the tallest bar
+  under half height. Finer step ladder; 83 → 100, 248 → 320.
+* **Overlapping axis labels** on wide screens: the phone and desktop label
+  sets were both visible at `sm`. Each width now shows only its own set.
+* **Comparison text squeezed** by the sparkline into one word per line. The
+  comparison moved to its own row.
+* **"No earlier period to compare"** was wrong when the earlier period simply
+  had zero. Reworded to "No comparison with the previous period".
+* **Two cards titled "Patients".** The register is now "Patient register".
+* **Every child route of `/admin` returned 404** on a freshly started dev
+  server, with nothing logged. A stale Turbopack cache: clearing `.next/dev`
+  and restarting fixed it. No code change.
+* **Dangling `aria-describedby`** on the date inputs after the hint paragraph
+  was removed. Removed, and a test now fails on any `aria-describedby` that
+  names a missing element.
+
+### A8. Known issues
+
+* **`src/types/database.ts` was edited by hand** for the three register
+  functions and the new enum value; regeneration (`npm run db:types`) was
+  blocked by the session's permission policy. The edits typecheck and match
+  the migration. Regenerate when convenient.
+* **The receptionist and doctor dashboards still use the original panels.**
+  Only the shared filter was restyled there.
+* **"Busiest practitioners" shows empty space** with one or two practitioners,
+  because it stretches to the height of the chart beside it.
+* **Comparisons cost two extra aggregate reads per page load.**
+* **Section 73's timezone note is intentionally absent** (A1.5). Dates are
+  still interpreted in the clinic's timezone.

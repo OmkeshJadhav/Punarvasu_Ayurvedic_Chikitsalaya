@@ -27,17 +27,6 @@ export const FORBIDDEN_PAGE = {
 export const ADMIN_AREA = {
   navLabel: "Administration",
   title: "Administration",
-  heading: "Clinic administration",
-  description:
-    "Manage who can sign in to Punarvasu and what each person is allowed to do.",
-  /**
-   * Said out loud rather than implied by an empty page. Services,
-   * availability, content and settings are later phases; a dashboard full of
-   * disabled tiles would suggest they exist.
-   */
-  scopeNoticeTitle: "What you can do here today",
-  scopeNoticeBody:
-    "Access management is the only administrative area that has been built. Services, availability, clinic settings and reporting are still to come.",
 } as const;
 
 export const ADMIN_USERS_PAGE = {

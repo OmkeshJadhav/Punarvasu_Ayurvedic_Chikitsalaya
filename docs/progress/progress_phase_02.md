@@ -555,3 +555,40 @@ A developer building the homepage should be able to compose it entirely from
 `SiteHeader`, `SiteFooter` and the design tokens, without inventing a colour,
 a font size, a spacing value or an interaction pattern. `/design-system` shows
 the full inventory in one page.
+
+---
+
+## Addendum — clinic dashboard redesign (2026-09-27)
+
+Design-system additions made for the redesigned clinic dashboard. Full record
+in `progress_phase_16.md`, addendum A2.
+
+**Categorical chart ramp.** The first deliberate multi-series palette, as the
+`--chart-series` comment anticipated. Four tokens, all from existing brand
+ramps plus one new sand step:
+
+| Token | Value | Role |
+| --- | --- | --- |
+| `--chart-1` | `--punarvasu-primary-700` #2a473a (forest) | completed |
+| `--chart-2` | `--punarvasu-primary-400` #6d9280 (sage) | scheduled / not yet concluded |
+| `--chart-3` | `--punarvasu-sand-500` #a88a5c (new, sand) | cancelled |
+| `--chart-4` | `--punarvasu-terracotta` #8f4a34 (clay) | no-show |
+
+Each clears 3:1 against the card and the page (WCAG 1.4.11), asserted in
+`contrast.test.ts` and mirrored in `palette.ts`. Sage and sand share a
+luminance, so identity never rests on colour: segments stack in a fixed order
+with a surface gap, and every chart has a text legend, a hover readout and a
+table. `--punarvasu-sand-500` exists only for data marks; as a surface it
+would read as mud.
+
+**`NavLink` sidebar appearance.** `appearance="sidebar"` plus an optional
+decorative `icon`: neutral rows, the current page as a filled
+`bg-primary` row with semibold text (so "you are here" is not colour alone),
+and a hover state that stays readable on the filled row. Used by the
+administration sidebar (`progress_phase_08.md`).
+
+**`AnalyticsTable` / `AppointmentReportExport` `embedded` option.** For use
+inside a card: no second frame, outer cells take the card's inset, the caption
+is kept for assistive technology. Off by default.
+
+Checks: typecheck, lint, tests (4,677 of 4,677).

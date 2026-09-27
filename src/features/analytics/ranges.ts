@@ -268,3 +268,24 @@ export function defaultRange(now: Date = new Date()): AnalyticsRange {
     preset: DEFAULT_ANALYTICS_PRESET,
   };
 }
+
+/**
+ * The period immediately before a range, of the same length.
+ *
+ * What a dashboard's "vs. previous period" compares against. The same number
+ * of days rather than "the previous calendar month", because a month-to-date
+ * on the 9th compared with all of last month would report a collapse in
+ * volume every morning until the 31st — the same reasoning `this_week` uses
+ * for stopping at today.
+ *
+ * `null` when the earlier period would start before the reporting floor: no
+ * comparison is an honest answer, a comparison against a clipped period is
+ * not.
+ */
+export function previousRange(range: AnalyticsRange): AnalyticsRange | null {
+  const to = addDaysToIsoDate(range.from, -1);
+  const from = addDaysToIsoDate(range.from, -range.spanDays);
+  const resolved = resolveRange(from, to, "custom");
+
+  return resolved.status === "ok" ? resolved.range : null;
+}

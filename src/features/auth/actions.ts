@@ -56,6 +56,7 @@ import {
   resetPasswordSchema,
 } from "@/features/auth/validation";
 import { buildAuthCallbackUrl } from "@/lib/auth/callback-url";
+import { resolveRole } from "@/lib/auth/current-user";
 import {
   AUTHENTICATED_LANDING_PATH,
   RESET_PASSWORD_PATH,
@@ -63,6 +64,7 @@ import {
   VERIFY_PATH,
 } from "@/lib/auth/paths";
 import { safeRedirectPath } from "@/lib/auth/redirect";
+import { landingPathForRole } from "@/lib/authorization/routes";
 import { logger } from "@/lib/logging/logger";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AUTH_PAGES } from "@/features/auth/content";
@@ -156,12 +158,15 @@ export async function signInAction(
     AUTHENTICATED_LANDING_PATH,
   );
 
+  let signedInUserId: string | null = null;
+
   try {
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: parsed.data.email,
       password: parsed.data.password,
     });
+    signedInUserId = data.user?.id ?? null;
 
     if (error) {
       const failure = describeAuthFailure("sign-in", error);
@@ -180,7 +185,31 @@ export async function signInAction(
   // email address in a log file is a patient list.
   logger.info("auth.sign_in_succeeded");
 
-  redirect(destination);
+  redirect(await landingAfterSignIn(destination, signedInUserId));
+}
+
+/**
+ * Where a signed-in user goes when they did not ask to go anywhere.
+ *
+ * A requested destination always wins — somebody who followed a link to
+ * `/admin/users` and was asked to sign in should arrive at `/admin/users`.
+ * Only the default is role-dependent, and only for an administrator, whose
+ * work begins on the clinic dashboard rather than on the account page.
+ *
+ * The role comes from `public.user_roles`, read with the fresh session, never
+ * from anything the form sent. A failed lookup falls back to the account
+ * page: the redirect is a convenience, and every area still guards itself.
+ */
+async function landingAfterSignIn(
+  destination: string,
+  userId: string | null,
+): Promise<string> {
+  if (destination !== AUTHENTICATED_LANDING_PATH || !userId) {
+    return destination;
+  }
+
+  const role = await resolveRole(userId);
+  return role === "admin" ? landingPathForRole(role) : destination;
 }
 
 // ---------------------------------------------------------------------------

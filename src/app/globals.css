@@ -60,6 +60,9 @@
      (#fff8e1) read as a template default next to cinematic photography. The
      ramp now sits closer to unbleached linen - still warm, but quiet enough
      that the photographs and the green carry the colour. */
+  /* The one sand deep enough to be a data mark: 3:1 on card and on cream.
+     Only the chart ramp uses it - as a surface it would read as mud. */
+  --punarvasu-sand-500: #a88a5c;
   --punarvasu-sand-300: #d6c7ad;
   --punarvasu-sand-200: #e6dccb;
   --punarvasu-sand-100: #ede3d0;
@@ -138,6 +141,22 @@
    */
   --chart-series: var(--punarvasu-primary-600);
   --chart-track: var(--punarvasu-sand-100);
+
+  /* The categorical ramp, added with the clinic dashboard redesign - the
+   * deliberate second-series decision the comment above anticipates.
+   *
+   * Four marks for the four appointment outcomes: forest, sage, sand and
+   * clay, all drawn from the brand's own ramps. Each clears 3:1 against the
+   * card and the page (asserted in `contrast.test.ts`), and they are never
+   * relied on alone: stacked segments sit in a fixed order with a surface gap
+   * between them, every chart carries a text legend, a hover readout and an
+   * always-available table. Sage and sand share a luminance, so they are
+   * never placed as the only two series in a chart.
+   */
+  --chart-1: var(--punarvasu-primary-700);
+  --chart-2: var(--punarvasu-primary-400);
+  --chart-3: var(--punarvasu-sand-500);
+  --chart-4: var(--punarvasu-terracotta);
 
   /* Editorial voice.
    *
@@ -274,6 +293,10 @@
   --color-primary-active: var(--primary-active);
   --color-chart-series: var(--chart-series);
   --color-chart-track: var(--chart-track);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);

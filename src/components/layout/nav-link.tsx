@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 import type { NavItem } from "@/config/navigation";
 import { MOTION_MICRO } from "@/lib/motion";
@@ -41,13 +41,20 @@ export interface NavLinkProps extends Omit<
   "href" | "children"
 > {
   readonly item: NavItem;
-  /** `header` sits on a bar; `stacked` is the mobile menu and footer. */
-  readonly appearance?: "header" | "stacked";
+  /**
+   * `header` sits on a bar; `stacked` is the mobile menu and footer;
+   * `sidebar` is a workspace's vertical navigation, where the current page is
+   * a filled row rather than an underline.
+   */
+  readonly appearance?: "header" | "stacked" | "sidebar";
+  /** A leading icon. Decorative: the label is the accessible name. */
+  readonly icon?: ReactNode;
 }
 
 export function NavLink({
   item,
   appearance = "header",
+  icon,
   className,
   ...props
 }: NavLinkProps) {
@@ -80,14 +87,29 @@ export function NavLink({
               "transition-[color,background-size] duration-(--duration-normal)",
               "aria-[current=page]:text-primary aria-[current=page]:link-underline-active",
             )
-          : cn(
-              "text-muted-foreground min-h-11 w-full",
-              "aria-[current=page]:text-primary aria-[current=page]:font-semibold",
-            ),
+          : appearance === "sidebar"
+            ? cn(
+                // The fill is the "you are here" mark, and the weight change
+                // backs it up so the current page is not colour alone.
+                "text-muted-foreground min-h-11 w-full gap-3 rounded-md px-3",
+                "hover:bg-accent hover:text-primary",
+                "aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground aria-[current=page]:font-semibold aria-[current=page]:shadow-sm",
+                "aria-[current=page]:hover:bg-primary-hover aria-[current=page]:hover:text-primary-foreground",
+                "[&_svg]:size-[1.125rem] [&_svg]:shrink-0",
+              )
+            : cn(
+                "text-muted-foreground min-h-11 w-full",
+                "aria-[current=page]:text-primary aria-[current=page]:font-semibold",
+              ),
         className,
       )}
       {...props}
     >
+      {icon ? (
+        <span aria-hidden="true" className="contents">
+          {icon}
+        </span>
+      ) : null}
       {item.label}
     </Link>
   );

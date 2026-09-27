@@ -125,7 +125,7 @@ Administrative access must therefore be auditable and protected by strong authen
 | **Patient** | Their own record, appointments, issued prescriptions, active plans, own documents, own notifications | Another patient's ids; staff routes; clinical records; role escalation | RLS scoped by `current_patient_id()`; reads that take no id at all; no write grant on any clinical table; no writable path to `user_roles` |
 | **Receptionist** | Operational scheduling and demographics | Clinical records, prescriptions, plans, documents, analytics beyond scope, role management | **No policy at all** on any clinical table; no clinical permission; `42501` from every clinical function |
 | **Doctor** | Their own diary, patients they are booked to see, records they authored | Another practitioner's patients or records; administrative operations; AI outside scope | Relationship-scoped policies; `assert_care_practitioner()`; no practitioner parameter exists anywhere to substitute |
-| **Administrator** | Users, roles, operational and clinic analytics, exports | Clinical data | No clinical policy and no clinical permission. Administrative power and clinical access are separate, and role changes are audited and self-excluding |
+| **Administrator** | Users, roles, operational and clinic analytics, exports, and the clinic registers (patient **names** beside appointment facts, audited per patient) | Clinical data; patient contact details | No clinical policy and no clinical permission. The registers return a name and operational facts only, and write an audit entry per patient shown. Administrative power and clinical access are separate, and role changes are audited and self-excluding |
 | **Compromised browser** | Nothing | Forging role in storage or a cookie, editing payloads, replaying requests | Nothing client-side decides anything; every identity is server-derived; `HttpOnly` cookies; CSP; same-origin check |
 | **External providers** | Only what section 43 lists | — | Credentials server-only; the AI context is de-identified; notification payloads carry no clinical content |
 
@@ -328,7 +328,7 @@ no current purpose. Deferred.
 | Filter parameters cannot become SQL | §§57, 58. Every filter is a typed parameter of an RPC: two `date`s and a `uuid`. A SQL fragment in a date is a type error, verified live, and the table it named survived. |
 | **Analytics owns no domain state** | §103. The migration contains no `create table`, no `insert`, no `update`, no `delete`, no trigger and no policy — asserted structurally. It is read-only with respect to Phases 07–15 as a property of the diff rather than as an intention. |
 | Clinical data is not queried, not merely not shown | §§3, 88. No function selects a diagnosis, symptom, assessment, doctor's note, medicine, dose, plan title, document title, file name, storage path, checksum, notification title or body, cancellation reason, patient note or internal note. Asserted against the migration text. |
-| Patient identifiers are minimised to nothing | §§35, 90, 104. There is no patient identifier in any return type. The only name that appears is a practitioner's **professional** display name, already printed on the diary every receptionist reads. |
+| Patient identifiers are minimised to nothing — in analytics | §§35, 90, 104. There is no patient identifier in any analytics return type. The only name that appears is a practitioner's **professional** display name, already printed on the diary every receptionist reads. Patient names appear only in the clinic registers below, which are not analytics. |
 | Export data minimisation | §45, example 4. The report is **aggregated** — a count per (clinic day, practitioner, appointment type, status) — rather than a row per appointment, so it identifies nobody and §90's separately-authorized identifier report does not arise. The five approved columns are a fixed contract the writer reads through; a column added to the RPC cannot start leaving the building. |
 | Export delivery | §47. Authenticated `POST` only, returning an attachment with `private, no-store` and `nosniff`. **No public URL and no GET download URL** — a `GET` returns 405, verified live. No object storage is involved. |
 | Export auditability | §48. Who, which report, when, and whether the scope was narrowed. Not what was in it, and **not to whom** it was narrowed: a practitioner id in an audit line is an identifier the record does not need. |
@@ -339,6 +339,26 @@ no current purpose. Deferred.
 | Safe errors | `features/analytics/errors.ts`, SQLSTATE range `PV060`–`PV062`, disjoint from every earlier phase. No function, table, policy, constraint or SQL fragment can reach a screen. |
 | Logging | The operation, an opaque user id and a failure category. Never a figure, a name, a period's contents or the provider's message; a successful dashboard read logs nothing at all. Asserted by an **allowlist** over every identifier in every `logger.*` call in the feature. |
 | Private pages are not publicly cached | `private, no-store` from the proxy, `force-dynamic` on the authenticated shell, `noindex` on all three routes, and `robots.txt` already disallows `/admin`, `/receptionist` and `/doctor`. Verified live. |
+
+### Implemented (clinic dashboard redesign) — the clinic registers
+
+`phase_16.md` §35A. The administrator's clinic dashboard gained three
+patient-level panels — an appointment register, a patient register and a
+recent-activity feed. They are the "separately authorized operational report"
+§§35 and 90 always allowed for, and they are built so that the analytics
+guarantees above remain true: they live in their own migration
+(`20261001120000_clinic_registers.sql`), their own module
+(`features/clinic-registers`) and behind their own permission.
+
+| Control | How |
+| --- | --- |
+| Permission | `registers.read.patients`, **administrator only**, and not part of any `analytics.read.*` permission. A receptionist keeps the front desk's own patient search; a doctor keeps their own patients. Neither sees the clinic-wide list. |
+| Gate in the body | `assert_patient_register_reader()` is called first by all three functions and refuses anyone but an administrator with `42501`. `security definer`, `search_path` pinned, revoked from `anon` by name, granted to `authenticated` only; the gate and the audit helper are granted to nobody. |
+| **Audited per patient, in the database** | Each function records one `patient_register.read` entry per distinct patient it returned, with that patient as `subject_patient_id`, through Phase 19's `record_security_audit_event()`. It is written inside the function, so a caller that bypassed the application still leaves the trail, and "who has seen this person's name" is the same indexed query as every other access. The page tells the administrator this beside the names. |
+| Minimal fields | A patient's **name** and appointment facts: time, practitioner, appointment type, status, counts, dates. No phone, email, date of birth, gender, address or emergency contact; no `patient_note`, `internal_note` or `cancellation_reason`; nothing clinical. Asserted against the migration's return types and text. |
+| No enumeration surface | No patient parameter, no search term, no sort, limit or offset parameter. Page size is a constant inside each function and the page number is clamped to 1–1000; the period goes through `analytics_assert_range()`. Only the period, practitioner filter and page numbers reach the URL. |
+| Not exported | The CSV export is unchanged and still carries no patient identifier. |
+| Logging | Operation, opaque user id and failure category. Never a name, a patient id or a page's contents — asserted by test. |
 
 ### Implemented (Phase 17) — clinical AI decision support
 
@@ -994,6 +1014,7 @@ own:
 | `patient_record.read` | staff open a patient's demographic record |
 | `document.access_granted` | a signed URL is minted for a document |
 | `report.exported` | an administrator generates the operations report |
+| `patient_register.read` | a clinic register shows an administrator a patient's name — one entry per patient shown |
 | `authorization.denied` | any guard refuses a request |
 
 A patient reading their own prescription is deliberately **not** recorded. It

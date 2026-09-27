@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CalendarDays, SlidersHorizontal } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -46,15 +47,20 @@ import type { AnalyticsRange } from "@/features/analytics/types";
  * That is also why the preset select does not hide the custom date inputs
  * when another preset is chosen. Hiding them would need state; leaving them
  * visible costs a reader nothing and means the form never depends on script
- * having run. The hint says what they are for.
+ * having run.
  *
- * ## Section 73's four requirements
+ * ## Section 73
  *
- * The current range is stated in words above the controls; the timezone note
- * says whose day a date means; reset is a link back to the default; and a
- * rejected period is reported rather than silently replaced — which is the
- * one somebody would otherwise never notice, because the page would just show
- * different numbers.
+ * The current range is stated in words above the controls; reset is a link
+ * back to the default; and a rejected period is reported rather than silently
+ * replaced — which is the one somebody would otherwise never notice, because
+ * the page would just show different numbers.
+ *
+ * There is deliberately **no hint text** under the controls — no "up to one
+ * year" line and no timezone note — by product decision, to keep the filter
+ * bar compact. The one-year bound is still enforced (by the browser's `min`,
+ * by `resolveRangeRequest` and by the database) and a period that breaks it is
+ * explained by the alert above, so nobody is refused without being told why.
  */
 export function DateRangeFilter({
   range,
@@ -75,6 +81,8 @@ export function DateRangeFilter({
   readonly fellBack: boolean;
   readonly problem: RangeProblem | null;
 }) {
+  const hasPractitioners = practitioners !== undefined;
+
   return (
     <div className="flex flex-col gap-4">
       {fellBack && problem ? (
@@ -86,18 +94,34 @@ export function DateRangeFilter({
       <form
         method="get"
         action={basePath}
-        className="border-border bg-muted/40 flex flex-col gap-4 rounded-lg border p-4"
+        className="border-border bg-card rounded-lg border p-5 shadow-sm sm:p-6"
       >
-        <fieldset className="contents">
-          <legend className="text-caption text-muted-foreground font-sans tracking-wide uppercase">
-            {RANGE_FILTER_COPY.legend}
-          </legend>
+        <fieldset className="flex flex-col gap-5">
+          <legend className="sr-only">{RANGE_FILTER_COPY.legend}</legend>
 
-          <p className="text-body-sm text-heading font-sans font-medium">
-            {formatRangeLabel(range.from, range.to)}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <p
+              aria-hidden="true"
+              className="text-caption text-muted-foreground font-sans font-semibold tracking-wide uppercase"
+            >
+              {RANGE_FILTER_COPY.legend}
+            </p>
+            <p className="text-body-sm text-heading inline-flex items-center gap-2 font-sans font-medium">
+              <CalendarDays
+                aria-hidden="true"
+                className="text-primary size-4 shrink-0"
+              />
+              {formatRangeLabel(range.from, range.to)}
+            </p>
+          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            className={
+              hasPractitioners
+                ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] xl:items-end"
+                : "grid gap-4 sm:grid-cols-3 xl:grid-cols-[repeat(3,minmax(0,1fr))_auto] xl:items-end"
+            }
+          >
             <Field name="preset" label={RANGE_FILTER_COPY.presetLabel}>
               {(control) => (
                 <NativeSelect defaultValue={range.preset} {...control}>
@@ -110,11 +134,7 @@ export function DateRangeFilter({
               )}
             </Field>
 
-            <Field
-              name="from"
-              label={RANGE_FILTER_COPY.fromLabel}
-              description={RANGE_FILTER_COPY.customHint}
-            >
+            <Field name="from" label={RANGE_FILTER_COPY.fromLabel}>
               {(control) => (
                 // A native date input: keyboard operable, announced correctly,
                 // and on a phone it opens the platform's own picker. `min`
@@ -157,18 +177,17 @@ export function DateRangeFilter({
                 )}
               </Field>
             ) : null}
-          </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="submit">{RANGE_FILTER_COPY.applyLabel}</Button>
-            <Button asChild variant="ghost">
-              <Link href={basePath}>{RANGE_FILTER_COPY.resetLabel}</Link>
-            </Button>
+            <div className="flex flex-wrap items-center gap-2 sm:col-span-full xl:col-span-1">
+              <Button type="submit">
+                <SlidersHorizontal aria-hidden="true" />
+                {RANGE_FILTER_COPY.applyLabel}
+              </Button>
+              <Button asChild variant="ghost">
+                <Link href={basePath}>{RANGE_FILTER_COPY.resetLabel}</Link>
+              </Button>
+            </div>
           </div>
-
-          <p className="text-caption text-muted-foreground measure font-sans">
-            {RANGE_FILTER_COPY.timezoneNote}
-          </p>
         </fieldset>
       </form>
     </div>

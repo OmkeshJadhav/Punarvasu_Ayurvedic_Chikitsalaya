@@ -79,6 +79,7 @@ const MATRIX: Readonly<Record<AppRole, Readonly<Record<Permission, boolean>>>> =
       "analytics.read.clinic": false,
       "analytics.read.own_practice": false,
       "reports.export": false,
+      "registers.read.patients": false,
       "users.read": false,
       "roles.manage": false,
     },
@@ -152,6 +153,7 @@ const MATRIX: Readonly<Record<AppRole, Readonly<Record<Permission, boolean>>>> =
       // Section 44: exporting is a stronger capability than viewing, and
       // nobody has asked the front desk to produce files.
       "reports.export": false,
+      "registers.read.patients": false,
       "users.read": false,
       "roles.manage": false,
     },
@@ -212,6 +214,7 @@ const MATRIX: Readonly<Record<AppRole, Readonly<Record<Permission, boolean>>>> =
       "analytics.read.operational": false,
       "analytics.read.clinic": false,
       "reports.export": false,
+      "registers.read.patients": false,
       "users.read": false,
       "roles.manage": false,
     },
@@ -279,6 +282,7 @@ const MATRIX: Readonly<Record<AppRole, Readonly<Record<Permission, boolean>>>> =
       "analytics.read.operational": true,
       "analytics.read.clinic": true,
       "reports.export": true,
+      "registers.read.patients": true,
       // Not a practitioner's own practice. An administrator is not a doctor
       // with a wider scope; `analytics.read.own_practice` resolves to whoever
       // the caller's practitioner record is, and an admin has none.

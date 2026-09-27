@@ -80,6 +80,7 @@ import type {
   AppointmentCounts,
   AppointmentReportRow,
   ClinicAnalytics,
+  ClinicComparison,
   ClinicSystemAnalytics,
   ClinicalActivity,
   DocumentTypeVolume,
@@ -285,6 +286,56 @@ export async function getClinicAnalytics(
     workload,
     patients,
     growth,
+  };
+}
+
+/**
+ * The previous period's headline figures, for the dashboard's comparisons.
+ *
+ * The same two RPCs, the same permission and the same consistency guard as
+ * `getClinicAnalytics`, so a comparison cannot be computed on a looser basis
+ * than the figure it sits beside. The caller supplies the earlier range from
+ * `previousRange()`; this module does not decide what "previous" means.
+ */
+export async function getClinicComparison(
+  range: AnalyticsRange,
+  practitionerId?: string,
+): Promise<ClinicComparison> {
+  const user = await assertPermission("analytics.read.operational");
+  const supabase = await createSupabaseServerClient();
+
+  const [appointments, patients] = await Promise.all([
+    read(
+      "clinic.comparison.appointments",
+      user.id,
+      () =>
+        supabase.rpc("analytics_clinic_appointment_summary", {
+          p_from: range.from,
+          p_to: range.to,
+          p_practitioner_id: practitionerId ?? null,
+        }),
+      mapCounts,
+    ),
+    read(
+      "clinic.comparison.patients",
+      user.id,
+      () =>
+        supabase.rpc("analytics_clinic_patient_summary", {
+          p_from: range.from,
+          p_to: range.to,
+        }),
+      mapPatientGrowth,
+    ),
+  ]);
+
+  return {
+    range,
+    appointments: guardCounts(
+      appointments,
+      user.id,
+      "clinic.comparison.appointments",
+    ),
+    patients,
   };
 }
 

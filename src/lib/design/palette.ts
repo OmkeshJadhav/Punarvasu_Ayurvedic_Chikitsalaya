@@ -48,6 +48,11 @@ export const PALETTE = {
    */
   chartSeries: "#355a49",
   chartTrack: "#ede3d0",
+  /** The categorical ramp. See `--chart-1` in `globals.css`. */
+  chart1: "#2a473a",
+  chart2: "#6d9280",
+  chart3: "#a88a5c",
+  chart4: "#8f4a34",
 
   border: "#e6dccb",
   borderStrong: "#d6c7ad",

@@ -65,8 +65,17 @@ export const RECEPTIONIST_AREA_PATH = "/receptionist";
  */
 export const DOCTOR_AREA_PATH = "/doctor";
 
-/** Clinic administration: staff access management. */
+/** Clinic administration: the clinic dashboard and staff access management. */
 export const ADMIN_AREA_PATH = "/admin";
+
+/**
+ * Where an administrator's work begins: the clinic dashboard.
+ *
+ * The administration area has no overview page of its own — `/admin`
+ * redirects here — so this is both the sign-in landing for an administrator
+ * and the target of every link to the area.
+ */
+export const ADMIN_LANDING_PATH = "/admin/analytics";
 
 export interface ProtectedArea {
   /** The route prefix. Everything at or beneath it needs `permission`. */
@@ -75,6 +84,11 @@ export interface ProtectedArea {
   readonly permission: Permission;
   /** The navigation label, when the area is offered as a link. */
   readonly label: string;
+  /**
+   * Where to send somebody arriving in the area, when that is not the area's
+   * root. Must sit beneath `path`, so the area's own guard covers it.
+   */
+  readonly landingPath?: string;
 }
 
 /**
@@ -104,6 +118,7 @@ export const PROTECTED_AREAS = {
     path: ADMIN_AREA_PATH,
     permission: "roles.manage",
     label: "Administration",
+    landingPath: ADMIN_LANDING_PATH,
   },
 } as const satisfies Readonly<Record<string, ProtectedArea>>;
 
@@ -143,16 +158,18 @@ export function areasForRole(role: AppRole | null): readonly ProtectedArea[] {
 /**
  * Where a role's own work lives.
  *
- * Used by the account page to offer the obvious next step, **not** by the
- * sign-in redirect. Sign-in continues to land on `/account` for everybody:
- * making the landing role-dependent would mean resolving the role in
- * `src/proxy.ts`, which runs on every request including prefetches, and
- * `phase_08.md` sections 24 and 31 both argue against putting an
- * authorization lookup there.
+ * Used by the account page to offer the obvious next step, and by the
+ * sign-in action to send an **administrator** straight to the clinic
+ * dashboard. The role is resolved once, in the sign-in action, after the
+ * password has been checked — never in `src/proxy.ts`, which runs on every
+ * request including prefetches, and where `phase_08.md` sections 24 and 31
+ * both argue against an authorization lookup. Other roles still land on
+ * `/account`.
  *
  * A role with no area of its own lands on the account page, which is honest
  * about why.
  */
 export function landingPathForRole(role: AppRole | null): string {
-  return areasForRole(role)[0]?.path ?? AUTHENTICATED_LANDING_PATH;
+  const area = areasForRole(role)[0];
+  return area ? (area.landingPath ?? area.path) : AUTHENTICATED_LANDING_PATH;
 }

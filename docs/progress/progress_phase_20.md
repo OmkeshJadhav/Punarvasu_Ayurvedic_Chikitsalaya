@@ -930,3 +930,34 @@ Three things to carry forward:
   from instruments that looked reasonable. The deterministic byte measurements
   never lied; the timing ones did, repeatedly, and once pointed at the
   opposite decision.
+
+---
+
+## Addendum — image budget restored (2026-09-27)
+
+`asset-and-seo-invariants.test.ts`'s "keeps the whole public image set well
+under 2 MB" had been failing: later page redesigns (contact, treatments) had
+added images and left full-size originals beside them, and `public/images`
+had grown back to **12.9 MB**.
+
+```text
+deleted, unreferenced anywhere in the repo            9.8 MB -> 0
+  cta-home.png, cta-treatments.png                    originals of the JPEGs in use
+  cta-image.png, cta-image-2.png, cta-image-3.png     never referenced
+  services-cta-water.jpg                              never referenced
+re-encoded, 15 photographs in use                     2.50 MB -> 1.26 MB
+  mozjpeg (via sharp), quality 76, progressive, dimensions unchanged
+public/images total                                   12.9 MB -> 1.5 MB
+```
+
+All deleted files are tracked in git and recoverable from history. Dimensions
+are unchanged, so every registry `width`/`height` still matches (asserted).
+Quality 76 was chosen over 80 (1.76 MB) to leave headroom for the next image
+added; a 1:1 crop of the most gradient-heavy photograph showed no visible
+difference or banding. The contact page renders with no broken images.
+
+The date filter's hint paragraph was also removed by product decision; the
+test that asserted it now asserts its absence and that no control's
+`aria-describedby` names a missing element (`progress_phase_16.md`, A1.5).
+
+Tests: 4,677 of 4,677.

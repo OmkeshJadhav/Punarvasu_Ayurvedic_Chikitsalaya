@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { cn } from "@/lib/utils/cn";
 import {
   Table,
   TableBody,
@@ -48,18 +49,38 @@ export function AnalyticsTable<Row>({
   rows,
   rowKey,
   footnote,
+  embedded = false,
 }: {
   readonly caption: string;
   readonly columns: readonly AnalyticsColumn<Row>[];
   readonly rows: readonly Row[];
   readonly rowKey: (row: Row, index: number) => string;
   readonly footnote?: ReactNode;
+  /**
+   * Inside a card that already names the table: no second frame, and the
+   * caption stays for assistive technology but is not printed twice.
+   */
+  readonly embedded?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <TableScroller label={caption}>
-        <Table>
-          <TableCaption>{caption}</TableCaption>
+      <TableScroller
+        label={caption}
+        className={cn(
+          embedded && "-mx-5 w-auto rounded-none border-x-0 sm:-mx-6",
+        )}
+      >
+        <Table
+          className={cn(
+            // Full-bleed, so the outer cells take the card's own inset and
+            // the first column lines up with the card's heading.
+            embedded &&
+              "[&_td]:py-3.5 [&_tr>*:first-child]:pl-5 sm:[&_tr>*:first-child]:pl-6 [&_tr>*:last-child]:pr-5 sm:[&_tr>*:last-child]:pr-6",
+          )}
+        >
+          <TableCaption className={cn(embedded && "sr-only")}>
+            {caption}
+          </TableCaption>
           <TableHeader>
             <TableRow>
               {columns.map((column) => (

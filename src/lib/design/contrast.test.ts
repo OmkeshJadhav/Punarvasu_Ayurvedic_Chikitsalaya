@@ -219,6 +219,14 @@ describe("non-text contrast meets WCAG AA (3:1)", () => {
     ["chart series on background", PALETTE.chartSeries, PALETTE.background],
     ["chart series on muted", PALETTE.chartSeries, PALETTE.muted],
     ["chart series on its own track", PALETTE.chartSeries, PALETTE.chartTrack],
+    ["chart 1 on card", PALETTE.chart1, PALETTE.card],
+    ["chart 2 on card", PALETTE.chart2, PALETTE.card],
+    ["chart 3 on card", PALETTE.chart3, PALETTE.card],
+    ["chart 4 on card", PALETTE.chart4, PALETTE.card],
+    ["chart 1 on background", PALETTE.chart1, PALETTE.background],
+    ["chart 2 on background", PALETTE.chart2, PALETTE.background],
+    ["chart 3 on background", PALETTE.chart3, PALETTE.background],
+    ["chart 4 on background", PALETTE.chart4, PALETTE.background],
     // On an inverted surface the ring becomes the brand foreground. See the
     // `[data-surface="inverted"]` rule in `globals.css`.
     [

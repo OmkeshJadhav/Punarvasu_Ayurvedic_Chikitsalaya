@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { APP_ROLES, PERMISSIONS } from "@/config/permissions";
+import { can } from "@/lib/authorization/policy";
 import { AUTHENTICATED_LANDING_PATH, isProtectedPath } from "@/lib/auth/paths";
 
 import {
   ADMIN_AREA_PATH,
+  ADMIN_LANDING_PATH,
   DOCTOR_AREA_PATH,
   FORBIDDEN_PATH,
   PATIENT_AREA_PATH,
@@ -166,8 +168,10 @@ describe("landingPathForRole", () => {
     expect(landingPathForRole("patient")).toBe(PATIENT_AREA_PATH);
   });
 
-  it("sends an admin to administration", () => {
-    expect(landingPathForRole("admin")).toBe(ADMIN_AREA_PATH);
+  it("sends an admin straight to the clinic dashboard", () => {
+    // The administration area has no overview page; `/admin` redirects here.
+    expect(landingPathForRole("admin")).toBe(ADMIN_LANDING_PATH);
+    expect(ADMIN_LANDING_PATH.startsWith(`${ADMIN_AREA_PATH}/`)).toBe(true);
   });
 
   it("sends a receptionist to the front desk", () => {
@@ -188,8 +192,18 @@ describe("landingPathForRole", () => {
       const required = requiredPermissionForPath(path);
 
       if (required !== null) {
-        expect(areasForRole(role).map((area) => area.path)).toContain(path);
+        expect(can(role, required), `${role} lands on ${path}`).toBe(true);
       }
+    }
+  });
+
+  it("only ever lands inside the area whose guard protects it", () => {
+    // A landing path outside its area would be guarded by a different rule —
+    // or by none — which is how a convenience redirect becomes a hole.
+    for (const area of PROTECTED_AREA_LIST) {
+      if (!area.landingPath) continue;
+      expect(area.landingPath.startsWith(`${area.path}/`)).toBe(true);
+      expect(requiredPermissionForPath(area.landingPath)).toBe(area.permission);
     }
   });
 });

@@ -1,5 +1,5 @@
-import { AnalyticsLoading } from "@/components/analytics/analytics-loading";
+import { DashboardLoading } from "@/components/analytics/dashboard/dashboard-loading";
 
 export default function AdminAnalyticsLoading() {
-  return <AnalyticsLoading label="Loading clinic analytics" panels={6} />;
+  return <DashboardLoading label="Loading clinic analytics" />;
 }
