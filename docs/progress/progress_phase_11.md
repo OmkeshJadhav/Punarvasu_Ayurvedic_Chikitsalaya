@@ -925,6 +925,7 @@ from uncommitted image work elsewhere in the tree and is unrelated.
 jump-link landing, streaming, and axe on the assembled page (as opposed to the
 components) are unchecked. Phase 11's browser pass found `landmark-unique`
 defects that jsdom could not see, so this is the check to run first.
+The sticky offset turned out to be wrong; see section 15.8.
 
 #### 15.7 Known limitations
 
@@ -936,6 +937,29 @@ defects that jsdom could not see, so this is the check to run first.
    its own workspace query — a handful of small, parallel, RLS-scoped reads
    rather than one shared read, kept so each section's authorization story is
    unchanged.
+
+#### 15.8 Fix — the jump bar's sticky offset (2026-09-28)
+
+Found in use, and the first of the unchecked items in section 15.6. The bar
+was pinned at `top-16` (`lg:top-20`) to sit beneath the site header, but the
+`(app)` shell's header is **not sticky** — only the marketing header is. Once
+the header had scrolled away, the bar stayed 64–80px down the viewport and the
+page scrolled visibly through the gap above it.
+
+* `workspace-nav.tsx` — the bar pins at `top-0` at every breakpoint.
+* `workspace-section.tsx` and the workspace page (overview and history
+  wrappers) — the scroll margin was `scroll-mt-36` / `lg:scroll-mt-40`, sized
+  for header *and* bar. It is now `scroll-mt-20` (80px), clearing the bar
+  alone (about 61px: `min-h-11` links plus `py-2` and the border), so a jump
+  link lands with the heading just below the bar rather than a header's height
+  further down.
+
+If the `(app)` header is ever made sticky, both offsets must grow back by its
+height (64px, 80px from `lg`).
+
+Typecheck, lint, Prettier and `doctor-workspace.test.tsx` (9 of 9) pass. The
+tests do not assert the offsets. **Still not verified in a browser** — the
+landing position of each jump link is the thing to check.
 
 ---
 
