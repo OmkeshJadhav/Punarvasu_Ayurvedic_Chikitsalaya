@@ -7,8 +7,10 @@ import {
 /**
  * Jump links to each section of the appointment workspace.
  *
- * Sticky beneath the site header (64px, 80px from `lg`), so a practitioner
- * halfway down the treatment plan is one tap from the notes. Plain fragment
+ * Sticky at the very top of the viewport, so a practitioner halfway down the
+ * treatment plan is one tap from the notes. The `(app)` shell's header is not
+ * sticky — it scrolls away — so the bar pins at `top-0`; an offset for a
+ * header that is no longer there left a gap the page showed through. Plain fragment
  * links: no script, keyboard- and screen-reader-operable as they are, and
  * ignored by the unsaved-changes guards, which only intercept navigation to
  * another page.
@@ -24,7 +26,7 @@ export function WorkspaceNav({
   return (
     <nav
       aria-label={DOCTOR_WORKSPACE_COPY.jumpNavLabel}
-      className="bg-background/95 border-border sticky top-16 z-(--z-sticky) border-b backdrop-blur lg:top-20"
+      className="bg-background/95 border-border sticky top-0 z-(--z-sticky) border-b backdrop-blur"
     >
       <ul className="flex gap-1 overflow-x-auto py-2">
         {sections.map((section) => (

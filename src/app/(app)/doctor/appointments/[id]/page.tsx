@@ -222,7 +222,7 @@ export default async function DoctorAppointmentPage({
 
         <div
           id={WORKSPACE_SECTIONS.overview}
-          className="flex scroll-mt-36 flex-col gap-8 lg:scroll-mt-40"
+          className="flex scroll-mt-20 flex-col gap-8"
         >
           {subject?.status === "found" ? (
             <PatientClinicalHeader
@@ -339,10 +339,7 @@ export default async function DoctorAppointmentPage({
         ) : null}
 
         {showHistory ? (
-          <div
-            id={WORKSPACE_SECTIONS.history}
-            className="scroll-mt-36 lg:scroll-mt-40"
-          >
+          <div id={WORKSPACE_SECTIONS.history} className="scroll-mt-20">
             <AppointmentHistory events={events} />
           </div>
         ) : null}

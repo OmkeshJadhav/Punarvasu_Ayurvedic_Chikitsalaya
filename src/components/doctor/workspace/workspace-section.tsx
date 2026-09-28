@@ -11,8 +11,8 @@ import { DOCTOR_WORKSPACE_COPY } from "@/features/doctor/content";
  * distinct, which keeps axe's `landmark-unique` satisfied — the defect Phase
  * 11 found on three doctor pages.
  *
- * The scroll margin clears the sticky site header *and* the sticky jump bar,
- * so a jump link lands with the heading visible rather than under both.
+ * The scroll margin clears the sticky jump bar (about 61px), so a jump link
+ * lands with the heading visible rather than under it.
  */
 export function WorkspaceSection({
   id,
@@ -34,7 +34,7 @@ export function WorkspaceSection({
     <section
       id={id}
       aria-labelledby={headingId}
-      className="border-border flex scroll-mt-36 flex-col gap-6 border-t pt-10 lg:scroll-mt-40"
+      className="border-border flex scroll-mt-20 flex-col gap-6 border-t pt-10"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id={headingId} className="text-h3 text-heading font-normal">
