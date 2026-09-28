@@ -744,6 +744,15 @@ disagreeing about it before it shipped.
 The trigger still holds regardless. A staff function cannot talk its way past
 it, and no client can update the table at all.
 
+The practitioner's equivalent is `update_appointment_status_as_doctor`
+(Phase 11, replaced by `20261002120000_doctor_check_in.sql`), mirrored in
+`src/features/doctor/status.ts`. It sets `confirmed`, `checked_in`,
+`in_consultation`, `completed` and `no_show`, only on appointments in the
+caller's own diary, and never `cancelled`. `checked_in` is shared with the
+desk because a consultation can only start from it: a patient who reaches the
+consulting room without being checked in can be checked in by the
+practitioner (`confirmed -> checked_in`) rather than waiting for the desk.
+
 ### One validator, two callers (Phase 10)
 
 `assert_bookable_slot` gained `p_require_online_booking` and

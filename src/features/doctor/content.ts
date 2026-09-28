@@ -314,7 +314,7 @@ export const DOCTOR_WORKSPACE_COPY = {
 
   /** Consultation notes, when the patient has not been checked in yet. */
   notesNotReady:
-    "The consultation can start once the patient has been checked in at the desk.",
+    "The consultation can start once the patient has been checked in.",
   /** Consultation notes, when the appointment ended without any. */
   notesNoneRecorded: "No consultation notes were written for this appointment.",
 
@@ -345,6 +345,7 @@ export const DOCTOR_ACTIONS_COPY = {
 
   statusSuccess: {
     confirmed: "Appointment confirmed.",
+    checked_in: "Patient checked in.",
     in_consultation: "Consultation started.",
     completed: "Consultation completed.",
     no_show: "Recorded as not attended.",

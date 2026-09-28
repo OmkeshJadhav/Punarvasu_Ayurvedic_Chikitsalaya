@@ -171,8 +171,8 @@ const STATUS_FIELDS = ["appointmentId", "status"] as const;
  *
  * ## Four things refuse an unauthorized status, not one
  *
- *   1. `doctorStatusSchema` constrains the value to the four this role may
- *      set, so `cancelled` and `checked_in` are rejected at the boundary;
+ *   1. `doctorStatusSchema` constrains the value to the five this role may
+ *      set, so `cancelled` is rejected at the boundary;
  *   2. `update_appointment_status_as_doctor` has the same allowlist, so a
  *      caller that skipped the schema is refused in the database;
  *   3. that function resolves the appointment by the caller's own

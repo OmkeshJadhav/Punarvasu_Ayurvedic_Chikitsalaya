@@ -81,12 +81,11 @@ export type CarePatientSearchInput = z.infer<typeof carePatientSearchSchema>;
 /**
  * A status change on one of the practitioner's own appointments.
  *
- * Two fields. `status` is constrained to the four this role may set, so a
- * request carrying `cancelled` or `checked_in` is refused at the boundary as
- * well as by the database's own allowlist and by the transition trigger
- * beneath it.
+ * Two fields. `status` is constrained to the five this role may set, so a
+ * request carrying `cancelled` is refused at the boundary as well as by the
+ * database's own allowlist and by the transition trigger beneath it.
  *
- * There is no `reason` field, because none of the four transitions writes
+ * There is no `reason` field, because none of the five transitions writes
  * one — which also means there is no free-text field anywhere on this path
  * for a clinical note to be typed into.
  */

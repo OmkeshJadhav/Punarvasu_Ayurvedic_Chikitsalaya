@@ -22,7 +22,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * *asks* for anything the database would have to refuse.
  *
  * The other half — that the database refuses independently — is a property
- * of `supabase/migrations/20260922120000_doctor_workspace.sql`, and is
+ * of `supabase/migrations/20261002120000_doctor_check_in.sql`, and is
  * asserted structurally in `doctor-security.test.ts` and against a live
  * project in `docs/progress/progress_phase_11.md`. Both halves are needed.
  * This is the same split Phases 07 to 10 recorded.
@@ -299,21 +299,24 @@ describe("the status write", () => {
     });
   });
 
-  it.each(["confirmed", "in_consultation", "completed", "no_show"])(
-    "accepts %s",
-    async (status) => {
-      const { updateDoctorAppointmentStatusAction } = await loadActions();
-      const state = await updateDoctorAppointmentStatusAction(
-        { status: "idle" },
-        statusForm({ status }),
-      );
+  it.each([
+    "confirmed",
+    "checked_in",
+    "in_consultation",
+    "completed",
+    "no_show",
+  ])("accepts %s", async (status) => {
+    const { updateDoctorAppointmentStatusAction } = await loadActions();
+    const state = await updateDoctorAppointmentStatusAction(
+      { status: "idle" },
+      statusForm({ status }),
+    );
 
-      expect(state.status).toBe("success");
-      expect(rpcCalls[0]?.args["p_status"]).toBe(status);
-    },
-  );
+    expect(state.status).toBe("success");
+    expect(rpcCalls[0]?.args["p_status"]).toBe(status);
+  });
 
-  it.each(["cancelled", "checked_in", "requested"])(
+  it.each(["cancelled", "requested"])(
     "refuses %s without calling the database",
     async (status) => {
       const { updateDoctorAppointmentStatusAction } = await loadActions();

@@ -113,9 +113,10 @@ describe("no schema has a field for clinical content", () => {
 });
 
 describe("the status schema", () => {
-  it("accepts the four statuses a practitioner may set", () => {
+  it("accepts the five statuses a practitioner may set", () => {
     for (const status of [
       "confirmed",
+      "checked_in",
       "in_consultation",
       "completed",
       "no_show",
@@ -128,10 +129,10 @@ describe("the status schema", () => {
     }
   });
 
-  it("rejects cancelling and checking in", () => {
+  it("rejects cancelling", () => {
     // Refused here, refused again by the database's allowlist, and refused a
     // third time by the transition trigger where the transition is illegal.
-    for (const status of ["cancelled", "checked_in"]) {
+    for (const status of ["cancelled"]) {
       const result = doctorStatusSchema.safeParse({
         appointmentId: VALID_UUID,
         status,

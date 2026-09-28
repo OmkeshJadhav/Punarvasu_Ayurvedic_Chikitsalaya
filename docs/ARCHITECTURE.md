@@ -731,10 +731,13 @@ Three rules this phase adds, and later phases inherit:
   to substitute — the strongest form of `phase_11.md` example 2.
 * **Two roles acting on one lifecycle get two allowlists, not one relaxed
   one.** The front desk sets `confirmed, checked_in, no_show, cancelled`; a
-  practitioner sets `confirmed, in_consultation, completed, no_show`. They are
-  complements: the two Phase 10 refused the desk because they describe the
+  practitioner sets `confirmed, checked_in, in_consultation, completed,
+  no_show`. The two Phase 10 refused the desk because they describe the
   consulting room are exactly the two this phase grants, and cancelling stays
-  where somebody can tell the patient.
+  where somebody can tell the patient. `checked_in` is shared
+  (`20261002120000_doctor_check_in.sql`): a consultation can only start from
+  it, so a practitioner may check in a patient in their own diary when the
+  desk has not.
 
 ### Implementation (Phase 10) — the front desk
 

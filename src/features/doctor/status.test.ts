@@ -36,15 +36,18 @@ import {
 
 const MIGRATION = readFileSync(
   new URL(
-    "../../../supabase/migrations/20260922120000_doctor_workspace.sql",
+    // The migration that defines the function *now*. Phase 11's original was
+    // replaced when practitioners were allowed to check patients in.
+    "../../../supabase/migrations/20261002120000_doctor_check_in.sql",
     import.meta.url,
   ),
   "utf8",
 );
 
 describe("the practitioner's status allowlist", () => {
-  it("is exactly confirm, start, complete and no-show", () => {
+  it("is exactly confirm, check in, start, complete and no-show", () => {
     expect([...DOCTOR_ASSIGNABLE_STATUSES].sort()).toEqual([
+      "checked_in",
       "completed",
       "confirmed",
       "in_consultation",
@@ -59,8 +62,10 @@ describe("the practitioner's status allowlist", () => {
     expect(isDoctorAssignableStatus("cancelled")).toBe(false);
   });
 
-  it("excludes checking a patient in, which happens at the desk", () => {
-    expect(isDoctorAssignableStatus("checked_in")).toBe(false);
+  it("includes checking a patient in, so a consultation is never stuck", () => {
+    // A consultation starts only from `checked_in`. If the desk has not
+    // checked the patient in, the practitioner can.
+    expect(isDoctorAssignableStatus("checked_in")).toBe(true);
   });
 
   it("refuses a status that is not one at all", () => {
@@ -72,14 +77,14 @@ describe("the practitioner's status allowlist", () => {
   it("is the complement of the front desk's, not a subset of it", () => {
     // `phase_11.md` section 25: the doctor workspace is not the receptionist
     // interface with a different heading. The two allowlists overlap on
-    // exactly the two statuses both roles can legitimately reach — confirming
-    // an appointment and recording that nobody came — and differ everywhere
-    // else.
+    // exactly the statuses both roles can legitimately reach — confirming an
+    // appointment, checking a patient in, and recording that nobody came —
+    // and differ everywhere else.
     const doctor = new Set<string>(DOCTOR_ASSIGNABLE_STATUSES);
     const desk = new Set<string>(STAFF_ASSIGNABLE_STATUSES);
 
     const shared = [...doctor].filter((status) => desk.has(status)).sort();
-    expect(shared).toEqual(["confirmed", "no_show"]);
+    expect(shared).toEqual(["checked_in", "confirmed", "no_show"]);
 
     // The two Phase 10 refused the front desk, because they describe what
     // happened in the consulting room.
@@ -88,10 +93,8 @@ describe("the practitioner's status allowlist", () => {
     expect(desk.has("in_consultation")).toBe(false);
     expect(desk.has("completed")).toBe(false);
 
-    // And the two the desk keeps.
-    expect(desk.has("checked_in")).toBe(true);
+    // And the one the desk keeps.
     expect(desk.has("cancelled")).toBe(true);
-    expect(doctor.has("checked_in")).toBe(false);
     expect(doctor.has("cancelled")).toBe(false);
   });
 
@@ -163,9 +166,8 @@ describe("canDoctorSetStatus", () => {
     // `requested -> cancelled` is a legal transition and is absent here,
     // because `cancelled` is not a status this role may set.
     requested: ["confirmed"],
-    // `confirmed -> checked_in` is legal and absent for the same reason:
-    // checking a patient in happens at the desk.
-    confirmed: ["no_show"],
+    // `confirmed -> cancelled` is legal and absent for the same reason.
+    confirmed: ["checked_in", "no_show"],
     checked_in: ["in_consultation", "no_show"],
     in_consultation: ["completed"],
     completed: [],
@@ -197,9 +199,13 @@ describe("canDoctorSetStatus", () => {
     }
   });
 
-  it("never allows a practitioner to check a patient in, from any state", () => {
+  it("allows a practitioner to check a patient in only once confirmed", () => {
+    // A request is confirmed first; the Phase 09 matrix has no
+    // `requested -> checked_in`, and this rule inherits that.
     for (const from of APPOINTMENT_STATUSES) {
-      expect(canDoctorSetStatus(from, "checked_in"), from).toBe(false);
+      expect(canDoctorSetStatus(from, "checked_in"), from).toBe(
+        from === "confirmed",
+      );
     }
   });
 });
@@ -244,6 +250,16 @@ describe("doctorActionsFor", () => {
     expect(actions.map((action) => action.status)).toEqual(["confirmed"]);
   });
 
+  it("offers checking in first for a confirmed appointment", () => {
+    // So the schedule row's single primary action is "Check in patient".
+    const actions = doctorActionsFor("confirmed");
+    expect(actions.map((action) => action.status)).toEqual([
+      "checked_in",
+      "no_show",
+    ]);
+    expect(actions[0]?.confirm).toBe(false);
+  });
+
   it("offers starting the consultation first for a checked-in patient", () => {
     // Lifecycle order: the likely action before the exception.
     const actions = doctorActionsFor("checked_in");
@@ -267,6 +283,7 @@ describe("doctorActionsFor", () => {
     }
 
     expect(confirming.get("confirmed")).toBe(false);
+    expect(confirming.get("checked_in")).toBe(false);
     expect(confirming.get("in_consultation")).toBe(false);
     expect(confirming.get("completed")).toBe(true);
     expect(confirming.get("no_show")).toBe(true);

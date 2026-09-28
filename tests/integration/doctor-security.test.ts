@@ -35,6 +35,19 @@ const MIGRATION = readFileSync(
   "utf8",
 );
 
+/**
+ * Where `update_appointment_status_as_doctor` is defined **now**. It was
+ * replaced to let a practitioner check their own patient in, and the
+ * assertions about it must describe the function actually installed.
+ */
+const STATUS_MIGRATION = readFileSync(
+  new URL(
+    "../../supabase/migrations/20261002120000_doctor_check_in.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+
 /** Phase 09's, for the guarantees this phase must not have weakened. */
 const ENGINE = readFileSync(
   new URL(
@@ -227,11 +240,11 @@ describe("the authorization gate", () => {
   });
 
   it("is called first by every function that reads or writes", () => {
-    for (const name of [
-      "search_care_patients",
-      "update_appointment_status_as_doctor",
-    ]) {
-      const definition = extractFunction(MIGRATION, name);
+    for (const [source, name] of [
+      [MIGRATION, "search_care_patients"],
+      [STATUS_MIGRATION, "update_appointment_status_as_doctor"],
+    ] as const) {
+      const definition = extractFunction(source, name);
       const body = definition.slice(definition.indexOf("begin"));
       const gate = body.indexOf("assert_care_practitioner()");
 
@@ -309,7 +322,7 @@ describe("the care-scoped patient search", () => {
 
 describe("the doctor's status function", () => {
   const definition = extractFunction(
-    MIGRATION,
+    STATUS_MIGRATION,
     "update_appointment_status_as_doctor",
   );
 
@@ -341,7 +354,15 @@ describe("the doctor's status function", () => {
     const match = /p_status not in \(([^)]*)\)/.exec(definition);
     expect(match).not.toBeNull();
     expect(match?.[1]).not.toContain("cancelled");
-    expect(match?.[1]).not.toContain("checked_in");
+  });
+
+  it("is still granted to signed-in users only, after being replaced", () => {
+    expect(STATUS_MIGRATION).toContain(
+      "revoke all on function public.update_appointment_status_as_doctor(uuid, public.appointment_status)\n  from public, anon;",
+    );
+    expect(STATUS_MIGRATION).toContain(
+      "grant execute on function public.update_appointment_status_as_doctor(uuid, public.appointment_status) to authenticated;",
+    );
   });
 
   it("raises the shared not-found and invalid-transition codes", () => {
@@ -532,14 +553,17 @@ describe("the application layer", () => {
 });
 
 /**
- * One function definition, from `create function` to its closing `$$;`.
+ * One function definition, from `create [or replace] function` to its
+ * closing `$$;`.
  *
  * Comments are kept, because a couple of assertions want to look at the
  * signature exactly as written; the callers that need comments stripped do
  * it themselves.
  */
 function extractFunction(source: string, name: string): string {
-  const start = source.indexOf(`create function public.${name}`);
+  const start = source.search(
+    new RegExp(`create (or replace )?function public\\.${name}\\b`),
+  );
   if (start === -1)
     throw new Error(`No such function in the migration: ${name}`);
 

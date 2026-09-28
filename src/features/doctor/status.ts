@@ -19,13 +19,19 @@
  *
  * ```text
  * receptionist   confirmed, checked_in, no_show, cancelled
- * doctor         confirmed, in_consultation, completed, no_show
+ * doctor         confirmed, checked_in, in_consultation, completed, no_show
  * ```
  *
  * `in_consultation` and `completed` are exactly the two Phase 10 refused the
  * front desk, on the grounds that they describe what happened in the
  * consulting room. This is the role that was in it, and `phase_11.md`
  * section 21 lists completion as a doctor action.
+ *
+ * `checked_in` is shared. It is ordinarily the desk's, but a consultation can
+ * only start from it, so a patient who reached the consulting room without
+ * being checked in would otherwise be stuck until somebody found a
+ * receptionist. The practitioner may check in only a patient in their own
+ * diary (`20261002120000_doctor_check_in.sql`).
  *
  * `cancelled` is deliberately absent. Cancelling releases a slot, changes a
  * patient's plans and needs somebody to tell them; a practitioner who needs
@@ -62,6 +68,7 @@ import type { AppointmentStatus } from "@/features/appointments/types";
  */
 export const DOCTOR_ASSIGNABLE_STATUSES = [
   "confirmed",
+  "checked_in",
   "in_consultation",
   "completed",
   "no_show",
@@ -121,7 +128,7 @@ export function canDoctorSetStatus(
  * Whether the consultation entry point should be offered.
  *
  * `phase_11.md` section 22: a consultation starts from an appointment that
- * is ready for one. The patient has been checked in at the desk, and the
+ * is ready for one. The patient has been checked in, and the
  * practitioner is about to see them.
  *
  * This is the *only* meaning "start a consultation" has in Phase 11 — it
@@ -165,6 +172,13 @@ const ACTION_PRESENTATION: Readonly<
     confirm: false,
     confirmBody: "",
   },
+  checked_in: {
+    // The same reasoning as the desk's check-in: it records an arrival, and
+    // the next step — starting the consultation — follows at once.
+    label: "Check in patient",
+    confirm: false,
+    confirmBody: "",
+  },
   in_consultation: {
     label: "Start consultation",
     confirm: false,
@@ -191,8 +205,8 @@ const ACTION_PRESENTATION: Readonly<
  * The actions to offer for an appointment in this status, in the order a
  * practitioner would reach for them.
  *
- * The order is the lifecycle's own: confirm, start, complete, and then the
- * exception. A terminal appointment offers nothing, which is the correct
+ * The order is the lifecycle's own: confirm, check in, start, complete, and
+ * then the exception. A terminal appointment offers nothing, which is the correct
  * empty answer rather than a row of disabled buttons telling somebody
  * nothing they can act on.
  */

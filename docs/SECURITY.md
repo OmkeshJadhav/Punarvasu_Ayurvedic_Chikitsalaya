@@ -537,7 +537,7 @@ data.
 | Doctor identity | Derived inside the database by `public.assert_care_practitioner()`, which reads `auth.uid()`, refuses a non-doctor, refuses a doctor with no practitioner record, and **returns the practitioner id**. There is no `doctorId` or `practitionerId` parameter on any function or in any schema in this feature. |
 | A doctor account not on the roster | Holding the doctor role is not the same as being a practitioner. An account with no `practitioners` row resolves to `null`, is refused by the gate, and reads no patient — verified live. It does not fall through to "everybody". |
 | Client cannot write an appointment | **Unchanged and still absolute.** No insert, update or delete grant on `public.appointments` for any client role, and no such policy. Every doctor write is a `security definer` function call. |
-| Status | A **role allowlist** of `confirmed, in_consultation, completed, no_show` — the complement of the front desk's. `cancelled` and `checked_in` are refused for this role, the Phase 09 transition trigger holds independently, and the schema refuses the value at the trust boundary. Three layers, all verified live. |
+| Status | A **role allowlist** of `confirmed, checked_in, in_consultation, completed, no_show`. `checked_in` was added by `20261002120000_doctor_check_in.sql` so a practitioner can check in their own patient when the desk has not. `cancelled` is refused for this role, the Phase 09 transition trigger holds independently, and the schema refuses the value at the trust boundary. Three layers, all verified live. |
 | No rescheduling, no cancelling | Not a hidden control: there is no server action, no RPC and no permission. Both change a patient's plans and need somebody to tell them, so they stay at the front desk where the actor is recorded. |
 | Patient search | `public.search_care_patients()`: doctor-only, restricted to the caller's own care scope in the `from` clause, refuses a term under two characters, clamps its own limit, escapes `%` and `_`, and returns six columns — no address, no emergency contact, no account identifier. The term is a parameter rather than part of a filter expression, and it is never logged. |
 | Search term privacy | A POST to a server action, not a `GET` with `?q=`. A search term is somebody's name, and a URL reaches browser history on a shared consulting-room machine, proxy logs and the next `Referer`. Verified in a browser that the term never reaches the URL. |
@@ -619,7 +619,7 @@ Planning-level for the cells no phase has built yet. The rows marked
 | Own patient record **(implemented)** | Read/update | No | No | No |
 | Operational patient record **(implemented)** | — | Read/create | No | No |
 | Any appointment **(implemented)** | No | View, create, confirm, check in, no-show, reschedule, cancel | No | No |
-| Own schedule **(implemented)** | — | — | View; confirm, start, complete, no-show | No |
+| Own schedule **(implemented)** | — | — | View; confirm, check in, start, complete, no-show | No |
 | Patients in own care scope **(implemented)** | — | — | Read and search, scoped by appointment relationship | No |
 | Own appointments **(implemented)** | Read, book, cancel, reschedule | No | No | No |
 | Users and roles **(implemented)** | No | No | No | Yes, audited |
@@ -628,7 +628,7 @@ Planning-level for the cells no phase has built yet. The rows marked
 | Book an appointment | Own | On behalf of any patient **(implemented)** | — | Yes |
 | View appointments | Own | All **(implemented)** | Own schedule **(implemented)** | All |
 | Cancel/reschedule | Own, within policy | Any **(implemented)** | Own | Any |
-| Check-in / check-out | No | Check-in **(implemented)** | No | Yes |
+| Check-in / check-out | No | Check-in **(implemented)** | Check-in, own schedule only **(implemented)** | Yes |
 | Clinical notes & assessments **(implemented)** | No patient-facing view exists yet | **No** | Create/manage, scoped to records they authored | **No** — needs an audit trail first |
 | Treatment plans **(implemented)** | Read own **active** plans | **No** | Create/manage, scoped to plans they wrote | **No** — needs an audit trail first |
 | Prescriptions **(implemented)** | View own **issued** | **No** | Create/issue/withdraw, scoped to ones they wrote | **No** — needs an audit trail first |
