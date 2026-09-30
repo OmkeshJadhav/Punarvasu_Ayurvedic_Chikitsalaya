@@ -106,20 +106,54 @@ export const PRACTITIONER_NOTIFICATION_COPY = {
     "Email notifications are not switched on for this clinic yet. Your notifications are waiting for you here in Punarvasu.",
 } as const;
 
+/**
+ * The same two screens, in the front desk's register.
+ *
+ * Overridden for the same reason the practitioner's are: "your care" is
+ * written for a patient, and the desk's notifications are about requests
+ * waiting for somebody to act on them.
+ */
+export const RECEPTION_NOTIFICATION_COPY = {
+  description:
+    "Requests waiting for the front desk. When a patient books an appointment online, it appears here — open one to review and confirm it.",
+
+  emptyBody:
+    "There are no notifications here yet. We'll let you know when a patient books an appointment online.",
+
+  preferencesDescription:
+    "Choose how Punarvasu tells the front desk about new appointment requests.",
+
+  scopeNote:
+    "Punarvasu only tells the front desk about appointment requests from patients. There is no marketing here and nothing to opt in to.",
+
+  privacyNote:
+    "Notifications are deliberately brief, and they never name a patient — a message can be read on a lock screen or a shared screen. Open the appointment to see who booked.",
+
+  mandatoryNote:
+    "Always on — a request nobody sees is a patient nobody calls back, and this is the one place that always exists.",
+
+  emailUnavailableNote:
+    "Email notifications are not switched on for this clinic yet. Your notifications are waiting for you here in Punarvasu.",
+} as const;
+
 /** The notification centre's introduction, for this reader. */
 export function notificationCentreDescription(
   audience: NotificationAudience,
 ): string {
-  return audience === "practitioner"
-    ? PRACTITIONER_NOTIFICATION_COPY.description
-    : NOTIFICATION_CENTRE_COPY.description;
+  if (audience === "practitioner") {
+    return PRACTITIONER_NOTIFICATION_COPY.description;
+  }
+  if (audience === "reception") return RECEPTION_NOTIFICATION_COPY.description;
+  return NOTIFICATION_CENTRE_COPY.description;
 }
 
 /** What an empty inbox says, for this reader. */
 export function notificationEmptyBody(audience: NotificationAudience): string {
-  return audience === "practitioner"
-    ? PRACTITIONER_NOTIFICATION_COPY.emptyBody
-    : NOTIFICATION_CENTRE_COPY.emptyBody;
+  if (audience === "practitioner") {
+    return PRACTITIONER_NOTIFICATION_COPY.emptyBody;
+  }
+  if (audience === "reception") return RECEPTION_NOTIFICATION_COPY.emptyBody;
+  return NOTIFICATION_CENTRE_COPY.emptyBody;
 }
 
 export const NOTIFICATION_PREFERENCES_COPY = {
@@ -184,6 +218,16 @@ export function notificationPreferencesCopy(audience: NotificationAudience): {
       privacyNote: PRACTITIONER_NOTIFICATION_COPY.privacyNote,
       mandatoryNote: PRACTITIONER_NOTIFICATION_COPY.mandatoryNote,
       emailUnavailableNote: PRACTITIONER_NOTIFICATION_COPY.emailUnavailableNote,
+    };
+  }
+
+  if (audience === "reception") {
+    return {
+      description: RECEPTION_NOTIFICATION_COPY.preferencesDescription,
+      scopeNote: RECEPTION_NOTIFICATION_COPY.scopeNote,
+      privacyNote: RECEPTION_NOTIFICATION_COPY.privacyNote,
+      mandatoryNote: RECEPTION_NOTIFICATION_COPY.mandatoryNote,
+      emailUnavailableNote: RECEPTION_NOTIFICATION_COPY.emailUnavailableNote,
     };
   }
 

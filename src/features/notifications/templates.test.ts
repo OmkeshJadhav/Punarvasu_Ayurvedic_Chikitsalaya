@@ -8,6 +8,7 @@ import {
   renderEmail,
   renderNotification,
   renderPractitionerNotification,
+  renderReceptionNotification,
   type NotificationTemplateData,
   type PractitionerNotificationTemplateData,
 } from "./templates";
@@ -149,9 +150,22 @@ describe("every event has a template", () => {
         migration,
       )?.[1] ?? "";
 
-    const values = [...declared.matchAll(/'([a-z_]+)'/g)].map(
-      (match) => match[1],
+    const added = readFileSync(
+      new URL(
+        "../../../supabase/migrations/20261003120000_reception_notification_enums.sql",
+        import.meta.url,
+      ),
+      "utf8",
     );
+
+    const values = [
+      ...[...declared.matchAll(/'([a-z_]+)'/g)].map((match) => match[1]),
+      ...[
+        ...added.matchAll(
+          /alter type public\.notification_event_type add value '([a-z_]+)'/g,
+        ),
+      ].map((match) => match[1]),
+    ];
 
     // A missing template would mean an event the processor could claim and
     // then fail to render for ever.
@@ -296,6 +310,48 @@ describe("the practitioner's templates", () => {
 /* Grammar against interpolated data                                         */
 /* ------------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------------ */
+/* The front desk's vocabulary                                               */
+/* ------------------------------------------------------------------------ */
+
+describe("the front desk's template", () => {
+  const rendered = renderReceptionNotification({
+    event: "appointment_requested",
+    data: {
+      practitionerName: PRACTITIONER,
+      appointmentTypeName: APPOINTMENT_TYPE,
+      startsAt: STARTS_AT,
+    },
+  });
+
+  it("says a request is waiting, with the type, practitioner and time", () => {
+    expect(rendered.title).toBe("New appointment request");
+    expect(rendered.body).toContain(APPOINTMENT_TYPE);
+    expect(rendered.body).toContain(PRACTITIONER);
+    expect(rendered.body).toMatch(/2026/);
+    expect(rendered.templateVersion).toBe(NOTIFICATION_TEMPLATE_VERSION);
+  });
+
+  it("is an appointment update, so it is always on in-app", () => {
+    expect(rendered.category).toBe("appointment_updates");
+    expect(EVENT_CATEGORY.appointment_requested).toBe("appointment_updates");
+  });
+
+  it("names no patient and carries no clinical word", () => {
+    // Sections 36, 37, 58. The interface has no patient field; this is the
+    // second line of defence.
+    const text = `${rendered.title} ${rendered.body}`;
+    expect(text).not.toContain(PATIENT_NAME);
+    expect(text.toLowerCase()).not.toContain("patient");
+  });
+
+  it("puts the operational fact, not a patient, in an email subject", () => {
+    expect(renderEmail(rendered).subject).toBe(
+      "Punarvasu: New appointment request",
+    );
+  });
+});
+
 describe("no article ever precedes an interpolated value", () => {
   /**
    * The defect this guards, found by the first live worker run.
@@ -347,7 +403,12 @@ describe("no article ever precedes an interpolated value", () => {
       } as PractitionerNotificationTemplateData),
     );
 
-    return [...patientMessages, ...practitionerMessages].map(
+    const receptionMessage = renderReceptionNotification({
+      event: "appointment_requested",
+      data: appointment,
+    });
+
+    return [...patientMessages, ...practitionerMessages, receptionMessage].map(
       (m) => `${m.title} ${m.body}`,
     );
   }

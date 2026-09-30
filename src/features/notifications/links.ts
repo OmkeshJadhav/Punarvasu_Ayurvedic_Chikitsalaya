@@ -36,6 +36,10 @@
  * they just issued is the noise section 56 exists to prevent. `null` means
  * "this audience is not told about this resource", and the database raises
  * rather than storing an empty path.
+ *
+ * The front desk's notification points at `/receptionist/schedule/<id>`, the
+ * desk's own view of the appointment and the place a request is confirmed.
+ * Appointments only, for the same reason.
  */
 
 import type { NotificationAudience, NotificationSubjectType } from "./types";
@@ -56,6 +60,12 @@ export function notificationLinkPath(
   if (audience === "practitioner") {
     return resourceType === "appointment"
       ? `/doctor/appointments/${resourceId}`
+      : null;
+  }
+
+  if (audience === "reception") {
+    return resourceType === "appointment"
+      ? `/receptionist/schedule/${resourceId}`
       : null;
   }
 

@@ -102,6 +102,11 @@ export interface NotificationCategoryRule {
     readonly label: string;
     readonly description: string;
   };
+  /** How the same category reads to the front desk. */
+  readonly reception?: {
+    readonly label: string;
+    readonly description: string;
+  };
 }
 
 /**
@@ -124,6 +129,11 @@ export const NOTIFICATION_CATEGORIES: Readonly<
       description:
         "When an appointment in your diary is confirmed, moved or cancelled. These always appear in Punarvasu, so a change made at the front desk reaches you.",
     },
+    reception: {
+      label: "Appointment requests",
+      description:
+        "When a patient books an appointment online and it is waiting to be confirmed. These always appear in Punarvasu, so no request goes unseen.",
+    },
   },
   appointment_reminders: {
     label: "Appointment reminders",
@@ -143,7 +153,8 @@ export const NOTIFICATION_CATEGORIES: Readonly<
  * Which categories each audience can actually receive.
  *
  * A patient receives all three. A practitioner receives **one** — the
- * schedule changes that happen to their day without them.
+ * schedule changes that happen to their day without them. The front desk
+ * receives **one** — a patient's online booking request.
  *
  * There is no `appointment_reminders` for a practitioner because none is sent:
  * somebody with eight appointments does not want sixteen reminders about a day
@@ -162,6 +173,7 @@ export const NOTIFICATION_AUDIENCE_CATEGORIES: Readonly<
 > = {
   patient: ["appointment_updates", "appointment_reminders", "clinical_updates"],
   practitioner: ["appointment_updates"],
+  reception: ["appointment_updates"],
 };
 
 /**
@@ -172,10 +184,10 @@ export const NOTIFICATION_AUDIENCE_CATEGORIES: Readonly<
  * **nothing** about what they can read. That is `notifications_select_own`,
  * which scopes every row to `auth.uid()` whatever this returns.
  *
- * A receptionist or an administrator maps to `patient` because that is the
- * full preference grid and the neutral wording — not because either receives a
- * patient's notifications. Neither receives any notification at all today, and
- * both see the empty state, which is honest.
+ * A receptionist maps to `reception`. An administrator maps to `patient`
+ * because that is the full preference grid and the neutral wording — not
+ * because they receive a patient's notifications. They receive none today, and
+ * see the empty state, which is honest.
  *
  * `null` — a session whose role has not resolved — maps there too, for the
  * same reason: the neutral wording is the safe thing to show somebody whose
@@ -184,7 +196,9 @@ export const NOTIFICATION_AUDIENCE_CATEGORIES: Readonly<
 export function notificationAudienceForRole(
   role: AppRole | null,
 ): NotificationAudience {
-  return role === "doctor" ? "practitioner" : "patient";
+  if (role === "doctor") return "practitioner";
+  if (role === "receptionist") return "reception";
+  return "patient";
 }
 
 /** What this category is called for this audience, and what it covers. */
@@ -196,6 +210,10 @@ export function notificationCategoryCopy(
 
   if (audience === "practitioner" && rule.practitioner) {
     return rule.practitioner;
+  }
+
+  if (audience === "reception" && rule.reception) {
+    return rule.reception;
   }
 
   return { label: rule.label, description: rule.description };

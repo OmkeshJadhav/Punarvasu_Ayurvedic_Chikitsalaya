@@ -86,6 +86,7 @@ import {
   renderEmail,
   renderNotification,
   renderPractitionerNotification,
+  renderReceptionNotification,
   type NotificationTemplateData,
   type PractitionerNotificationEvent,
 } from "./templates";
@@ -297,6 +298,8 @@ async function handleEvent(
     case "appointment_rescheduled":
     case "appointment_cancelled":
       return handleAppointmentEvent(supabase, channels, event);
+    case "appointment_requested":
+      return handleAppointmentRequestedEvent(supabase, channels, event);
     case "prescription_issued":
       return handlePrescriptionEvent(supabase, channels, event);
     case "treatment_plan_activated":
@@ -449,6 +452,88 @@ async function handleAppointmentEvent(
   // retrying would produce the same answer for ever.
   if (!patientNotificationId && !practitionerNotificationId) {
     return { kind: "skipped", reason: "no_recipient" };
+  }
+
+  return { kind: "processed" };
+}
+
+/**
+ * A patient booked online; tell the front desk.
+ *
+ * The request is re-read before anything is rendered. If the desk has already
+ * confirmed or cancelled it, or the patient has moved it, the event is stale
+ * and nobody is told — a notification asking somebody to confirm what is
+ * already confirmed is noise (sections 117, 118, 122).
+ *
+ * Only the desk is told. The patient already saw "requested" on the page the
+ * booking redirected to, and the practitioner hears about it when it is
+ * confirmed — a request is not yet in their day.
+ */
+async function handleAppointmentRequestedEvent(
+  supabase: AdminClient,
+  channels: readonly NotificationChannelAdapter[],
+  event: ClaimedEvent,
+): Promise<EventOutcome> {
+  const { data, error } = await supabase.rpc(
+    "notification_appointment_context",
+    { p_appointment_id: event.subject_id },
+  );
+
+  if (error) throw error;
+
+  const context = data?.[0];
+  if (!context) return { kind: "skipped", reason: "resource_missing" };
+
+  const startsAt = new Date(context.starts_at);
+  const keyedEpoch = readTrailingEpoch(event.dedupe_key);
+
+  if (keyedEpoch !== null && keyedEpoch !== appointmentEpoch(startsAt)) {
+    return { kind: "skipped", reason: "superseded" };
+  }
+
+  if (context.status !== "requested") {
+    return { kind: "skipped", reason: "stale_event" };
+  }
+
+  // No patient name, no patient note: `ReceptionAppointmentTemplateData` has
+  // no field for either (sections 36, 37, 58).
+  const rendered = renderReceptionNotification({
+    event: "appointment_requested",
+    data: {
+      practitionerName: context.practitioner_name,
+      appointmentTypeName: context.appointment_type_name,
+      startsAt,
+    },
+  });
+
+  // Every receptionist, resolved by the database. There is no recipient here
+  // to pass.
+  const { data: ids, error: createError } = await supabase.rpc(
+    "create_reception_notifications",
+    {
+      p_dedupe_key: `appointment:${event.subject_id}:requested_reception:${appointmentEpoch(startsAt)}`,
+      p_event_type: "appointment_requested",
+      p_category: rendered.category,
+      p_resource_type: "appointment",
+      p_resource_id: event.subject_id,
+      p_title: rendered.title,
+      p_body: rendered.body,
+      p_template_version: rendered.templateVersion,
+    },
+  );
+
+  if (createError) throw createError;
+
+  const notificationIds = ids ?? [];
+
+  // A clinic with no receptionist account. Retrying would produce the same
+  // answer for ever.
+  if (notificationIds.length === 0) {
+    return { kind: "skipped", reason: "no_recipient" };
+  }
+
+  for (const notificationId of notificationIds) {
+    await enqueueDeliveries(supabase, channels, notificationId);
   }
 
   return { kind: "processed" };

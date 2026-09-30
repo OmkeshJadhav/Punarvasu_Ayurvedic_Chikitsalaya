@@ -24,8 +24,9 @@ import type { NotificationAudience, NotificationSubjectType } from "./types";
  *
  * ## Which migration this reads
  *
- * The **current** definition, which is `20260930120000`'s three-argument
- * function rather than `20260926120000`'s two-argument one. That one was
+ * The **current** definition, which is `20261003130000`'s — the
+ * three-argument function with the front desk's branch — rather than
+ * `20260930120000`'s or `20260926120000`'s two-argument one, which was
  * dropped. A mirror test that kept reading the superseded file would go on
  * passing while describing SQL that is no longer installed — the exact failure
  * `progress_phase_15.md` recorded when the grants fix superseded the original
@@ -34,24 +35,40 @@ import type { NotificationAudience, NotificationSubjectType } from "./types";
 
 const MIGRATION = readFileSync(
   new URL(
-    "../../../supabase/migrations/20260930120000_doctor_notifications.sql",
+    "../../../supabase/migrations/20261003130000_reception_notifications.sql",
     import.meta.url,
   ),
   "utf8",
 );
 
+/** Where `notification_audience` was created, and where it was extended. */
+const AUDIENCE_MIGRATIONS = [
+  "20260930120000_doctor_notifications.sql",
+  "20261003120000_reception_notification_enums.sql",
+]
+  .map((name) =>
+    readFileSync(
+      new URL(`../../../supabase/migrations/${name}`, import.meta.url),
+      "utf8",
+    ),
+  )
+  .join("\n");
+
 /** The body of `notification_link_path()`, where the routes live. */
 const LINK_BODY =
-  /create function public\.notification_link_path\([\s\S]*?as \$\$([\s\S]*?)\$\$;/.exec(
+  /create or replace function public\.notification_link_path\([\s\S]*?as \$\$([\s\S]*?)\$\$;/.exec(
     MIGRATION,
   )?.[1] ?? "";
 
 /**
- * The two halves of the `case`, split at the `end` that closes the
- * practitioner branch. Each half holds one audience's routes.
+ * The three branches of the `case`, one per audience: the practitioner's, the
+ * front desk's, and the patient's `else`.
  */
-const [PRACTITIONER_BODY = "", PATIENT_BODY = ""] =
-  LINK_BODY.split(/\bend\s*\n\s*else\b/);
+const [PRACTITIONER_BODY = "", REST = ""] = LINK_BODY.split(
+  /when p_audience = 'reception' then/,
+);
+const [RECEPTION_BODY = "", PATIENT_BODY = ""] =
+  REST.split(/\bend\s*\n\s*else\b/);
 
 const RESOURCE_TYPES: readonly NotificationSubjectType[] = [
   "appointment",
@@ -59,7 +76,11 @@ const RESOURCE_TYPES: readonly NotificationSubjectType[] = [
   "treatment_plan",
 ];
 
-const AUDIENCES: readonly NotificationAudience[] = ["patient", "practitioner"];
+const AUDIENCES: readonly NotificationAudience[] = [
+  "patient",
+  "practitioner",
+  "reception",
+];
 
 const ID = "7d1f6c0e-2b3a-4c5d-8e9f-0a1b2c3d4e5f";
 
@@ -72,12 +93,14 @@ const ROUTED: readonly {
   { audience: "patient", type: "prescription" },
   { audience: "patient", type: "treatment_plan" },
   { audience: "practitioner", type: "appointment" },
+  { audience: "reception", type: "appointment" },
 ];
 
 describe("the SQL this mirrors", () => {
   it("was actually found, and both audiences with it", () => {
     expect(LINK_BODY.length).toBeGreaterThan(50);
     expect(PRACTITIONER_BODY).toContain("p_audience = 'practitioner'");
+    expect(RECEPTION_BODY).toContain("'/receptionist/schedule/'");
     expect(PATIENT_BODY).toContain("'/patient/appointments/'");
   });
 });
@@ -121,6 +144,26 @@ describe("notificationLinkPath", () => {
     expect(PRACTITIONER_BODY).toContain("else null");
   });
 
+  it("agrees with the database for the front desk's appointment", () => {
+    const prefix = /when 'appointment' then '([^']+)'/.exec(
+      RECEPTION_BODY,
+    )?.[1];
+
+    expect(prefix, "no SQL branch for a reception appointment").toBe(
+      "/receptionist/schedule/",
+    );
+    expect(notificationLinkPath("reception", "appointment", ID)).toBe(
+      `${prefix}${ID}`,
+    );
+  });
+
+  it("sends the front desk nowhere for a prescription or a plan", () => {
+    // Section 58: a receptionist is not told about prescriptions or plans.
+    expect(notificationLinkPath("reception", "prescription", ID)).toBeNull();
+    expect(notificationLinkPath("reception", "treatment_plan", ID)).toBeNull();
+    expect(RECEPTION_BODY).toContain("else null");
+  });
+
   it("never points a practitioner into the patient area", () => {
     // A practitioner following their own notification must not land on a
     // page built for the person it is about.
@@ -153,12 +196,17 @@ describe("notificationLinkPath", () => {
   it("covers every audience the enum declares", () => {
     const declared =
       /create type public\.notification_audience as enum \(([^)]*)\)/.exec(
-        MIGRATION,
+        AUDIENCE_MIGRATIONS,
       )?.[1] ?? "";
 
-    const values = [...declared.matchAll(/'([a-z_]+)'/g)].map(
-      (match) => match[1],
-    );
+    const values = [
+      ...[...declared.matchAll(/'([a-z_]+)'/g)].map((match) => match[1]),
+      ...[
+        ...AUDIENCE_MIGRATIONS.matchAll(
+          /alter type public\.notification_audience add value '([a-z_]+)'/g,
+        ),
+      ].map((match) => match[1]),
+    ];
 
     expect([...values].sort()).toEqual([...AUDIENCES].sort());
   });

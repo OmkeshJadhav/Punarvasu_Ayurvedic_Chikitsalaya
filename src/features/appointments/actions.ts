@@ -220,6 +220,11 @@ export async function bookAppointmentAction(
 
   logger.info("appointment.requested", { userId: actor.userId });
 
+  // The booking trigger queued `appointment_requested` inside the transaction
+  // above; this drains it once the response is sent, so the front desk sees
+  // the request promptly.
+  scheduleNotificationDispatch();
+
   revalidatePath(APPOINTMENTS_PATH);
   revalidatePath(PATIENT_AREA_PATH);
 

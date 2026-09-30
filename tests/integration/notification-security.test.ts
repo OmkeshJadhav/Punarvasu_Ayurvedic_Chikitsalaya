@@ -75,6 +75,31 @@ const AUDIENCE_MIGRATION = readFileSync(
   "utf8",
 );
 
+/**
+ * The front desk's migrations.
+ *
+ * `20261003130000` replaces `create_notification`, `notification_link_path`
+ * and `notification_recipient_for_resource` **in place** — same signatures —
+ * and adds `create_reception_notifications`. The enum values it uses arrive in
+ * `20261003120000`, because an added value cannot be used in the transaction
+ * that added it.
+ */
+const RECEPTION_MIGRATION = readFileSync(
+  new URL(
+    "../../supabase/migrations/20261003130000_reception_notifications.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+
+const RECEPTION_ENUM_MIGRATION = readFileSync(
+  new URL(
+    "../../supabase/migrations/20261003120000_reception_notification_enums.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+
 /** The three functions whose current definition lives in the newest file. */
 const REDEFINED = [
   "create_notification",
@@ -95,7 +120,7 @@ const NOTIFICATION_TABLES = [
 function functionBodies(sql: string = MIGRATION): Map<string, string> {
   const bodies = new Map<string, string>();
   const pattern =
-    /create function public\.([a-z_]+)\s*\(([\s\S]*?)\)\s*returns[\s\S]*?as \$\$([\s\S]*?)\$\$;/g;
+    /create (?:or replace )?function public\.([a-z_]+)\s*\(([\s\S]*?)\)\s*returns[\s\S]*?as \$\$([\s\S]*?)\$\$;/g;
 
   for (const match of sql.matchAll(pattern)) {
     bodies.set(match[1] ?? "", `${match[2] ?? ""}||${match[3] ?? ""}`);
@@ -112,6 +137,7 @@ function functionBodies(sql: string = MIGRATION): Map<string, string> {
  */
 function currentBody(name: string): string {
   return (
+    functionBodies(RECEPTION_MIGRATION).get(name) ??
     functionBodies(AUDIENCE_MIGRATION).get(name) ??
     functionBodies().get(name) ??
     ""
@@ -556,9 +582,9 @@ describe("no recipient parameter exists", () => {
 
   it("and an audience is not a recipient", () => {
     // `p_audience` is the one parameter the signature gained when staff
-    // notifications arrived. It takes two values — `patient` and
-    // `practitioner` — and neither names anybody: the account is still
-    // resolved from the resource.
+    // notifications arrived. It takes three values — `patient`,
+    // `practitioner` and `reception` — and none names anybody: the accounts
+    // are still resolved from the resource.
     const params = currentBody("create_notification").split("||")[0] ?? "";
 
     expect(params).toContain("p_audience public.notification_audience");
@@ -571,9 +597,113 @@ describe("no recipient parameter exists", () => {
         AUDIENCE_MIGRATION,
       )?.[1] ?? "";
 
+    const added = [
+      ...RECEPTION_ENUM_MIGRATION.matchAll(
+        /alter type public\.notification_audience add value '([a-z_]+)'/g,
+      ),
+    ].map((match) => match[1]);
+
     expect(
-      [...declared.matchAll(/'([a-z_]+)'/g)].map((match) => match[1]).sort(),
-    ).toEqual(["patient", "practitioner"]);
+      [...declared.matchAll(/'([a-z_]+)'/g)]
+        .map((match) => match[1])
+        .concat(added)
+        .sort(),
+    ).toEqual(["patient", "practitioner", "reception"]);
+  });
+});
+
+/* ------------------------------------------------------------------------ */
+/* The front desk's notifications                                            */
+/* ------------------------------------------------------------------------ */
+
+describe("the front desk's notifications", () => {
+  const createReception = functionBodies(RECEPTION_MIGRATION).get(
+    "create_reception_notifications",
+  );
+
+  it("are created by a function that was found", () => {
+    expect(createReception?.length ?? 0).toBeGreaterThan(200);
+  });
+
+  it("take no recipient and no link", () => {
+    // Sections 54, 72, 73, 110. The desk's accounts are resolved inside the
+    // function from `profiles.role`, which no client can change.
+    const params = createReception?.split("||")[0] ?? "";
+
+    expect(params.toLowerCase()).not.toMatch(
+      /p_recipient|p_user_id|p_profile_id|p_email|p_phone|p_to\b|p_link|p_url|p_path/,
+    );
+    expect(createReception).toContain("pr.role = 'receptionist'");
+    expect(createReception).toContain("public.notification_link_path(");
+  });
+
+  it("are gated to the worker and granted to service_role alone", () => {
+    expect(createReception).toContain(
+      "perform public.assert_notification_worker();",
+    );
+    expect(RECEPTION_MIGRATION).toMatch(
+      /revoke all on function public\.create_reception_notifications\([\s\S]*?\) from public, anon, authenticated;/,
+    );
+
+    const grants = [
+      ...RECEPTION_MIGRATION.matchAll(
+        /grant execute on function public\.create_reception_notifications\([\s\S]*?\) to ([a-z_, ]+);/g,
+      ),
+    ].map((match) => match[1]?.trim());
+
+    expect(grants).toEqual(["service_role"]);
+  });
+
+  it("is a definer with a pinned search_path", () => {
+    const declaration =
+      /create function public\.create_reception_notifications[\s\S]*?(?=\bas \$\$)/.exec(
+        RECEPTION_MIGRATION,
+      )?.[0] ?? "";
+
+    expect(declaration).toContain("security definer");
+    expect(declaration).toContain("set search_path = ''");
+  });
+
+  it("are idempotent per recipient", () => {
+    expect(RECEPTION_MIGRATION).toContain(
+      "unique (dedupe_key, recipient_user_id)",
+    );
+    expect(createReception).toContain(
+      "on conflict (dedupe_key, recipient_user_id) do nothing",
+    );
+    expect(currentBody("create_notification")).toContain(
+      "on conflict (dedupe_key, recipient_user_id) do nothing",
+    );
+  });
+
+  it("cannot be reached through create_notification", () => {
+    // Refused outright rather than resolved to nobody — and the recipient
+    // resolver no longer treats an unknown audience as a patient.
+    expect(currentBody("create_notification")).toMatch(
+      /p_audience = 'reception' then[\s\S]{0,600}PV057/,
+    );
+    const resolver = currentBody("notification_recipient_for_resource");
+    expect(resolver).toContain("when p_audience = 'patient' then");
+    expect(resolver).toMatch(/else null\s*end;/);
+  });
+
+  it("are emitted only for a row INSERTED as requested", () => {
+    // Only a patient's own online booking inserts `requested`; the front
+    // desk's booking inserts `confirmed`. A patient reschedule, which returns
+    // an appointment to `requested` by UPDATE, emits no request.
+    const trigger = currentBody("appointments_emit_notification_events");
+    const [insertArm = "", updateArm = ""] = trigger.split("return null;");
+
+    expect(insertArm).toContain("new.status = 'requested'");
+    expect(insertArm).toContain("'appointment_requested'");
+    expect(updateArm).not.toContain("'appointment_requested'");
+  });
+
+  it("send the desk to its own schedule, never into the patient area", () => {
+    const link = currentBody("notification_link_path");
+    expect(link).toMatch(
+      /p_audience = 'reception' then[\s\S]*?'\/receptionist\/schedule\/'/,
+    );
   });
 });
 

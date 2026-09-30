@@ -32,6 +32,7 @@ const MIGRATION = [
   "20260926130000_notification_function_grants_fix.sql",
   "20260926140000_notification_preference_reader_gate.sql",
   "20260930120000_doctor_notifications.sql",
+  "20261003130000_reception_notifications.sql",
 ]
   .map((name) =>
     readFileSync(

@@ -37,11 +37,12 @@ export type NotificationSubjectType =
 /**
  * Which side of an appointment a notification was written for.
  *
- * Two values, and neither names anybody. It decides which account the database
+ * Three values, and none names anybody. It decides which accounts the database
  * resolves the notification to and which area the deep link points at — the
- * patient's `/patient/...` or the practitioner's `/doctor/...` — and it is the
- * *only* thing `create_notification` gained when staff notifications arrived.
- * There is still no recipient parameter anywhere in this feature.
+ * patient's `/patient/...`, the practitioner's `/doctor/...` or the front
+ * desk's `/receptionist/...`. `reception` resolves to every receptionist
+ * account rather than one. There is still no recipient parameter anywhere in
+ * this feature.
  */
 export type NotificationAudience =
   Database["public"]["Enums"]["notification_audience"];

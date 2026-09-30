@@ -6,6 +6,8 @@ against it with real per-role JWTs, and the whole lifecycle driven end to end
 against a production build.
 
 **Extended on 2026-09-23 with notifications for the practitioner** (section 20).
+**Extended on 2026-09-30 with front-desk notifications for online bookings**
+(section 22). Its migrations are **not yet applied** to the live project.
 Its migration is **applied to the live project and verified against it** —
 including the fan-out, the recipient resolution and row-level isolation driven
 against real rows. See section 20.7.
@@ -1693,6 +1695,121 @@ Hover originally required `pointerType === "mouse"`. It now ignores only
 
 ---
 
+### 22. Front-desk notifications for online bookings (2026-09-30)
+
+When a patient books an appointment online, every receptionist now gets an
+in-app notification. `phase_15.md` section 58 lists "appointment request"
+first among the receptionist notifications. It is also the only one where the
+desk has a job to do: a self-service booking arrives as `requested` and waits
+until somebody confirms it. Before this change, nothing told the desk about
+it.
+
+#### 22.1 What the desk sees
+
+| Event | Title | Body |
+| --- | --- | --- |
+| `appointment_requested` | "New appointment request" | *\<type\> with \<practitioner\>, requested online for \<date, time\>. Open it to review and confirm.* |
+
+The notification links to `/receptionist/schedule/<id>`, where the request is
+confirmed. That route already existed and checks access on its own. The desk
+sees the notification in the bell and in `/notifications`. The preferences grid
+shows the desk one category, "Appointment requests" (`appointment_updates`).
+It is always on in-app.
+
+**The message never names the patient.** A receptionist is allowed to know who
+booked, but a notification can show on a lock screen or a shared front-desk
+screen. So `ReceptionAppointmentTemplateData` has no patient field and no
+patient-note field. The practitioner's messages follow the same rule.
+
+#### 22.2 Design
+
+```text
+book_appointment inserts status = 'requested'
+   -> trigger writes appointment_requested   (same transaction)
+   -> processor re-reads the appointment
+        still requested, same start?  -> create_reception_notifications
+        confirmed / cancelled / moved -> skipped (stale_event / superseded)
+   -> one row per profile with role = 'receptionist'
+```
+
+* **Only a patient's booking triggers it.** The event fires only when a row is
+  *inserted* as `requested`. Only `book_appointment` does that. Front-desk
+  bookings are inserted as `confirmed`, so the desk is never told about its own
+  work.
+* **The patient and the practitioner get nothing new.** The patient already
+  sees "requested" after booking. A request is not yet part of the
+  practitioner's day. They are still told when it is confirmed, as before.
+* **Several recipients, and still no recipient parameter.**
+  `create_reception_notifications` finds the receptionists itself, from
+  `profiles.role`, which users cannot change themselves. It takes no account
+  id, email or phone. `create_notification` rejects the `reception` audience
+  with PV057 rather than resolving it to nobody. The recipient resolver now has
+  an explicit `patient` branch, so any other audience resolves to null instead
+  of falling through to the patient.
+* **Duplicates are now prevented per recipient.** `notifications.dedupe_key`
+  was unique on its own. It is now unique on `(dedupe_key, recipient_user_id)`.
+  A patient or practitioner key still resolves to exactly one account, so
+  nothing changes for them. For the desk, a second worker run still creates one
+  row per receptionist. The key is
+  `appointment:<id>:requested_reception:<epoch>`.
+* **The worker runs right after booking.** `bookAppointmentAction` now calls
+  `scheduleNotificationDispatch()`, the same one-line call the other domain
+  actions make.
+* **Two migrations, not one.** An enum value added by `alter type … add value`
+  cannot be used in the transaction that added it. So
+  `20261003120000_reception_notification_enums.sql` adds the values, and
+  `20261003130000_reception_notifications.sql` uses them. Every function keeps
+  its signature and is replaced in place, and its grants are applied again.
+
+#### 22.3 Files
+
+```text
+Created
+supabase/migrations/20261003120000_reception_notification_enums.sql
+supabase/migrations/20261003130000_reception_notifications.sql
+
+Modified
+src/types/database.ts                       two enum values, one function
+src/features/notifications/templates.ts     renderReceptionNotification; version 3
+src/features/notifications/processor.ts     handleAppointmentRequestedEvent
+src/features/notifications/links.ts         the /receptionist/schedule branch
+src/features/notifications/types.ts         audience docs
+src/features/notifications/errors.ts        PV057
+src/features/notifications/content.ts       RECEPTION_NOTIFICATION_COPY
+src/config/notifications.ts                 reception audience, role mapping, copy
+src/features/appointments/actions.ts        dispatch after booking
++ tests: templates, links, errors, config, processor (9 new), security (8 new)
+```
+
+#### 22.4 Verification
+
+```text
+Typecheck:  PASS
+Lint:       1 warning, in src/components/marketing/location-section.tsx
+            (unused CONTACT_PAGE). That file was not touched by this change.
+Tests:      PASS, 4,703 of 4,703
+Build:      PASS, npx next build
+Migration:  NOT APPLIED to the live project. Nothing verified live yet.
+```
+
+#### 22.5 Known limitations
+
+1. **The migrations are not applied.** Until they are, patient bookings emit
+   nothing and the new code path is never reached.
+2. **A patient's reschedule does not notify the desk.** It sets the
+   appointment back to `requested` with an UPDATE, which emits
+   `appointment_rescheduled` for the patient and the practitioner only. The
+   desk has to confirm it again but is not told. Adding this is one more
+   branch in the processor, and the product needs to decide whether it wants
+   it.
+3. **Receptionists who join later do not get earlier requests.** Recipients
+   are fixed when the event is processed.
+4. **There is no Recent updates panel on `/receptionist`.** The bell and
+   `/notifications` cover it. A panel like the one on `/doctor` could be added
+   using `RecentNotifications`.
+
+---
+
 ### 19. Phase status
 
 ```text
@@ -1705,6 +1822,9 @@ Verified live:                           YES — 19 checks, section 20.7
 Verified in a browser:                   NO  — known issue 1
 
 Bell preview panel (section 21):         COMPLETE
+
+Front-desk booking requests (section 22): COMPLETE in code
+Migrations applied to the live project:   NO
 Verified in a browser:                   PARTLY — hover, section 21.4
 ```
 

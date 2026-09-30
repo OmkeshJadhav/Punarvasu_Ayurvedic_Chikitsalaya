@@ -54,6 +54,12 @@ export const NOTIFICATION_ERROR_CODES = {
    * a `not null` violation with nothing attached explaining why.
    */
   noRoute: "PV056",
+  /**
+   * `create_notification` was asked for the front desk, which has many
+   * accounts rather than one. `create_reception_notifications` is the path.
+   * A worker bug if it is ever seen, and never user-facing.
+   */
+  receptionAudience: "PV057",
 } as const;
 
 const INSUFFICIENT_PRIVILEGE = "42501";

@@ -47,6 +47,10 @@
  * That is what makes the practitioner rule structural: a practitioner template
  * has no field for a patient's name, so it cannot put one on a lock screen.
  *
+ * The front desk is a third vocabulary with its own union and renderer, for
+ * the same reason. It is told that a patient has asked for a time — the type,
+ * the practitioner and the time, and no patient.
+ *
  * ## Email privacy: the subject line is separate from the body
  *
  * Sections 37 and 82, and example 4. A subject line and its preview are read
@@ -95,8 +99,11 @@ import type { NotificationCategory, NotificationEventType } from "./types";
  * and "a" cannot agree with data. The patient wording is unchanged in this
  * revision; the version is global, so a patient notification created from now
  * on records 2 while reading exactly as 1 did.
+ *
+ * **3** — the front desk's appointment-request message was added. Patient and
+ * practitioner wording is unchanged.
  */
-export const NOTIFICATION_TEMPLATE_VERSION = 2;
+export const NOTIFICATION_TEMPLATE_VERSION = 3;
 
 /** The subject every clinical email carries. Deliberately says nothing. */
 export const NEUTRAL_EMAIL_SUBJECT = "New update from Punarvasu";
@@ -128,6 +135,22 @@ export interface AppointmentTemplateData {
  * The message says the day changed. The diary behind the link says who.
  */
 export interface PractitionerAppointmentTemplateData {
+  /** The consultation type — an operational category, never a treatment. */
+  readonly appointmentTypeName: string;
+  readonly startsAt: Date;
+}
+
+/**
+ * What a **front-desk** appointment template is allowed to know.
+ *
+ * The practitioner's name is here — the desk works across every diary and
+ * needs to know whose — and the patient's is not, for the lock-screen reason
+ * `PractitionerAppointmentTemplateData` gives (`phase_15.md` sections 36, 37,
+ * 58). Neither is the patient's note: it is free text a patient wrote, and a
+ * notification is the wrong place to repeat it.
+ */
+export interface ReceptionAppointmentTemplateData {
+  readonly practitionerName: string;
   /** The consultation type — an operational category, never a treatment. */
   readonly appointmentTypeName: string;
   readonly startsAt: Date;
@@ -202,6 +225,22 @@ export type PractitionerNotificationTemplateData =
 export type PractitionerNotificationEvent =
   PractitionerNotificationTemplateData["event"];
 
+/**
+ * The events the front desk is told about.
+ *
+ * One: a patient booked online and the request is waiting to be confirmed.
+ * Confirmations, moves and cancellations are mostly made *by* the desk, and
+ * telling it about its own work is the noise section 56 forbids.
+ */
+export type ReceptionNotificationTemplateData = {
+  readonly event: "appointment_requested";
+  readonly data: ReceptionAppointmentTemplateData;
+};
+
+/** The event types a front-desk notification can carry. */
+export type ReceptionNotificationEvent =
+  ReceptionNotificationTemplateData["event"];
+
 /** A rendered notification, ready to be stored. */
 export interface RenderedNotification {
   readonly title: string;
@@ -220,6 +259,7 @@ export const EVENT_CATEGORY: Readonly<
   appointment_reminder: "appointment_reminders",
   prescription_issued: "clinical_updates",
   treatment_plan_activated: "clinical_updates",
+  appointment_requested: "appointment_updates",
 };
 
 /**
@@ -342,6 +382,32 @@ export function renderPractitionerNotification(
         // cancellation note is written by staff for staff (section 27).
         title: "An appointment has been cancelled",
         body: `${input.data.appointmentTypeName} on ${when} is no longer in your diary.`,
+      };
+  }
+}
+
+/**
+ * Renders the in-app notification the **front desk** receives.
+ *
+ * A patient has booked online, and the request is waiting for somebody to
+ * confirm it. The category is `appointment_updates` — mandatory in-app,
+ * because a request nobody sees is a patient nobody calls back.
+ */
+export function renderReceptionNotification(
+  input: ReceptionNotificationTemplateData,
+): RenderedNotification {
+  const category = EVENT_CATEGORY[input.event];
+  const templateVersion = NOTIFICATION_TEMPLATE_VERSION;
+  const when = formatClinicDateTime(input.data.startsAt);
+
+  switch (input.event) {
+    case "appointment_requested":
+      return {
+        category,
+        templateVersion,
+        title: "New appointment request",
+        // No article before the type, for the reason in this module's header.
+        body: `${input.data.appointmentTypeName} with ${input.data.practitionerName}, requested online for ${when}. Open it to review and confirm.`,
       };
   }
 }

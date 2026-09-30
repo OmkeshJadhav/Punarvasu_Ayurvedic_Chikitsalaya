@@ -183,6 +183,7 @@ beforeEach(() => {
       error: null,
     },
     create_notification: { data: NOTIFICATION_ID, error: null },
+    create_reception_notifications: { data: [], error: null },
     plan_appointment_reminders: { data: [], error: null },
     cancel_appointment_reminders: { data: 0, error: null },
     release_due_reminders: { data: [], error: null },
@@ -615,6 +616,171 @@ describe("the practitioner's copy of an appointment event", () => {
     expect(summary.outboxProcessed).toBe(1);
     expect(summary.outboxSkipped).toBe(0);
     expect(practitionerCall()).toBeDefined();
+  });
+});
+
+describe("a patient's online booking request", () => {
+  const RECEPTION_IDS = [
+    "66666666-6666-4666-8666-666666666666",
+    "77777777-7777-4777-8777-777777777777",
+  ];
+
+  function requestedEvent(overrides: Partial<Record<string, unknown>> = {}) {
+    return outboxEvent({
+      event_type: "appointment_requested",
+      dedupe_key: `appointment:${APPOINTMENT_ID}:requested:${STARTS_AT_EPOCH}`,
+      ...overrides,
+    });
+  }
+
+  beforeEach(() => {
+    rpcResults.claim_notification_outbox = {
+      data: [requestedEvent()],
+      error: null,
+    };
+    rpcResults.notification_appointment_context = {
+      data: appointmentContext("requested"),
+      error: null,
+    };
+    rpcResults.create_reception_notifications = {
+      data: RECEPTION_IDS,
+      error: null,
+    };
+  });
+
+  it("tells the front desk, and only the front desk", async () => {
+    const summary = await runNotificationWorker();
+
+    expect(summary.outboxProcessed).toBe(1);
+    expect(callsTo("create_reception_notifications")).toHaveLength(1);
+    // Not the patient — they saw "requested" on the page the booking
+    // redirected to — and not the practitioner: a request is not yet in
+    // their day.
+    expect(callsTo("create_notification")).toHaveLength(0);
+    expect(callsTo("complete_notification_outbox")[0]?.args.p_status).toBe(
+      "processed",
+    );
+  });
+
+  it("passes no recipient, and a key the database's shape constraint accepts", async () => {
+    await runNotificationWorker();
+
+    const args = callsTo("create_reception_notifications")[0]?.args ?? {};
+    const names = Object.keys(args);
+
+    for (const forbidden of [
+      "p_recipient",
+      "p_recipient_user_id",
+      "p_recipient_email",
+      "p_recipient_phone",
+      "p_to",
+      "p_link_path",
+    ]) {
+      expect(names).not.toContain(forbidden);
+    }
+
+    expect(args.p_dedupe_key).toBe(
+      `appointment:${APPOINTMENT_ID}:requested_reception:${STARTS_AT_EPOCH}`,
+    );
+    expect(
+      /^[a-z_]+:[0-9a-f-]{36}:[a-z_]+(:[0-9]+){0,2}$/.test(
+        String(args.p_dedupe_key),
+      ),
+    ).toBe(true);
+    expect(args.p_event_type).toBe("appointment_requested");
+    expect(args.p_category).toBe("appointment_updates");
+  });
+
+  it("names the type, practitioner and time, and no patient", async () => {
+    await runNotificationWorker();
+
+    const args = callsTo("create_reception_notifications")[0]?.args ?? {};
+    expect(args.p_title).toBe("New appointment request");
+    expect(String(args.p_body)).toContain("Initial consultation");
+    expect(String(args.p_body)).toContain(PRACTITIONER);
+    expect(String(args.p_body).toLowerCase()).not.toContain("patient");
+  });
+
+  it("is skipped once the desk has already confirmed or cancelled it", async () => {
+    for (const status of ["confirmed", "cancelled"]) {
+      rpcCalls = [];
+      rpcResults.claim_notification_outbox = {
+        data: [requestedEvent()],
+        error: null,
+      };
+      rpcResults.notification_appointment_context = {
+        data: appointmentContext(status),
+        error: null,
+      };
+
+      const summary = await runNotificationWorker();
+
+      expect(summary.outboxSkipped).toBe(1);
+      expect(callsTo("create_reception_notifications")).toHaveLength(0);
+      expect(
+        callsTo("complete_notification_outbox")[0]?.args.p_error_code,
+      ).toBe("stale_event");
+    }
+  });
+
+  it("is skipped when the patient has since moved it", async () => {
+    rpcResults.notification_appointment_context = {
+      data: appointmentContext("requested", "2026-09-20T05:00:00.000Z"),
+      error: null,
+    };
+
+    const summary = await runNotificationWorker();
+
+    expect(summary.outboxSkipped).toBe(1);
+    expect(callsTo("create_reception_notifications")).toHaveLength(0);
+    expect(callsTo("complete_notification_outbox")[0]?.args.p_error_code).toBe(
+      "superseded",
+    );
+  });
+
+  it("touches no reminder — a request has none", async () => {
+    await runNotificationWorker();
+
+    expect(callsTo("plan_appointment_reminders")).toHaveLength(0);
+    expect(callsTo("cancel_appointment_reminders")).toHaveLength(0);
+  });
+
+  it("skips, rather than fails, when the clinic has no receptionist account", async () => {
+    rpcResults.create_reception_notifications = { data: [], error: null };
+
+    const summary = await runNotificationWorker();
+
+    expect(summary.outboxSkipped).toBe(1);
+    expect(summary.outboxFailed).toBe(0);
+    expect(callsTo("complete_notification_outbox")[0]?.args.p_error_code).toBe(
+      "no_recipient",
+    );
+  });
+
+  it("enqueues a delivery for each receptionist's notification", async () => {
+    channels = [emailChannel()];
+
+    await runNotificationWorker();
+
+    expect(
+      callsTo("enqueue_notification_delivery").map(
+        (call) => call.args.p_notification_id,
+      ),
+    ).toEqual(RECEPTION_IDS);
+  });
+
+  it("retries a database failure rather than marking it processed", async () => {
+    rpcResults.create_reception_notifications = {
+      data: null,
+      error: pgError("XX000"),
+    };
+
+    const summary = await runNotificationWorker();
+
+    expect(summary.outboxProcessed).toBe(0);
+    expect(callsTo("complete_notification_outbox")[0]?.args.p_status).toBe(
+      "failed",
+    );
   });
 });
 

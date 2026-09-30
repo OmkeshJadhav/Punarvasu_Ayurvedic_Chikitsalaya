@@ -232,6 +232,7 @@ describe("the audiences", () => {
   const AUDIENCES: readonly NotificationAudience[] = [
     "patient",
     "practitioner",
+    "reception",
   ];
 
   it("covers every value the database enum declares", () => {
@@ -248,9 +249,25 @@ describe("the audiences", () => {
         audienceMigration,
       )?.[1] ?? "";
 
-    const values = [...declared.matchAll(/'([a-z_]+)'/g)].map(
-      (match) => match[1],
+    // Values added later arrive through `alter type ... add value`, which
+    // cannot share a transaction with their first use and so has a migration
+    // of its own.
+    const added = readFileSync(
+      new URL(
+        "../../supabase/migrations/20261003120000_reception_notification_enums.sql",
+        import.meta.url,
+      ),
+      "utf8",
     );
+
+    const values = [
+      ...[...declared.matchAll(/'([a-z_]+)'/g)].map((match) => match[1]),
+      ...[
+        ...added.matchAll(
+          /alter type public\.notification_audience add value '([a-z_]+)'/g,
+        ),
+      ].map((match) => match[1]),
+    ];
 
     expect([...values].sort()).toEqual([...AUDIENCES].sort());
     expect(Object.keys(NOTIFICATION_AUDIENCE_CATEGORIES).sort()).toEqual(
@@ -279,9 +296,14 @@ describe("the audiences", () => {
     expect(NOTIFICATION_AUDIENCE_CATEGORIES.practitioner).toEqual([
       "appointment_updates",
     ]);
+    // The front desk is sent booking requests, which are appointment updates,
+    // and nothing else.
+    expect(NOTIFICATION_AUDIENCE_CATEGORIES.reception).toEqual([
+      "appointment_updates",
+    ]);
   });
 
-  it("maps only the doctor role to the practitioner audience", () => {
+  it("maps the doctor to the practitioner and the receptionist to reception", () => {
     const roles: readonly AppRole[] = [
       "patient",
       "doctor",
@@ -291,7 +313,11 @@ describe("the audiences", () => {
 
     for (const role of roles) {
       expect(notificationAudienceForRole(role)).toBe(
-        role === "doctor" ? "practitioner" : "patient",
+        role === "doctor"
+          ? "practitioner"
+          : role === "receptionist"
+            ? "reception"
+            : "patient",
       );
     }
 
