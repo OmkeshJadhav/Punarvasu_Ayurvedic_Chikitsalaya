@@ -37,7 +37,7 @@ argument, a schema key or a form field.
 **In-app notifications work. Email does not, and the product says so.** The
 adapter exists and no provider is configured, so the channel is disabled and
 the preferences page explains why. There is no SMS and no WhatsApp anywhere —
-not an enum value, not a stub.
+not an enum value, not a stub....
 
 3,388 tests pass, up from 3,049. **146 live checks** against the linked
 project: 115 database and authorization checks with real per-role JWTs, 3
